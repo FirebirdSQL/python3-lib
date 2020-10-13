@@ -1,5 +1,5 @@
 #coding:utf-8
-"""A setuptools based setup module for firebird-driver package.
+"""A setuptools based setup module for firebird-lib package.
 See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject

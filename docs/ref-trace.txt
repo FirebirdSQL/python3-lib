@@ -1,0 +1,212 @@
+.. module:: firebird.lib.trace
+    :synopsis: Module for parsing Firebird trace & audit protocol
+
+==================
+firebird.lib.trace
+==================
+
+Enums
+=====
+
+Status
+------
+.. autoclass:: Status
+
+Event
+-----
+.. autoclass:: Event
+
+Dataclasses
+===========
+
+TraceInfo
+---------
+.. autoclass:: TraceInfo
+
+TraceEvent
+----------
+.. autoclass:: TraceEvent
+
+AttachmentInfo
+--------------
+.. autoclass:: AttachmentInfo
+
+TransactionInfo
+---------------
+.. autoclass:: TransactionInfo
+
+ServiceInfo
+-----------
+.. autoclass:: ServiceInfo
+
+SQLInfo
+-------
+.. autoclass:: SQLInfo
+
+ParamSet
+--------
+.. autoclass:: ParamSet
+
+AccessStats
+-----------
+.. autoclass:: AccessStats
+
+EventTraceInit
+--------------
+.. autoclass:: EventTraceInit
+
+EventTraceSuspend
+-----------------
+.. autoclass:: EventTraceSuspend
+
+EventTraceFinish
+----------------
+.. autoclass:: EventTraceFinish
+
+EventCreate
+-----------
+.. autoclass:: EventCreate
+
+EventDrop
+---------
+.. autoclass:: EventDrop
+
+EventAttach
+-----------
+.. autoclass:: EventAttach
+
+EventDetach
+-----------
+.. autoclass:: EventDetach
+
+EventTransactionStart
+---------------------
+.. autoclass:: EventTransactionStart
+
+EventCommit
+-----------
+.. autoclass:: EventCommit
+
+EventRollback
+-------------
+.. autoclass:: EventRollback
+
+EventCommitRetaining
+--------------------
+.. autoclass:: EventCommitRetaining
+
+EventRollbackRetaining
+----------------------
+.. autoclass:: EventRollbackRetaining
+
+EventPrepareStatement
+---------------------
+.. autoclass:: EventPrepareStatement
+
+EventStatementStart
+-------------------
+.. autoclass:: EventStatementStart
+
+EventStatementFinish
+--------------------
+.. autoclass:: EventStatementFinish
+
+EventFreeStatement
+------------------
+.. autoclass:: EventFreeStatement
+
+EventCloseCursor
+----------------
+.. autoclass:: EventCloseCursor
+
+EventTriggerStart
+-----------------
+.. autoclass:: EventTriggerStart
+
+EventTriggerFinish
+------------------
+.. autoclass:: EventTriggerFinish
+
+EventProcedureStart
+-------------------
+.. autoclass:: EventProcedureStart
+
+EventProcedureFinish
+--------------------
+.. autoclass:: EventProcedureFinish
+
+EventServiceAttach
+------------------
+.. autoclass:: EventServiceAttach
+
+EventServiceDetach
+------------------
+.. autoclass:: EventServiceDetach
+
+EventServiceStart
+-----------------
+.. autoclass:: EventServiceStart
+
+EventServiceQuery
+-----------------
+.. autoclass:: EventServiceQuery
+
+EventSetContext
+---------------
+.. autoclass:: EventSetContext
+
+EventError
+----------
+.. autoclass:: EventError
+
+EventWarning
+------------
+.. autoclass:: EventWarning
+
+EventServiceError
+-----------------
+.. autoclass:: EventServiceError
+
+EventServiceWarning
+-------------------
+.. autoclass:: EventServiceWarning
+
+EventSweepStart
+---------------
+.. autoclass:: EventSweepStart
+
+EventSweepProgress
+------------------
+.. autoclass:: EventSweepProgress
+
+EventSweepFinish
+----------------
+.. autoclass:: EventSweepFinish
+
+EventSweepFailed
+----------------
+.. autoclass:: EventSweepFailed
+
+EventBLRCompile
+---------------
+.. autoclass:: EventBLRCompile
+
+EventBLRExecute
+---------------
+.. autoclass:: EventBLRExecute
+
+EventDYNExecute
+---------------
+.. autoclass:: EventDYNExecute
+
+EventUnknown
+------------
+.. autoclass:: EventUnknown
+
+Classes
+=======
+
+TraceParser
+-----------
+.. autoclass:: TraceParser
+

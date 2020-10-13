@@ -1,0 +1,39 @@
+###############################
+The Python library for Firebird
+###############################
+
+The `firebird-lib` package provides extensions to `firebird-driver`_ - an official Python driver for the open source relational database `Firebird`_ ®.
+
+This package provides modules for:
+
+- Work with Firebird database schema.
+- Work with Firebird monitoring tables.
+- Processing output from gstat Firebird utility.
+- Processing Firebird server log.
+- Processing output from Firebird server trace & audit sessions.
+
+Content
+*******
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   usage-guide
+   reference
+   changelog
+   license
+
+Library development is sponsored by IBPhoenix_.
+
+Indices and tables
+******************
+
+* :ref:`genindex`
+* :ref:`modindex`
+
+.. _firebird-driver: https://pypi.org/project/firebird-driver/
+.. _Python: http://python.org
+.. _Firebird: http://www.firebirdsql.org
+.. _Firebird Project: http://www.firebirdsql.org
+.. _IBPhoenix: http://www.ibphoenix.com

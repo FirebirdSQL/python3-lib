@@ -1,0 +1,33 @@
+.. module:: firebird.lib.logmsgs
+    :synopsis: Firebird log messages for Firebird log parser
+
+====================
+firebird.lib.logmsgs
+====================
+
+Firebird log messages for Firebird log parser
+
+Enums
+=====
+
+Severity
+--------
+.. autoclass:: Severity
+
+Facility
+--------
+.. autoclass:: Facility
+
+Dataclasses
+===========
+
+MsgDesc
+-------
+.. autoclass:: MsgDesc
+
+Functions
+=========
+
+identify_msg
+------------
+.. autofunction:: identify_msg

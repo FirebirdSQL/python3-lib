@@ -1,0 +1,42 @@
+.. module:: firebird.lib.gstat
+    :synopsis: Module for work with Firebird gstat output
+
+==================
+firebird.lib.gstat
+==================
+
+Enums
+=====
+
+DbAttribute
+-----------
+.. autoclass:: DbAttribute
+   :no-members:
+
+Dataclasses
+===========
+
+FillDistribution
+----------------
+.. autoclass:: FillDistribution
+   :no-members:
+
+Encryption
+----------
+.. autoclass:: Encryption
+   :no-members:
+
+Classes
+=======
+
+StatDatabase
+------------
+.. autoclass:: StatDatabase
+
+StatTable
+---------
+.. autoclass:: StatTable
+
+StatIndex
+---------
+.. autoclass:: StatIndex

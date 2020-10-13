@@ -1,0 +1,77 @@
+.. module:: firebird.lib.monitor
+    :synopsis: Module for work with Firebird monitoring tables
+
+====================
+firebird.lib.monitor
+====================
+
+Enums
+=====
+
+ShutdownMode
+------------
+.. autoclass:: ShutdownMode
+
+BackupState
+-----------
+.. autoclass:: BackupState
+
+State
+-----
+.. autoclass:: State
+
+IsolationMode
+-------------
+.. autoclass:: IsolationMode
+
+Group
+-----
+.. autoclass:: Group
+
+Security
+--------
+.. autoclass:: Security
+
+Classes
+=======
+
+Monitor
+-------
+.. autoclass:: Monitor
+
+InfoItem
+--------
+.. autoclass:: InfoItem
+
+DatabaseInfo
+------------
+.. autoclass:: DatabaseInfo
+
+AttachmentInfo
+--------------
+.. autoclass:: AttachmentInfo
+
+TransactionInfo
+---------------
+.. autoclass:: TransactionInfo
+
+StatementInfo
+-------------
+.. autoclass:: StatementInfo
+
+CallStackInfo
+-------------
+.. autoclass:: CallStackInfo
+
+IOStatsInfo
+-----------
+.. autoclass:: IOStatsInfo
+
+TableStatsInfo
+--------------
+.. autoclass:: TableStatsInfo
+
+ContextVariableInfo
+-------------------
+.. autoclass:: ContextVariableInfo
+

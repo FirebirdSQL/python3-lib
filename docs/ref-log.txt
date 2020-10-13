@@ -1,0 +1,23 @@
+.. module:: firebird.lib.log
+    :synopsis: Module for parsing Firebird server log
+
+================
+firebird.lib.log
+================
+
+Module for parsing Firebird server log.
+
+Dataclasses
+===========
+
+LogMessage
+----------
+.. autoclass:: LogMessage
+
+Classes
+=======
+
+LogParser
+---------
+.. autoclass:: LogParser
+

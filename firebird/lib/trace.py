@@ -47,14 +47,16 @@ from dataclasses import dataclass
 from firebird.base.types import Error, STOP, Sentinel
 
 class Status(Enum):
-    "Trace event status codes"
+    """Trace event status codes.
+    """
     OK = ' '
     FAILED = 'F'
     UNAUTHORIZED = 'U'
     UNKNOWN = '?'
 
 class Event(IntEnum):
-    "Trace event codes"
+    """Trace event codes.
+    """
     TRACE_INIT = 0
     TRACE_SUSPENDED = 1
     TRACE_FINI = 2
@@ -93,16 +95,19 @@ class Event(IntEnum):
     UNKNOWN = 35
 
 class TraceInfo:
-    "Base class for trace info blocks"
+    """Base class for trace info blocks.
+    """
     pass
 
 class TraceEvent:
-    "Base class for trace events"
+    """Base class for trace events.
+    """
     pass
 
 @dataclass(frozen=True)
 class AttachmentInfo(TraceInfo):
-    "Information about database attachment"
+    """Information about database attachment.
+    """
     #: Attachamnet ID
     attachment_id: int
     #: Database name/file
@@ -124,7 +129,8 @@ class AttachmentInfo(TraceInfo):
 
 @dataclass(frozen=True)
 class TransactionInfo(TraceInfo):
-    "Information about transaction"
+    """Information about transaction.
+    """
     #: Attachamnet ID
     attachment_id: int
     #: Transaction ID
@@ -134,7 +140,8 @@ class TransactionInfo(TraceInfo):
 
 @dataclass(frozen=True)
 class ServiceInfo(TraceInfo):
-    "Information about service attachment"
+    """Information about service attachment.
+    """
     #: Service ID
     service_id: int
     #: User name
@@ -150,7 +157,8 @@ class ServiceInfo(TraceInfo):
 
 @dataclass(frozen=True)
 class SQLInfo(TraceInfo):
-    "Information about SQL statement"
+    """Information about SQL statement.
+    """
     #: SQL ID
     sql_id: int
     #: SQL command
@@ -160,7 +168,8 @@ class SQLInfo(TraceInfo):
 
 @dataclass(frozen=True)
 class ParamSet(TraceInfo):
-    "Information about set of parameters"
+    """Information about set of parameters.
+    """
     #: Parameter set ID
     par_id: int
     #: List of parameters (name, value pairs)
@@ -168,7 +177,8 @@ class ParamSet(TraceInfo):
 
 @dataclass(frozen=True)
 class AccessStats(TraceInfo):
-    "Table access statistics"
+    """Table access statistics.
+    """
     #: Table name
     table: str
     #: Number of rows accessed sequentially
@@ -794,7 +804,6 @@ class EventSweepProgress(TraceEvent):
     timestamp: datetime.datetime
     #: Database attachent ID
     attachment_id: int
-    run_time: int
     #: Execution time in ms
     run_time: int
     #: Number of page reads
@@ -919,7 +928,7 @@ class EventUnknown(TraceEvent):
 
 def safe_int(str_value: str, base: int=10):
     """Always returns integer value from string/None argument. Returns 0 if argument is None.
-"""
+    """
     if str_value:
         return int(str_value, base)
     else:
@@ -927,8 +936,8 @@ def safe_int(str_value: str, base: int=10):
 
 class TraceParser:
     """Parser for standard textual trace log. Produces dataclasses describing individual
-trace log entries/events.
-"""
+    trace log entries/events.
+    """
     def __init__(self):
         #: Set of attachment ids that were already processed
         self.seen_attachments: Set[int] = set()
@@ -936,7 +945,7 @@ trace log entries/events.
         self.seen_transactions: Set[int] = set()
         #: Set of service ids that were already processed
         self.seen_services: set[int] = set()
-        #: Dictionary that maps (sql_cmd,plan) keys to internal ids
+        #: Dictionary that maps (sql_cmd, plan) keys to internal ids
         self.sqlinfo_map: Dict[Tuple[str, str], int]= {}
         #: Dictionary that maps parameters (statement or procedure) keys to internal ids
         self.param_map = {}
@@ -946,6 +955,11 @@ trace log entries/events.
         self.next_sql_id: int = 1
         #: Sequence id that would be assigned to next parsed unique parameter (starts with 1)
         self.next_param_id: int = 1
+        #: Parsing option indicating that parsed trace contains `FREE_STATEMENT` events.
+        #: This has impact on cleanup of `SQLInfo` ID cache. When True, the SQLInfo is
+        #: discarded when its FREE_STATEMENT event is processed. When False, the SQLInfo
+        #: is discarded when its EXECUTE_STATEMENT_FINISH is processed.
+        self.has_statement_free: bool = True
         #
         self.__infos: collections.deque = collections.deque()
         self.__pushed: List[str] = []
@@ -1266,9 +1280,6 @@ trace log entries/events.
             self.next_sql_id += 1
             self.sqlinfo_map[key] = sql_id
             self.__infos.append(SQLInfo(**{'sql_id': sql_id, 'sql': sql, 'plan': plan,}))
-        #
-        del self.__event_values['plan']
-        del self.__event_values['sql']
         self.__event_values['sql_id'] = sql_id
     def _parse_trigger(self) -> None:
         trigger, event = self.__current_block.popleft().split('(')
@@ -1386,6 +1397,7 @@ trace log entries/events.
         # Transaction parameters
         self._parse_transaction_info(self.__event_values, check=False)
         self._parse_transaction_performance()
+        self.seen_transactions.remove(self.__event_values['transaction_id'])
         return EventCommit(**self.__event_values)
     def __parser_rollback_transaction(self) -> EventRollback:
         self.__parse_trace_header()
@@ -1396,6 +1408,7 @@ trace log entries/events.
         # Transaction parameters
         self._parse_transaction_info(self.__event_values, check=False)
         self._parse_transaction_performance()
+        self.seen_transactions.remove(self.__event_values['transaction_id'])
         return EventRollback(**self.__event_values)
     def __parser_commit_retaining(self) -> EventCommitRetaining:
         self.__parse_trace_header()
@@ -1425,6 +1438,9 @@ trace log entries/events.
         self._parse_sql_statement()
         self._parse_plan()
         self._parse_sql_info()
+        #
+        del self.__event_values['plan']
+        del self.__event_values['sql']
         return EventPrepareStatement(**self.__event_values)
     def __parser_execute_statement_start(self) -> EventStatementStart:
         self.__parse_trace_header()
@@ -1434,6 +1450,9 @@ trace log entries/events.
         self._parse_plan()
         self._parse_parameters()
         self._parse_sql_info()
+        #
+        del self.__event_values['plan']
+        del self.__event_values['sql']
         return EventStatementStart(**self.__event_values)
     def __parser_execute_statement_finish(self) -> EventStatementFinish:
         self.__parse_trace_header()
@@ -1445,6 +1464,11 @@ trace log entries/events.
         self.__event_values['records'] = None
         self._parse_performance()
         self._parse_sql_info()
+        #
+        if not self.has_statement_free:
+            del self.sqlinfo_map[self.__event_values['sql'], self.__event_values['plan']]
+        del self.__event_values['plan']
+        del self.__event_values['sql']
         return EventStatementFinish(**self.__event_values)
     def __parser_free_statement(self) -> EventFreeStatement:
         self.__parse_trace_header()
@@ -1454,6 +1478,10 @@ trace log entries/events.
         self._parse_plan()
         self._parse_sql_info()
         del self.__event_values['status']
+        #
+        del self.sqlinfo_map[self.__event_values['sql'], self.__event_values['plan']]
+        del self.__event_values['plan']
+        del self.__event_values['sql']
         return EventFreeStatement(**self.__event_values)
     def __parser_close_cursor(self) -> EventCloseCursor:
         self.__parse_trace_header()
@@ -1463,6 +1491,9 @@ trace log entries/events.
         self._parse_plan()
         self._parse_sql_info()
         del self.__event_values['status']
+        #
+        del self.__event_values['plan']
+        del self.__event_values['sql']
         return EventCloseCursor(**self.__event_values)
     def __parser_trigger_start(self) -> EventTriggerStart:
         self.__parse_trace_header()
@@ -1509,6 +1540,7 @@ trace log entries/events.
         self.__parse_trace_header()
         # Attachment parameters
         self._parse_attachment_info(self.__event_values, check=False)
+        self.seen_attachments.remove(self.__event_values['attachment_id'])
         return EventDetach(**self.__event_values)
     def __parser_service_start(self) -> EventServiceStart:
         self.__parse_trace_header()
@@ -1529,6 +1561,7 @@ trace log entries/events.
     def __parser_service_detach(self) -> EventServiceDetach:
         self.__parse_trace_header()
         self._parse_service()
+        self.seen_services.remove(self.__event_values['service_id'])
         return EventServiceDetach(**self.__event_values)
     def __parser_service_query(self) -> EventServiceQuery:
         self.__parse_trace_header()
@@ -1688,7 +1721,7 @@ trace log entries/events.
 
         Raises:
             firebird.base.types.Error: When any problem is found in input stream.
-"""
+        """
         for rec in (self.parse_event(x) for x in self._iter_trace_blocks(lines)):
             while len(self.__infos) > 0:
                 yield self.__infos.popleft()
@@ -1701,7 +1734,11 @@ trace log entries/events.
 
         Returns:
             None, or list with parsed elements (single event preceded by any info blocks
-            related to it)"""
+            related to it).
+
+        Raises:
+            Error: When pushed line is not recognized as part of trace event.
+        """
         if line is STOP:
             if self.__pushed:
                 event = self.parse_event(self.__pushed)

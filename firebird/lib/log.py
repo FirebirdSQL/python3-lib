@@ -45,7 +45,8 @@ from .logmsgs import identify_msg, Severity, Facility
 
 @dataclass(order=True, frozen=True)
 class LogMessage:
-    "Firebird log message."
+    """Firebird log message.
+    """
     #: Firebird server identification
     origin: str
     #: Date and time when message was written to log
@@ -63,7 +64,8 @@ class LogMessage:
     params: Dict[str, Any]
 
 class LogParser:
-    """"""
+    """Parser for firebird.log files.
+    """
     def __init__(self):
         self.__buffer: List[str] = []
     def push(self, line: Union[str, Sentinel]) -> Optional[LogMessage]:
@@ -136,7 +138,7 @@ class LogParser:
 
         Raises:
             firebird.base.types.Error: When any problem is found in input stream.
-"""
+        """
         for line in lines:
             result = self.push(line)
             if result is not None:

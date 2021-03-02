@@ -47,7 +47,8 @@ from firebird.driver import Connection, Cursor, Statement, Isolation, TraAccessM
 from firebird.driver.types import UserInfo
 
 class FieldType(IntEnum):
-    "Firebird field type codes"
+    """Firebird field type codes.
+    """
     NONE = 0
     SHORT = 7
     LONG = 8
@@ -73,7 +74,8 @@ class FieldType(IntEnum):
     BLOB = 261
 
 class FieldSubType(IntEnum):
-    """Field sub-types."""
+    """Field sub-types.
+    """
     # BLOB sub-types
     BINARY = 0
     TEXT = 1
@@ -103,7 +105,8 @@ COLUMN_TYPES = {None: 'UNKNOWN', FieldType.SHORT: 'SMALLINT',
 INTEGRAL_SUBTYPES = ('UNKNOWN', 'NUMERIC', 'DECIMAL')
 
 class ObjectType(IntEnum):
-    "Dependent type codes"
+    """Dependent type codes.
+    """
     TABLE = 0
     VIEW = 1
     TRIGGER = 2
@@ -126,16 +129,20 @@ class ObjectType(IntEnum):
     PACKAGE_BODY = 19
 
 class IndexType(Enum):
+    """Index ordering.
+    """
     ASCENDING = 'ASCENDING'
     DESCENDING = 'DESCENDING'
 
 class FunctionType(IntEnum):
-    "Function type codes"
+    """Function type codes.
+    """
     VALUE = 0
     BOOLEAN = 1
 
 class Mechanism(IntEnum):
-    "Mechanism codes"
+    """Mechanism codes.
+    """
     BY_VALUE = 0
     BY_REFERENCE = 1
     BY_VMS_DESCRIPTOR = 2
@@ -144,13 +151,15 @@ class Mechanism(IntEnum):
     BY_REFERENCE_WITH_NULL = 5
 
 class TransactionState(IntEnum):
-    "Transaction state codes"
+    """Transaction state codes.
+    """
     LIMBO = 1
     COMMITTED = 2
     ROLLED_BACK = 3
 
 class SystemFlag(IntEnum):
-    "System flag codes"
+    """System flag codes.
+    """
     USER = 0
     SYSTEM = 1
     QLI = 2
@@ -160,13 +169,15 @@ class SystemFlag(IntEnum):
     IDENTITY_GENERATOR = 6
 
 class ShadowFlag(IntFlag):
-    "Shadow file flags"
+    """Shadow file flags.
+    """
     INACTIVE = 2
     MANUAL = 4
     CONDITIONAL = 16
 
 class RelationType(IntEnum):
-    "Relation type codes"
+    """Relation type codes.
+    """
     PERSISTENT = 0
     VIEW = 1
     EXTERNAL = 2
@@ -175,41 +186,48 @@ class RelationType(IntEnum):
     GLOBAL_TEMPORARY_DELETE = 5
 
 class ProcedureType(IntEnum):
-    "Procedure tpe codes"
+    """Procedure type codes.
+    """
     LEGACY = 0
     SELECTABLE = 1
     EXECUTABLE = 2
 
 class ParameterMechanism(IntEnum):
-    "Parameter mechanism type codes"
+    """Parameter mechanism type codes.
+    """
     NORMAL = 0
     TYPE_OF = 1
 
 class TypeFrom(IntEnum):
-    "Source of parameter datatype codes"
+    """Source of parameter datatype codes.
+    """
     DATATYPE = 0
     DOMAIN = 1
     TYPE_OF_DOMAIN = 2
     TYPE_OF_COLUMN = 3
 
 class ParameterType(IntEnum):
-    "Parameter type codes"
+    """Parameter type codes.
+    """
     INPUT = 0
     OUTPUT = 1
 
 class IdentityType(IntEnum):
-    "Identity type codes"
+    """Identity type codes.
+    """
     ALWAYS = 0
     BY_DEFAULT = 1
 
 class GrantOption(IntEnum):
-    "Grant option codes"
+    """Grant option codes.
+    """
     NONE = 0
     GRANT_OPTION = 1
     ADMIN_OPTION = 2
 
 class PageType(IntEnum):
-    "Page type codes"
+    """Page type codes.
+    """
     HEADER = 1
     PAGE_INVENTORY = 2
     TRANSACTION_INVENTORY = 3
@@ -222,18 +240,21 @@ class PageType(IntEnum):
     SCN_INVENTORY = 10
 
 class MapTo(IntEnum):
-    "Map to type codes"
+    """Map to type codes.
+    """
     USER = 0
     ROLE = 1
 
 class TriggerType(IntEnum):
-    "Trigger type codes"
+    """Trigger type codes.
+    """
     DML = 0
     DB = 8192
     DDL = 16384
 
 class DDLTrigger(IntEnum):
-    "DDL trigger type codes"
+    """DDL trigger type codes.
+    """
     ANY = 4611686018427375615
     CREATE_TABLE = 1
     ALTER_TABLE = 2
@@ -282,7 +303,8 @@ class DDLTrigger(IntEnum):
     DROP_MAPPING = 47
 
 class DBTrigger(IntEnum):
-    "Database trigger type codes"
+    """Database trigger type codes.
+    """
     CONNECT = 0
     DISCONNECT = 1
     TRANSACTION_START = 2
@@ -290,18 +312,22 @@ class DBTrigger(IntEnum):
     TRANSACTION_ROLLBACK = 4
 
 class DMLTrigger(IntFlag):
-    "DML trigger type codes"
+    """DML trigger type codes.
+    """
     INSERT = auto()
     UPDATE = auto()
     DELETE = auto()
 
 class TriggerTime(IntEnum):
-    "Trigger action time codes"
+    """Trigger action time codes.
+    """
     BEFORE = 0
     AFTER = 1
 
 
 class ConstraintType(Enum):
+    """Contraint type codes.
+    """
     CHECK = 'CHECK'
     NOT_NULL = 'NOT NULL'
     FOREIGN_KEY = 'FOREIGN KEY'
@@ -309,7 +335,8 @@ class ConstraintType(Enum):
     UNIQUE = 'UNIQUE'
 
 class Section(Enum):
-    "DDL script sections. Used by `.Schema.get_metadata_ddl()`"
+    """DDL script sections. Used by `.Schema.get_metadata_ddl()`.
+    """
     COLLATIONS = auto()
     CHARACTER_SETS = auto()
     UDFS = auto()
@@ -341,7 +368,8 @@ class Section(Enum):
     TRIGGER_ACTIVATIONS = auto()
 
 class Category(Enum):
-    "Schema information collection categories."
+    """Schema information collection categories.
+    """
     TABLES = auto()
     VIEWS = auto()
     DOMAINS = auto()
@@ -366,17 +394,20 @@ class Category(Enum):
     FILTERS = auto()
 
 class Privacy(IntEnum):
-    "Privacy flag codes"
+    """Privacy flag codes.
+    """
     PUBLIC = 0
     PRIVATE = 1
 
 class Legacy(IntEnum):
-    "Legacy flag codes"
+    """Legacy flag codes.
+    """
     NEW_STYLE = 0
     LEGACY_STYLE = 1
 
 class PrivilegeCode(Enum):
-    "Priviledge codes"
+    """Priviledge codes.
+    """
     SELECT = 'S'
     INSERT = 'I'
     UPDATE = 'U'
@@ -390,7 +421,8 @@ class PrivilegeCode(Enum):
     MEMBERSHIP = 'M'
 
 class CollationFlag(IntFlag):
-    "Collation attribute flags"
+    """Collation attribute flags.
+    """
     NONE = 0
     PAD_SPACE = 1
     CASE_INSENSITIVE = 2
@@ -486,21 +518,21 @@ def get_grants(privileges: List[Privilege], grantors: List[str]=None) -> List[st
 
 
 def escape_single_quotes(text: str) -> str:
-    "Return `text` with any single quotes escaped (doubled)."
+    """Returns `text` with any single quotes escaped (doubled).
+    """
     return text.replace("'", "''")
 
-
-
 class Visitable:
-    "Base class for Visitor Pattern support."
+    """Base class for Visitor Pattern support.
+    """
     def accept(self, visitor: Visitor) -> None:
         """Visitor Pattern support.
 
-    Calls `visit(self)` on parameter object.
+        Calls `visit(self)` on parameter object.
 
-    Arguments:
-        visitor: Visitor object of Visitor Pattern.
-    """
+        Arguments:
+            visitor: Visitor object of Visitor Pattern.
+        """
         visitor.visit(self)
 
 class Visitor:
@@ -577,7 +609,6 @@ class Visitor:
 class Schema(Visitable):
     """This class represents database schema.
     """
-
     #: Configuration option - Always quote db object names on output
     opt_always_quote: bool = False
     #: Configuration option - Keyword for generator/sequence
@@ -844,7 +875,6 @@ class Schema(Visitable):
             self.__users = DataList((UserInfo(user_name=row[0].strip()) for row in self._ic),
                                     UserInfo, 'item.user_name')
         return self.__users
-
     def bind(self, connection: Connection) -> Schema:
         """Bind this instance to specified connection`.
 
@@ -858,7 +888,6 @@ class Schema(Visitable):
                                                      access=TraAccessMode.READ)).cursor()
         self._ic._logging_id_ = 'schema.internal_cursor'
         self.__clear()
-
         self.ods = self._con.info.ods
         if self.ods == 12.0: # Firebird 3
             self._reserved_ = ['ABS', 'ACOS', 'ACOSH', 'ACTIVE', 'ADD', 'ADMIN', 'AFTER',
@@ -1039,9 +1068,9 @@ class Schema(Visitable):
             raise Error("Call to 'close' not allowed for embedded Schema.")
         self._close()
         self.__clear()
-
     def clear(self) -> None:
-        "Drop all cached metadata objects."
+        """Drop all cached metadata objects.
+        """
         self.__clear()
     def reload(self, data: Union[Category, List[Category]]=None) -> None:
         """Commits query transaction and drops all or specified categories of cached
@@ -1056,9 +1085,9 @@ class Schema(Visitable):
         self.__clear(data)
         if not self.closed:
             self._ic.transaction.commit()
-
     def get_item(self, name: str, itype: ObjectType, subname: str=None) -> SchemaItem:
-        "Return database object by type and name."
+        """Return database object by type and name.
+        """
         if itype is ObjectType.TABLE:
             return self.all_tables.get(name)
         elif itype is ObjectType.VIEW:
@@ -1245,12 +1274,13 @@ class Schema(Visitable):
             else:
                 raise ValueError("Unknown section code %s" % section)
         return script
-
     def is_keyword(self, ident: str) -> bool:
-        "Return True if `ident` is a Firebird keyword."
+        """Return True if `ident` is a Firebird keyword.
+        """
         return ident in self._reserved_
     def is_multifile(self) -> bool:
-        "Returns True if database has multiple files."
+        """Returns True if database has multiple files.
+        """
         return len(self.files) > 0
     def get_collation_by_id(self, charset_id: int, collation_id: int) -> Collation:
         """Get `.Collation` by ID.
@@ -1301,27 +1331,33 @@ class Schema(Visitable):
                                        and (p.user_type in utype), copy=True)
     @property
     def closed(self) -> bool:
-        "True if schema is not bound to database connection."
+        """True if schema is not bound to database connection.
+        """
         return self._con is None
     @property
     def description(self) -> Optional[str]:
-        "Database description or None if it doesn't have a description."
+        """Database description or None if it doesn't have a description.
+        """
         return self.__attrs['RDB$DESCRIPTION']
     @property
     def owner_name(self) -> str:
-        "Database owner name."
+        """Database owner name.
+        """
         return self.__owner
     @property
     def default_character_set(self) -> CharacterSet:
-        "Default `.CharacterSet` for database."
+        """Default `.CharacterSet` for database.
+        """
         return self.character_sets.get(self._default_charset_name)
     @property
     def security_class(self) -> str:
-        "Can refer to the security class applied as databasewide access control limits."
+        """Can refer to the security class applied as databasewide access control limits.
+        """
         return self.__attrs['RDB$SECURITY_CLASS'].strip()
     @property
     def collations(self) -> DataList[Collation]:
-        "List of all collations in database."
+        """List of all collations in database.
+        """
         if self.__collations is None:
             self.__fail_if_closed()
             self.__collations = DataList((Collation(self, row) for row
@@ -1330,7 +1366,8 @@ class Schema(Visitable):
         return self.__collations
     @property
     def character_sets(self) -> DataList[CharacterSet]:
-        "List of all character sets in database."
+        """List of all character sets in database.
+        """
         if self.__character_sets is None:
             self.__fail_if_closed()
             self.__character_sets = DataList((CharacterSet(self, row) for row
@@ -1339,7 +1376,8 @@ class Schema(Visitable):
         return self.__character_sets
     @property
     def exceptions(self) -> DataList[DatabaseException]:
-        "List of all exceptions in database."
+        """List of all exceptions in database.
+        """
         if self.__exceptions is None:
             self.__fail_if_closed()
             self.__exceptions = DataList((DatabaseException(self, row) for row
@@ -1349,91 +1387,113 @@ class Schema(Visitable):
         return self.__exceptions
     @property
     def generators(self) -> DataList[Sequence]:
-        "List of all user generators in database."
+        """List of all user generators in database.
+        """
         return self._get_all_generators()[0]
     @property
     def sys_generators(self) -> DataList[Sequence]:
-        "List of all system generators in database."
+        """List of all system generators in database.
+        """
         return self._get_all_generators()[1]
     @property
     def all_generators(self) -> DataList[Sequence]:
-        "List of all (system + user) generators in database."
+        """List of all (system + user) generators in database.
+        """
         return self._get_all_generators()[2]
     @property
     def domains(self) ->  DataList[Domain]:
-        "List of all user domains in database."
+        """List of all user domains in database.
+        """
         return self._get_all_domains()[0]
     @property
     def sys_domains(self) ->  DataList[Domain]:
-        "List of all system domains in database."
+        """List of all system domains in database.
+        """
         return self._get_all_domains()[1]
     @property
     def all_domains(self) ->  DataList[Domain]:
-        "List of all (system + user) domains in database."
+        """List of all (system + user) domains in database.
+        """
         return self._get_all_domains()[2]
     @property
     def indices(self) -> DataList[Index]:
-        "List of all user indices in database."
+        """List of all user indices in database.
+        """
         return self._get_all_indices()[0]
     @property
     def sys_indices(self) -> DataList[Index]:
-        "List of all system indices in database."
+        """List of all system indices in database.
+        """
         return self._get_all_indices()[1]
     @property
     def all_indices(self) -> DataList[Index]:
-        "List of all (system + user) indices in database."
+        """List of all (system + user) indices in database.
+        """
         return self._get_all_indices()[2]
     @property
     def tables(self) -> DataList[Table]:
-        "List of all user tables in database."
+        """List of all user tables in database.
+        """
         return self._get_all_tables()[0]
     @property
     def sys_tables(self) -> DataList[Table]:
-        "List of all system tables in database."
+        """List of all system tables in database.
+        """
         return self._get_all_tables()[1]
     @property
     def all_tables(self) -> DataList[Table]:
-        "List of all (system + user) tables in database."
+        """List of all (system + user) tables in database.
+        """
         return self._get_all_tables()[2]
     @property
     def views(self) -> DataList[View]:
-        "List of all user views in database."
+        """List of all user views in database.
+        """
         return self._get_all_views()[0]
     @property
     def sys_views(self) -> DataList[View]:
-        "List of all system views in database."
+        """List of all system views in database.
+        """
         return self._get_all_views()[1]
     @property
     def all_views(self) -> DataList[View]:
-        "List of all system (system + user) in database."
+        """List of all system (system + user) in database.
+        """
         return self._get_all_views()[2]
     @property
     def triggers(self) -> DataList[Trigger]:
-        "List of all user triggers in database."
+        """List of all user triggers in database.
+        """
         return self._get_all_triggers()[0]
     @property
     def sys_triggers(self) -> DataList[Trigger]:
-        "List of all system triggers in database."
+        """List of all system triggers in database.
+        """
         return self._get_all_triggers()[1]
     @property
     def all_triggers(self) -> DataList[Trigger]:
-        "List of all (system + user) triggers in database."
+        """List of all (system + user) triggers in database.
+        """
         return self._get_all_triggers()[2]
     @property
     def procedures(self) -> DataList[Procedure]:
-        "List of all user procedures in database."
+        """List of all user procedures in database.
+        """
         return self._get_all_procedures()[0]
     @property
     def sys_procedures(self) -> DataList[Procedure]:
-        "List of all system procedures in database."
+        """List of all system procedures in database.
+        """
         return self._get_all_procedures()[1]
     @property
     def all_procedures(self) -> DataList[Procedure]:
-        "List of all (system + user) procedures in database."
+        """List of all (system + user) procedures in database.
+        """
         return self._get_all_procedures()[2]
     @property
     def constraints(self) -> DataList[Constraint]:
-        "List of all constraints in database."
+        """List of all constraints in database.
+        """
         if self.__constraints is None:
             self.__fail_if_closed()
             # Dummy call to _get_all_tables() is necessary as
@@ -1465,7 +1525,8 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__constraints
     @property
     def roles(self) -> DataList[Role]:
-        "List of all roles in database."
+        """List of all roles in database.
+        """
         if self.__roles is None:
             self.__fail_if_closed()
             self.__roles = DataList((Role(self, row) for row
@@ -1475,7 +1536,8 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__roles
     @property
     def dependencies(self) -> DataList[Dependency]:
-        "List of all dependencies in database."
+        """List of all dependencies in database.
+        """
         if self.__dependencies is None:
             self.__fail_if_closed()
             self.__dependencies = DataList((Dependency(self, row) for row
@@ -1484,19 +1546,23 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__dependencies
     @property
     def functions(self) -> DataList[Function]:
-        "List of all user functions defined in database."
+        """List of all user functions defined in database.
+        """
         return self._get_all_functions()[0]
     @property
     def sys_functions(self) -> DataList[Function]:
-        "List of all system functions defined in database."
+        """List of all system functions defined in database.
+        """
         return self._get_all_functions()[1]
     @property
     def all_functions(self) -> DataList[Function]:
-        "List of all (system + user) functions defined in database."
+        """List of all (system + user) functions defined in database.
+        """
         return self._get_all_functions()[2]
     @property
     def files(self) -> DataList[DatabaseFile]:
-        "List of all extension files defined for database."
+        """List of all extension files defined for database.
+        """
         if self.__files is None:
             self.__fail_if_closed()
             cmd = """select RDB$FILE_NAME, RDB$FILE_SEQUENCE,
@@ -1509,7 +1575,8 @@ order by RDB$FILE_SEQUENCE"""
         return self.__files
     @property
     def shadows(self) -> DataList[Shadow]:
-        "List of all shadows defined for database."
+        """List of all shadows defined for database.
+        """
         if self.__shadows is None:
             self.__fail_if_closed()
             cmd = """select RDB$FILE_FLAGS, RDB$SHADOW_NUMBER
@@ -1522,7 +1589,8 @@ order by RDB$SHADOW_NUMBER"""
         return self.__shadows
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of all privileges defined for database."
+        """List of all privileges defined for database.
+        """
         if self.__privileges is None:
             self.__fail_if_closed()
             cmd = """select RDB$USER, RDB$GRANTOR, RDB$PRIVILEGE,
@@ -1533,7 +1601,8 @@ FROM RDB$USER_PRIVILEGES"""
         return self.__privileges
     @property
     def backup_history(self) -> DataList[BackupHistory]:
-        "List of all nbackup hisotry records."
+        """List of all nbackup hisotry records.
+        """
         if self.__backup_history is None:
             self.__fail_if_closed()
             cmd = """SELECT RDB$BACKUP_ID, RDB$TIMESTAMP,
@@ -1545,7 +1614,8 @@ FROM RDB$BACKUP_HISTORY"""
         return self.__backup_history
     @property
     def filters(self) -> DataList[Filter]:
-        "List of all user-defined BLOB filters."
+        """List of all user-defined BLOB filters.
+        """
         if self.__filters is None:
             self.__fail_if_closed()
             cmd = """SELECT RDB$FUNCTION_NAME, RDB$DESCRIPTION,
@@ -1557,7 +1627,8 @@ FROM RDB$FILTERS"""
         return self.__filters
     @property
     def packages(self) -> DataList[Package]:
-        "List of all packages defined for database."
+        """List of all packages defined for database.
+        """
         if self.__packages is None:
             self.__fail_if_closed()
             cmd = """select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE,
@@ -1570,12 +1641,13 @@ RDB$SYSTEM_FLAG, RDB$DESCRIPTION
         return self.__packages
     @property
     def linger(self) -> Optional[int]:
-        "Database linger value."
+        """Database linger value.
+        """
         return self.__attrs['RDB$LINGER']
 
-
 class SchemaItem(Visitable):
-    """Base class for all database schema objects."""
+    """Base class for all database schema objects.
+    """
     schema: Schema = None
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         #: Weak reference to parent `.Schema` instance.
@@ -1612,21 +1684,24 @@ class SchemaItem(Visitable):
         return 'RE'+self._get_create_sql(**params)
     def _get_create_or_alter_sql(self, **params) -> str:
         return 'CREATE OR ALTER' + self._get_create_sql(**params)[6:]
-
     def is_sys_object(self) -> bool:
-        "Returns True if this database object is system object."
+        """Returns True if this database object is system object.
+        """
         return True if self._attributes.get('RDB$SYSTEM_FLAG', 0) > 0 else False
     def get_quoted_name(self) -> str:
-        "Returns quoted (if necessary) name."
+        """Returns quoted (if necessary) name.
+        """
         return self._get_quoted_ident(self.name)
     def get_dependents(self) -> DataList[Dependency]:
-        """Returns list of all database objects that depend on this one."""
+        """Returns list of all database objects that depend on this one.
+        """
         result = self.schema.dependencies.extract(lambda d: d.depended_on_name == self.name and
                                                   d.depended_on_type in self._type_code, copy=True)
         result.freeze()
         return result
     def get_dependencies(self) -> DataList[Dependency]:
-        """Returns list of all database objects that this object depend on."""
+        """Returns list of all database objects that this object depend on.
+        """
         result = self.schema.dependencies.extract(lambda d: d.dependent_name == self.name and
                                                   d.dependent_type in self._type_code, copy=True)
         result.freeze()
@@ -1645,15 +1720,18 @@ class SchemaItem(Visitable):
             raise ValueError(f"Unsupported action '{action}'")
     @property
     def name(self) -> str:
-        "Database object name or None if object doesn't have a name."
+        """Database object name or None if object doesn't have a name.
+        """
         return self._get_name()
     @property
     def description(self) -> str:
-        "Database object description or None if object doesn't have a description."
+        """Database object description or None if object doesn't have a description.
+        """
         return self._attributes.get('RDB$DESCRIPTION')
     @property
     def actions(self) -> List[str]:
-        "List of supported SQL operations on metadata object instance."
+        """List of supported SQL operations on metadata object instance.
+        """
         return self._actions
 
 class Collation(SchemaItem):
@@ -1666,17 +1744,14 @@ class Collation(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.COLLATION)
-
         self._strip_attribute('RDB$COLLATION_NAME')
         self._strip_attribute('RDB$BASE_COLLATION_NAME')
         self._strip_attribute('RDB$FUNCTION_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'drop'])
-
     def _get_drop_sql(self, **params) -> str:
         self._check_params(params, [])
         return f'DROP COLLATION {self.get_quoted_name()}'
@@ -1701,40 +1776,49 @@ class Collation(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$COLLATION_NAME']
     def is_based_on_external(self) -> bool:
-        "Returns True if collation is based on external collation definition."
+        """Returns True if collation is based on external collation definition.
+        """
         return self._attributes['RDB$BASE_COLLATION_NAME'] and not self.base_collation
     @property
     def id(self) -> int:
-        "Collation ID."
+        """Collation ID.
+        """
         return self._attributes['RDB$COLLATION_ID']
     @property
     def character_set(self) -> CharacterSet:
-        "Character set object associated with collation."
+        """Character set object associated with collation.
+        """
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
     def base_collation(self) -> Collation:
-        "Base `.Collation` object that's extended by this one, or None."
+        """Base `.Collation` object that's extended by this one, or None.
+        """
         base_name = self._attributes['RDB$BASE_COLLATION_NAME']
         return self.schema.collations.get(base_name) if base_name else None
     @property
     def attributes(self) -> CollationFlag:
-        "Collation attributes."
+        """Collation attributes.
+        """
         return CollationFlag(self._attributes['RDB$COLLATION_ATTRIBUTES'])
     @property
     def specific_attributes(self) -> str:
-        "Collation specific attributes."
+        """Collation specific attributes.
+        """
         return self._attributes['RDB$SPECIFIC_ATTRIBUTES']
     @property
     def function_name(self) -> str:
-        "Not currently used."
+        """Not currently used.
+        """
         return self._attributes['RDB$FUNCTION_NAME']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Creator's user name."
+        """Creator's user name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
 
 class CharacterSet(SchemaItem):
@@ -1746,16 +1830,12 @@ class CharacterSet(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.CHARACTER_SET)
-
         self._strip_attribute('RDB$CHARACTER_SET_NAME')
         self._strip_attribute('RDB$DEFAULT_COLLATE_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         self._actions.extend(['alter', 'comment'])
-
         self.__collations: DataList= None
-
     def _get_alter_sql(self, **params) -> str:
         self._check_params(params, ['collation'])
         collation = params.get('collation')
@@ -1772,24 +1852,28 @@ class CharacterSet(SchemaItem):
         return self._attributes['RDB$CHARACTER_SET_NAME']
     def get_collation_by_id(self, id: int) -> Optional[Collation]:
         """Return :class:`Collation` object with specified id that belongs to
-this character set.
+        this character set.
         """
         return self.collations.find(lambda item: item.id == id)
     @property
     def id(self) -> int:
-        "Character set ID."
+        """Character set ID.
+        """
         return self._attributes['RDB$CHARACTER_SET_ID']
     @property
     def bytes_per_character(self) -> int:
-        "Size of characters in bytes."
+        """Size of characters in bytes.
+        """
         return self._attributes['RDB$BYTES_PER_CHARACTER']
     @property
     def default_collate(self) -> Collation:
-        "Collate object of default collate."
+        """Collate object of default collate.
+        """
         return self.collations.get(self._attributes['RDB$DEFAULT_COLLATE_NAME'])
     @property
     def collations(self) -> DataList[Collation]:
-        "List of collations associated with character set."
+        """List of collations associated with character set.
+        """
         if self.__collations is None:
             self.__collations = self.schema.collations.extract(lambda i:
                                                                i._attributes['RDB$CHARACTER_SET_ID'] == self.id,
@@ -1798,11 +1882,13 @@ this character set.
         return self.__collations
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Creator user name."
+        """Creator user name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
 
 class DatabaseException(SchemaItem):
@@ -1816,15 +1902,12 @@ class DatabaseException(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.EXCEPTION)
-
         self._strip_attribute('RDB$EXCEPTION_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         return f"CREATE EXCEPTION {self.get_quoted_name()} '{escape_single_quotes(self.message)}'"
@@ -1846,19 +1929,23 @@ class DatabaseException(SchemaItem):
         return self._attributes['RDB$EXCEPTION_NAME']
     @property
     def id(self) -> int:
-        "System-assigned unique exception number."
+        """System-assigned unique exception number.
+        """
         return self._attributes['RDB$EXCEPTION_NUMBER']
     @property
     def message(self) -> str:
-        "Custom message text."
+        """Custom message text.
+        """
         return self._attributes['RDB$MESSAGE']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Creator's user name."
+        """Creator's user name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
 
 class Sequence(SchemaItem):
@@ -1872,15 +1959,12 @@ class Sequence(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.GENERATOR)
-
         self._strip_attribute('RDB$GENERATOR_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'alter', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, ['value', 'increment'])
         value = params.get('value')
@@ -1907,31 +1991,38 @@ class Sequence(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$GENERATOR_NAME']
     def is_identity(self) -> bool:
-        "Returns True for system generators created for IDENTITY columns."
+        """Returns True for system generators created for IDENTITY columns.
+        """
         return self._attributes['RDB$SYSTEM_FLAG'] == 6
     @property
     def id(self) -> int:
-        "Internal ID number of the sequence."
+        """Internal ID number of the sequence.
+        """
         return self._attributes['RDB$GENERATOR_ID']
     @property
     def value(self) -> int:
-        "Current sequence value."
+        """Current sequence value.
+        """
         return self.schema._select_row(f'select GEN_ID({self.get_quoted_name()},0) from RDB$DATABASE')['GEN_ID']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Creator's user name."
+        """Creator's user name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
     @property
     def inital_value(self) -> int:
-        "Initial sequence value."
+        """Initial sequence value.
+        """
         return self._attributes.get('RDB$INITIAL_VALUE')
     @property
     def increment(self) -> int:
-        "Sequence increment."
+        """Sequence increment.
+        """
         return self._attributes.get('RDB$GENERATOR_INCREMENT')
 
 class TableColumn(SchemaItem):
@@ -1946,20 +2037,16 @@ class TableColumn(SchemaItem):
     def __init__(self, schema: Schema, table: Table, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.extend([ObjectType.DOMAIN, ObjectType.COLUMN])
-
         self.__table = weakref.proxy(table)
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$FIELD_SOURCE')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$GENERATOR_NAME')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['alter', 'drop'])
-
         self.__privileges: DataList = None
-
     def _get_alter_sql(self, **params) -> str:
         self._check_params(params, ['expression', 'datatype', 'name', 'position', 'restart'])
         new_expr = params.get('expression')
@@ -2000,57 +2087,72 @@ class TableColumn(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$FIELD_NAME']
     def get_dependents(self) -> DataList[Dependency]:
-        "Return list of all database objects that depend on this one."
+        """Return list of all database objects that depend on this one.
+        """
         return self.schema.dependencies.extract(lambda d: d.depended_on_name == self._attributes['RDB$RELATION_NAME']
                 and d.depended_on_type == 0 and d.field_name == self.name, copy=True)
     def get_dependencies(self) -> DataList[Dependency]:
-        "Return list of database objects that this object depend on."
+        """Return list of database objects that this object depend on.
+        """
         return self.schema.dependencies.extract(lambda d: d.dependent_name == self._attributes['RDB$RELATION_NAME']
                 and d.dependent_type == 0 and d.field_name == self.name, copy=True)
     def get_computedby(self) -> str:
-        "Returns extression for column computation or None."
+        """Returns extression for column computation or None.
+        """
         return self.domain.expression
     def is_computed(self) -> bool:
-        "Returns True if column is computed."
+        """Returns True if column is computed.
+        """
         return bool(self.domain.expression)
     def is_domain_based(self) -> bool:
-        "Returns True if column is based on user domain."
+        """Returns True if column is based on user domain.
+        """
         return not self.domain.is_sys_object()
     def is_nullable(self) -> bool:
-        "Returns True if column can accept NULL values."
+        """Returns True if column can accept NULL values.
+        """
         return not self._attributes['RDB$NULL_FLAG']
     def is_writable(self) -> bool:
-        "Returns True if column is writable (i.e. it's not computed etc.)."
+        """Returns True if column is writable (i.e. it's not computed etc.).
+        """
         return bool(self._attributes['RDB$UPDATE_FLAG'])
     def is_identity(self) -> bool:
-        "Returns True for identity type column."
+        """Returns True for identity type column.
+        """
         return self._attributes.get('RDB$IDENTITY_TYPE') is not None
     def has_default(self) -> bool:
-        "Returns True if column has default value."
+        """Returns True if column has default value.
+        """
         return bool(self._attributes.get('RDB$DEFAULT_SOURCE'))
     @property
     def id(self) -> int:
-        "Internam number ID for the column."
+        """Internam number ID for the column.
+        """
         return self._attributes['RDB$FIELD_ID']
     @property
     def table(self) -> Table:
-        "The `.Table` object this column belongs to."
+        """The `.Table` object this column belongs to.
+        """
         return self.__table
     @property
     def domain(self) -> Domain:
-        "`.Domain` object this column is based on."
+        """`.Domain` object this column is based on.
+        """
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
     def position(self) -> int:
-        "Column's sequence number in row."
+        """Column's sequence number in row.
+        """
         return self._attributes['RDB$FIELD_POSITION']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def default(self) -> str:
-        "Default value for column or None."
+        """Default value for column or None.
+        """
         result = self._attributes.get('RDB$DEFAULT_SOURCE')
         if result:
             if result.upper().startswith('DEFAULT '):
@@ -2058,27 +2160,32 @@ class TableColumn(SchemaItem):
         return result
     @property
     def collation(self) -> Collation:
-        "`.Collation` object or None."
+        """`.Collation` object or None.
+        """
         return self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'],
                                                self._attributes['RDB$COLLATION_ID'])
     @property
     def datatype(self) -> str:
-        "Comlete SQL datatype definition."
+        """Comlete SQL datatype definition.
+        """
         return self.domain.datatype
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges granted to column."
+        """List of privileges granted to column.
+        """
         return self.schema.privileges.extract(lambda p: (p.subject_name == self.table.name and
                                                         p.field_name == self.name and
                                                         p.subject_type in self.table._type_code),
                                                      copy = True)
     @property
     def generator(self) -> Sequence:
-        "Identity `.Sequence`."
+        """Identity `.Sequence`.
+        """
         return self.schema.all_generators.get(self._attributes.get('RDB$GENERATOR_NAME'))
     @property
     def identity_type(self) -> int:
-        "Identity type, None for normal columns."
+        """Identity type, None for normal columns.
+        """
         return self._attributes.get('RDB$IDENTITY_TYPE')
 
 class Index(SchemaItem):
@@ -2091,17 +2198,14 @@ class Index(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.extend([ObjectType.INDEX_EXPR, ObjectType.INDEX])
-
         self.__segment_names = None
         self.__segment_statistics = None
         self._strip_attribute('RDB$INDEX_NAME')
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$FOREIGN_KEY')
-
         self._actions.extend(['activate', 'recompute', 'comment'])
         if not self.is_sys_object():
             self._actions.extend(['create', 'deactivate', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         return f"CREATE {'UNIQUE ' if self.is_unique() else ''}{self.index_type.value} " \
@@ -2126,50 +2230,62 @@ class Index(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$INDEX_NAME']
     def is_sys_object(self) -> bool:
-        "Returns True if this database object is system object."
+        """Returns True if this database object is system object.
+        """
         return bool(self._attributes['RDB$SYSTEM_FLAG']
                     or (self.is_enforcer() and self.name.startswith('RDB$')))
     def is_expression(self) -> bool:
-        "Returns True if index is expression index."
+        """Returns True if index is expression index.
+        """
         return not self.segments
     def is_unique(self) -> bool:
-        "Returns True if index is UNIQUE."
+        """Returns True if index is UNIQUE.
+        """
         return self._attributes['RDB$UNIQUE_FLAG'] == 1
     def is_inactive(self) -> bool:
-        "Returns True if index is INACTIVE."
+        """Returns True if index is INACTIVE.
+        """
         return self._attributes['RDB$INDEX_INACTIVE'] == 1
     def is_enforcer(self) -> bool:
-        "Returns True if index is used to enforce a constraint."
+        """Returns True if index is used to enforce a constraint.
+        """
         return self.name in self.schema._get_constraint_indices()
     @property
     def table(self) -> Table:
-        "The `.Table` instance the index applies to."
+        """The `.Table` instance the index applies to.
+        """
         return self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
     @property
     def id(self) -> int:
-        "Internal number ID of the index."
+        """Internal number ID of the index.
+        """
         return self._attributes['RDB$INDEX_ID']
     @property
     def index_type(self) -> IndexType:
-        "Index type (ASCENDING or DESCENDING)."
+        """Index type (ASCENDING or DESCENDING).
+        """
         return (IndexType.DESCENDING if self._attributes['RDB$INDEX_TYPE'] == 1
                 else IndexType.ASCENDING)
     @property
     def partner_index(self) -> Index:
-        "Associated unique/primary key :class:`Index` instance, or None."
+        """Associated unique/primary key :class:`Index` instance, or None.
+        """
         return (self.schema.all_indices.get(pname) if (pname := self._attributes['RDB$FOREIGN_KEY'])
                 else None)
     @property
     def expression(self) -> str:
-        "Source of an expression or None."
+        """Source of an expression or None.
+        """
         return self._attributes['RDB$EXPRESSION_SOURCE']
     @property
     def statistics(self) -> float:
-        "Latest selectivity of the index."
+        """Latest selectivity of the index.
+        """
         return self._attributes['RDB$STATISTICS']
     @property
     def segment_names(self) -> List[str]:
-        "List of index segment names."
+        """List of index segment names.
+        """
         if self.__segment_names is None:
             if self._attributes['RDB$SEGMENT_COUNT'] > 0:
                 self.__segment_names = [r['RDB$FIELD_NAME'].strip() for r
@@ -2180,7 +2296,8 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         return self.__segment_names
     @property
     def segment_statistics(self) -> List[float]:
-        "List of index segment statistics."
+        """List of index segment statistics.
+        """
         if self.__segment_statistics is None:
             if self._attributes['RDB$SEGMENT_COUNT'] > 0:
                 self.__segment_statistics = [r['RDB$STATISTICS'] for r
@@ -2191,11 +2308,13 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         return self.__segment_statistics
     @property
     def segments(self) -> DataList[TableColumn]:
-        "List of index segments (table columns)."
+        """List of index segments (table columns).
+        """
         return DataList(self.table.columns.get(colname) for colname in self.segment_names)
     @property
     def constraint(self) -> Constraint:
-        "`Constraint` instance that uses this index or None."
+        """`Constraint` instance that uses this index or None.
+        """
         return self.schema.constraints.get(self.schema._get_constraint_indices().get(self.name))
 
 class ViewColumn(SchemaItem):
@@ -2207,7 +2326,6 @@ class ViewColumn(SchemaItem):
     def __init__(self, schema: Schema, view: View, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.extend([ObjectType.DOMAIN, ObjectType.COLUMN])
-
         self.__view = weakref.proxy(view)
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$BASE_FIELD')
@@ -2215,9 +2333,7 @@ class ViewColumn(SchemaItem):
         self._strip_attribute('RDB$FIELD_SOURCE')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('BASE_RELATION')
-
         self._actions.append('comment')
-
     def _get_comment_sql(self, **params) -> str:
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
@@ -2225,23 +2341,28 @@ class ViewColumn(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$FIELD_NAME']
     def get_dependents(self) -> DataList[Dependency]:
-        "Return list of all database objects that depend on this one."
+        """Return list of all database objects that depend on this one.
+        """
         return self.schema.dependencies.extract(lambda d: d.depended_on_name == self._attributes['RDB$RELATION_NAME']
                 and d.depended_on_type == 1 and d.field_name == self.name, copy=True)
     def get_dependencies(self) -> DataList[Dependency]:
-        "Return list of database objects that this object depend on."
+        """Return list of database objects that this object depend on.
+        """
         return self.schema.dependencies.extract(lambda d: d.dependent_name == self._attributes['RDB$RELATION_NAME']
                 and d.dependent_type == 1 and d.field_name == self.name, copy=True)
     def is_nullable(self) -> bool:
-        "Returns True if column is NULLABLE."
+        """Returns True if column is NULLABLE.
+        """
         return not self._attributes['RDB$NULL_FLAG']
     def is_writable(self) -> bool:
-        "Returns True if column is writable."
+        """Returns True if column is writable.
+        """
         return bool(self._attributes['RDB$UPDATE_FLAG'])
     @property
     def base_field(self) -> Union[TableColumn, ViewColumn, ProcedureParameter]:
         """The source column from the base relation. Result could be either `.TableColumn`,
-        `.ViewColumn` or `.ProcedureParameter` instance or None."""
+        `.ViewColumn` or `.ProcedureParameter` instance or None.
+        """
         bfield = self._attributes['RDB$BASE_FIELD']
         if bfield:
             brel = self._attributes['BASE_RELATION']
@@ -2255,32 +2376,39 @@ class ViewColumn(SchemaItem):
         return None
     @property
     def view(self) -> View:
-        "View object this column belongs to."
+        """View object this column belongs to.
+        """
         return self.__view
     @property
     def domain(self) -> Domain:
-        "Domain object this column is based on."
+        """Domain object this column is based on.
+        """
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
     def position(self) -> int:
-        "Column's sequence number in row."
+        """Column's sequence number in row.
+        """
         return self._attributes['RDB$FIELD_POSITION']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def collation(self) -> Collation:
-        "Collation object or None."
+        """Collation object or None.
+        """
         return self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'],
                                                self._attributes['RDB$COLLATION_ID'])
     @property
     def datatype(self) -> str:
-        "Comlete SQL datatype definition."
+        """Complete SQL datatype definition.
+        """
         return self.domain.datatype
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges granted to column."
+        """List of privileges granted to column.
+        """
         # Views are logged as Tables in RDB$USER_PRIVILEGES
         return self.schema.privileges.extract(lambda p: (p.subject_name == self.view.name and
                                                          p.field_name == self.name and
@@ -2298,15 +2426,12 @@ class Domain(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.COLUMN)
-
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'alter', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         sql = f'CREATE DOMAIN {self.get_quoted_name()} AS {self.datatype}'
@@ -2351,98 +2476,122 @@ class Domain(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$FIELD_NAME']
     def is_sys_object(self) -> bool:
-        "Return True if this database object is system object."
+        """Return True if this database object is system object.
+        """
         return (self._attributes['RDB$SYSTEM_FLAG'] == 1) or self.name.startswith('RDB$')
     def is_nullable(self) -> bool:
-        "Returns True if domain is not defined with NOT NULL."
+        """Returns True if domain is not defined with NOT NULL.
+        """
         return not self._attributes['RDB$NULL_FLAG']
     def is_computed(self) -> bool:
-        "Returns True if domain is computed."
+        """Returns True if domain is computed.
+        """
         return bool(self._attributes['RDB$COMPUTED_SOURCE'])
     def is_validated(self) -> bool:
-        "Returns True if domain has validation constraint."
+        """Returns True if domain has validation constraint.
+        """
         return bool(self._attributes['RDB$VALIDATION_SOURCE'])
     def is_array(self) -> bool:
-        "Returns True if domain defines an array."
+        """Returns True if domain defines an array.
+        """
         return bool(self._attributes['RDB$DIMENSIONS'])
     def has_default(self) -> bool:
-        "Returns True if domain has default value."
+        """Returns True if domain has default value.
+        """
         return bool(self._attributes['RDB$DEFAULT_SOURCE'])
     @property
     def expression(self) -> str:
-        "Expression that defines the COMPUTED BY column or None."
+        """Expression that defines the COMPUTED BY column or None.
+        """
         return self._attributes['RDB$COMPUTED_SOURCE']
     @property
     def validation(self) -> str:
-        "CHECK constraint for the domain or None."
+        """CHECK constraint for the domain or None.
+        """
         return self._attributes['RDB$VALIDATION_SOURCE']
     @property
     def default(self) -> str:
-        "Expression that defines the default value or None."
+        """Expression that defines the default value or None.
+        """
         if result := self._attributes.get('RDB$DEFAULT_SOURCE'):
             if result.upper().startswith('DEFAULT '):
                 result = result[8:]
         return result
     @property
     def length(self) -> int:
-        "Length of the column in bytes."
+        """Length of the column in bytes.
+        """
         return self._attributes['RDB$FIELD_LENGTH']
     @property
     def scale(self) -> int:
-        "Negative number representing the scale of NUMBER and DECIMAL column."
+        """Negative number representing the scale of NUMBER and DECIMAL column.
+        """
         return self._attributes['RDB$FIELD_SCALE']
     @property
     def field_type(self) -> FieldType:
-        "Number code of the data type defined for the column."
+        """Number code of the data type defined for the column.
+        """
         return FieldType(self._attributes['RDB$FIELD_TYPE'])
     @property
     def sub_type(self) -> int:
-        "Field sub-type."
+        """Field sub-type.
+        """
         return self._attributes['RDB$FIELD_SUB_TYPE']
     @property
     def segment_length(self) -> int:
-        "For BLOB columns, a suggested length for BLOB buffers."
+        """For BLOB columns, a suggested length for BLOB buffers.
+        """
         return self._attributes['RDB$SEGMENT_LENGTH']
     @property
     def external_length(self) -> int:
-        "Length of field as it is in an external table. Always 0 for regular tables."
+        """Length of field as it is in an external table. Always 0 for regular tables.
+        """
         return self._attributes['RDB$EXTERNAL_LENGTH']
     @property
     def external_scale(self) -> int:
-        "Scale factor of an integer field as it is in an external table."
+        """Scale factor of an integer field as it is in an external table.
+        """
         return self._attributes['RDB$EXTERNAL_SCALE']
     @property
     def external_type(self) -> FieldType:
-        "Data type of the field as it is in an external table."
+        """Data type of the field as it is in an external table.
+        """
         if (value := self._attributes['RDB$EXTERNAL_TYPE']) is not None:
             return FieldType(value)
         return None
     @property
     def dimensions(self) -> List[Tuple[int, int]]:
-        "List of dimension definition pairs if column is an array type. Always empty for non-array columns."
+        """List of dimension definition pairs if column is an array type. Always empty
+        for non-array columns.
+        """
         if self._attributes['RDB$DIMENSIONS']:
             return self.schema._get_field_dimensions(self)
         return []
     @property
     def character_length(self) -> int:
-        "Length of CHAR and VARCHAR column, in characters (not bytes)."
+        """Length of CHAR and VARCHAR column, in characters (not bytes).
+        """
         return self._attributes['RDB$CHARACTER_LENGTH']
     @property
     def collation(self) -> Collation:
-        "Collation object for a character column or None."
+        """Collation object for a character column or None.
+        """
         return self.schema.get_collation_by_id(self._attributes['RDB$CHARACTER_SET_ID'],
                                                self._attributes['RDB$COLLATION_ID'])
     @property
     def character_set(self) -> CharacterSet:
-        "CharacterSet object for a character or text BLOB column, or None."
+        """CharacterSet object for a character or text BLOB column, or None.
+        """
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
     def precision(self) -> int:
-        "Indicates the number of digits of precision available to the data type of the column."
+        """Indicates the number of digits of precision available to the data type of the column.
+        """
         return self._attributes['RDB$FIELD_PRECISION']
     @property
     def datatype(self) -> str:
-        "Comlete SQL datatype definition."
+        """Comlete SQL datatype definition.
+        """
         l = []
         precision_known = False
         if self.field_type in (FieldType.SHORT, FieldType.LONG, FieldType.INT64):
@@ -2479,11 +2628,13 @@ class Domain(SchemaItem):
         return ''.join(l)
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Creator's user name."
+        """Creator's user name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
 
 class Dependency(SchemaItem):
@@ -2494,27 +2645,30 @@ class Dependency(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self._strip_attribute('RDB$DEPENDENT_NAME')
         self._strip_attribute('RDB$DEPENDED_ON_NAME')
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$PACKAGE_NAME')
-
     def is_sys_object(self) -> bool:
-        "Returns True as dependency entries are considered as system objects."
+        """Returns True as dependency entries are considered as system objects.
+        """
         return True
     def get_dependents(self) -> DataList:
-        "Returns empty list because Dependency object never has dependents."
+        """Returns empty list because Dependency object never has dependents.
+        """
         return DataList()
     def get_dependencies(self) -> DataList:
-        "Returns empty list because Dependency object never has dependencies."
+        """Returns empty list because Dependency object never has dependencies.
+        """
         return DataList()
     def is_packaged(self) -> bool:
-        "Returns True if dependency is defined in package."
+        """Returns True if dependency is defined in package.
+        """
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def dependent(self) -> SchemaItem:
-        "Dependent database object."
+        """Dependent database object.
+        """
         if self.dependent_type == 0: # TABLE
             return self.schema.all_tables.get(self.dependent_name)
         elif self.dependent_type == 1: # VIEW
@@ -2561,19 +2715,23 @@ class Dependency(SchemaItem):
         return None
     @property
     def dependent_name(self) -> str:
-        "Dependent database object name."
+        """Dependent database object name.
+        """
         return self._attributes['RDB$DEPENDENT_NAME']
     @property
     def dependent_type(self) -> ObjectType:
-        "Dependent database object type."
+        """Dependent database object type.
+        """
         return ObjectType(value) if (value := self._attributes['RDB$DEPENDENT_TYPE']) is not None else None
     @property
     def field_name(self) -> str:
-        "Name of one column in `depended on` object."
+        """Name of one column in `depended on` object.
+        """
         return self._attributes['RDB$FIELD_NAME']
     @property
     def depended_on(self) -> SchemaItem:
-        "Database object on which dependent depends."
+        """Database object on which dependent depends.
+        """
         if self.depended_on_type == 0: # TABLE
             t = self.schema.all_tables.get(self.depended_on_name)
             if self.field_name:
@@ -2624,15 +2782,18 @@ class Dependency(SchemaItem):
         return None
     @property
     def depended_on_name(self) -> str:
-        "Name of db object on which dependent depends."
+        """Name of db object on which dependent depends.
+        """
         return self._attributes['RDB$DEPENDED_ON_NAME']
     @property
     def depended_on_type(self) -> ObjectType:
-        "Type of db object on which dependent depends."
+        """Type of db object on which dependent depends.
+        """
         return ObjectType(value) if (value := self._attributes['RDB$DEPENDED_ON_TYPE']) is not None else None
     @property
     def package(self) -> Package:
-        "`.Package` instance if dependent depends on object in package or None."
+        """`.Package` instance if dependent depends on object in package or None.
+        """
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
 
 class Constraint(SchemaItem):
@@ -2644,7 +2805,6 @@ class Constraint(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self._strip_attribute('RDB$CONSTRAINT_NAME')
         self._strip_attribute('RDB$CONSTRAINT_TYPE')
         self._strip_attribute('RDB$RELATION_NAME')
@@ -2656,10 +2816,8 @@ class Constraint(SchemaItem):
         self._strip_attribute('RDB$MATCH_OPTION')
         self._strip_attribute('RDB$UPDATE_RULE')
         self._strip_attribute('RDB$DELETE_RULE')
-
         if not (self.is_sys_object() or self.is_not_null()):
             self._actions.extend(['create', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         const_def = f'ALTER TABLE {self.table.get_quoted_name()} ADD '
@@ -2693,72 +2851,94 @@ class Constraint(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$CONSTRAINT_NAME']
     def is_sys_object(self) -> bool:
-        "Returns True if this database object is system object."
+        """Returns True if this database object is system object.
+        """
         return self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME']).is_sys_object()
     def is_not_null(self) -> bool:
-        "Returns True if it's NOT NULL constraint."
+        """Returns True if it's NOT NULL constraint.
+        """
         return self.constraint_type == ConstraintType.NOT_NULL
     def is_pkey(self) -> bool:
-        "Returns True if it's PRIMARY KEY constraint."
+        """Returns True if it's PRIMARY KEY constraint.
+        """
         return self.constraint_type == ConstraintType.PRIMARY_KEY
     def is_fkey(self) -> bool:
-        "Returns True if it's FOREIGN KEY constraint."
+        """Returns True if it's FOREIGN KEY constraint.
+        """
         return self.constraint_type == ConstraintType.FOREIGN_KEY
     def is_unique(self) -> bool:
-        "Returns True if it's UNIQUE constraint."
+        """Returns True if it's UNIQUE constraint.
+        """
         return self.constraint_type == ConstraintType.UNIQUE
     def is_check(self) -> bool:
-        "Returns True if it's CHECK constraint."
+        """Returns True if it's CHECK constraint.
+        """
         return self.constraint_type == ConstraintType.CHECK
     def is_deferrable(self) -> bool:
-        "Returns True if it's DEFERRABLE constraint."
+        """Returns True if it's DEFERRABLE constraint.
+        """
         return self._attributes['RDB$DEFERRABLE'] != 'NO'
     def is_deferred(self) -> bool:
-        "Returns True if it's INITIALLY DEFERRED constraint."
+        """Returns True if it's INITIALLY DEFERRED constraint.
+        """
         return self._attributes['RDB$INITIALLY_DEFERRED'] != 'NO'
     @property
     def constraint_type(self) -> ConstraintType:
-        "Constraint type -> primary key/unique/foreign key/check/not null."
+        """Constraint type -> primary key/unique/foreign key/check/not null.
+        """
         return ConstraintType(self._attributes['RDB$CONSTRAINT_TYPE'])
     @property
     def table(self) -> Table:
-        "`.Table` instance this constraint applies to."
+        """`.Table` instance this constraint applies to.
+        """
         return self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
     @property
     def index(self) -> Index:
         """`.Index` instance that enforces the constraint.
-        `None` if constraint is not primary key/unique or foreign key."""
+        `None` if constraint is not primary key/unique or foreign key.
+        """
         return self.schema.all_indices.get(self._attributes['RDB$INDEX_NAME'])
     @property
     def trigger_names(self) -> List[str]:
-        "For a CHECK constraint contains trigger names that enforce the constraint."
+        """For a CHECK constraint contains trigger names that enforce the constraint.
+        """
         if self.is_check():
             return self._attributes['RDB$TRIGGER_NAME']
         else:
             return []
     @property
     def triggers(self) -> DataList[Trigger]:
-        "List of triggers that enforce the CHECK constraint."
+        """List of triggers that enforce the CHECK constraint.
+        """
         return self.schema.all_triggers.extract(lambda x: x.name in self.trigger_names, copy=True)
     @property
     def column_name(self) -> str:
-        "For a NOT NULL constraint, this is the name of the column to which the constraint applies."
+        """For a NOT NULL constraint, this is the name of the column to which
+        the constraint applies.
+        """
         return self._attributes['RDB$TRIGGER_NAME'] if self.is_not_null() else None
     @property
     def partner_constraint(self) -> Constraint:
-        "For a FOREIGN KEY constraint, this is the unique or primary key `.Constraint` referred."
+        """For a FOREIGN KEY constraint, this is the unique or primary key
+        `.Constraint` referred.
+        """
         return self.schema.constraints.get(self._attributes['RDB$CONST_NAME_UQ'])
     @property
     def match_option(self) -> str:
-        "For a FOREIGN KEY constraint only. Current value is FULL in all cases."
+        """For a FOREIGN KEY constraint only. Current value is FULL in all cases.
+        """
         return self._attributes['RDB$MATCH_OPTION']
     @property
     def update_rule(self) -> str:
-        "For a FOREIGN KEY constraint, this is the action applicable to when primary key is updated."
+        """For a FOREIGN KEY constraint, this is the action applicable to when primary key
+        is updated.
+        """
         return self._attributes['RDB$UPDATE_RULE']
     @property
     def delete_rule(self) -> str:
-        "For a FOREIGN KEY constraint, this is the action applicable to when primary key is deleted."
+        """For a FOREIGN KEY constraint, this is the action applicable to when primary key
+        is deleted.
+        """
         return self._attributes['RDB$DELETE_RULE']
 
 class Table(SchemaItem):
@@ -2772,18 +2952,14 @@ class Table(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.TABLE)
-
         self.__columns = None
-
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$OWNER_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$DEFAULT_CLASS')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         try:
             self._check_params(params, ['no_pk', 'no_unique'])
@@ -2861,74 +3037,91 @@ class Table(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$RELATION_NAME']
     def is_gtt(self) -> bool:
-        "Returns True if table is GLOBAL TEMPORARY table."
+        """Returns True if table is GLOBAL TEMPORARY table.
+        """
         return self.table_type in [RelationType.GLOBAL_TEMPORARY_DELETE,
                                    RelationType.GLOBAL_TEMPORARY_PRESERVE]
     def is_persistent(self) -> bool:
-        "Returns True if table is persistent one."
+        """Returns True if table is persistent one.
+        """
         return self.table_type in [RelationType.PERSISTENT, RelationType.EXTERNAL]
     def is_external(self) -> bool:
-        "Returns True if table is external table."
+        """Returns True if table is external table.
+        """
         return bool(self.external_file)
     def has_pkey(self) -> bool:
-        "Returns True if table has PRIMARY KEY defined."
+        """Returns True if table has PRIMARY KEY defined.
+        """
         for const in self.constraints:
             if const.is_pkey():
                 return True
         return False
     def has_fkey(self) -> bool:
-        "Returns True if table has any FOREIGN KEY constraint."
+        """Returns True if table has any FOREIGN KEY constraint.
+        """
         for const in self.constraints:
             if const.is_fkey():
                 return True
         return False
     @property
     def id(self) -> int:
-        "Internal number ID for the table."
+        """Internal number ID for the table.
+        """
         return self._attributes['RDB$RELATION_ID']
     @property
     def dbkey_length(self) -> int:
-        "Length of the RDB$DB_KEY column in bytes."
+        """Length of the RDB$DB_KEY column in bytes.
+        """
         return self._attributes['RDB$DBKEY_LENGTH']
     @property
     def format(self) -> int:
-        "Internal format ID for the table."
+        """Internal format ID for the table.
+        """
         return self._attributes['RDB$FORMAT']
     @property
     def table_type(self) -> RelationType:
-        "Table type."
+        """Table type.
+        """
         return RelationType(self._attributes.get('RDB$RELATION_TYPE'))
     @property
     def security_class(self) -> str:
-        "Security class that define access limits to the table."
+        """Security class that define access limits to the table.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def external_file(self) -> str:
-        "Full path to the external data file, if any."
+        """Full path to the external data file, if any.
+        """
         return self._attributes['RDB$EXTERNAL_FILE']
     @property
     def owner_name(self) -> str:
-        "User name of table's creator."
+        """User name of table's creator.
+        """
         return self._attributes['RDB$OWNER_NAME']
     @property
     def default_class(self) -> str:
-        "Default security class."
+        """Default security class.
+        """
         return self._attributes['RDB$DEFAULT_CLASS']
     @property
     def flags(self) -> int:
-        "Internal flags."
+        """Internal flags.
+        """
         return self._attributes['RDB$FLAGS']
     @property
     def primary_key(self) -> Optional[Constraint]:
-        "PRIMARY KEY constraint for this table or None."
+        """PRIMARY KEY constraint for this table or None.
+        """
         return self.constraints.find(lambda c: c.is_pkey())
     @property
     def foreign_keys(self) -> DataList[Constraint]:
-        "List of FOREIGN KEY constraints for this table."
+        """List of FOREIGN KEY constraints for this table.
+        """
         return self.constraints.extract(lambda c: c.is_fkey(), copy=True)
     @property
     def columns(self) -> DataList[TableColumn]:
-        "List of columns defined for table."
+        """List of columns defined for table.
+        """
         if self.__columns is None:
             cols = ['RDB$FIELD_NAME', 'RDB$RELATION_NAME', 'RDB$FIELD_SOURCE',
                     'RDB$FIELD_POSITION', 'RDB$UPDATE_FLAG', 'RDB$FIELD_ID',
@@ -2943,22 +3136,26 @@ class Table(SchemaItem):
         return self.__columns
     @property
     def constraints(self) -> DataList[Constraint]:
-        "List of constraints defined for table."
+        """List of constraints defined for table.
+        """
         return self.schema.constraints.extract(lambda c: c._attributes['RDB$RELATION_NAME'] == self.name,
                                                copy=True)
     @property
     def indices(self) -> DataList[Index]:
-        "List of indices defined for table."
+        """List of indices defined for table.
+        """
         return self.schema.all_indices.extract(lambda i: i._attributes['RDB$RELATION_NAME'] == self.name,
                                                copy=True)
     @property
     def triggers(self) -> DataList[Trigger]:
-        "List of triggers defined for table."
+        """List of triggers defined for table.
+        """
         return self.schema.triggers.extract(lambda t: t._attributes['RDB$RELATION_NAME'] == self.name,
                                             copy=True)
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges to table."
+        """List of privileges to table.
+        """
         return self.schema.privileges.extract(lambda p: ((p.subject_name == self.name) and
                                                          (p.subject_type in self._type_code)),
                                                      copy=True)
@@ -2974,15 +3171,12 @@ class View(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.VIEW)
-
         self.__columns = None
-
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$VIEW_SOURCE')
         self._strip_attribute('RDB$OWNER_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$DEFAULT_CLASS')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
@@ -3015,43 +3209,53 @@ class View(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$RELATION_NAME']
     def has_checkoption(self) -> bool:
-        "Returns True if View has WITH CHECK OPTION defined."
+        """Returns True if View has WITH CHECK OPTION defined.
+        """
         return "WITH CHECK OPTION" in self.sql.upper()
     @property
     def id(self) -> int:
-        "Internal number ID for the view."
+        """Internal number ID for the view.
+        """
         return self._attributes['RDB$RELATION_ID']
     @property
     def sql(self) -> str:
-        "The query specification."
+        """The query specification.
+        """
         return self._attributes['RDB$VIEW_SOURCE']
     @property
     def dbkey_length(self) -> int:
-        "Length of the RDB$DB_KEY column in bytes."
+        """Length of the RDB$DB_KEY column in bytes.
+        """
         return self._attributes['RDB$DBKEY_LENGTH']
     @property
     def format(self) -> int:
-        "Internal format ID for the view."
+        """Internal format ID for the view.
+        """
         return self._attributes['RDB$FORMAT']
     @property
     def security_class(self) -> str:
-        "Security class that define access limits to the view."
+        """Security class that define access limits to the view.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def owner_name(self) -> str:
-        "User name of view's creator."
+        """User name of view's creator.
+        """
         return self._attributes['RDB$OWNER_NAME']
     @property
     def default_class(self) -> str:
-        "Default security class."
+        """Default security class.
+        """
         return self._attributes['RDB$DEFAULT_CLASS']
     @property
     def flags(self) -> int:
-        "Internal flags."
+        """Internal flags.
+        """
         return self._attributes['RDB$FLAGS']
     @property
     def columns(self) -> DataList[ViewColumn]:
-        "List of columns defined for view."
+        """List of columns defined for view.
+        """
         if self.__columns is None:
             self.__columns = DataList((ViewColumn(self.schema, self, row) for row
                                        in self.schema._select("""select r.RDB$FIELD_NAME,
@@ -3065,13 +3269,15 @@ r.RDB$DEFAULT_SOURCE, r.RDB$COLLATION_ID, r.RDB$BASE_FIELD, v.RDB$RELATION_NAME 
         return self.__columns
     @property
     def triggers(self) -> DataList[Trigger]:
-        "List of triggers defined for view."
+        """List of triggers defined for view.
+        """
         return self.schema.triggers.extract(lambda t:
                                             t._attributes['RDB$RELATION_NAME'] == self.name,
                                             copy=True)
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges granted to view."
+        """List of privileges granted to view.
+        """
         # Views are logged as Tables in RDB$USER_PRIVILEGES
         return self.schema.privileges.extract(lambda p: ((p.subject_name == self.name) and
                                                          (p.subject_type == 0)), copy=True)
@@ -3087,12 +3293,10 @@ class Trigger(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.append(ObjectType.TRIGGER)
-
         self._strip_attribute('RDB$TRIGGER_NAME')
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$ENGINE_NAME')
         self._strip_attribute('RDB$ENTRYPOINT')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
@@ -3164,28 +3368,36 @@ class Trigger(SchemaItem):
             return self.__m[code - 1]
         return None
     def is_before(self) -> bool:
-        "Returns True if this trigger is set for BEFORE action."
+        """Returns True if this trigger is set for BEFORE action.
+        """
         return self.time is TriggerTime.BEFORE
     def is_after(self) -> bool:
-        "Returns True if this trigger is set for AFTER action."
+        """Returns True if this trigger is set for AFTER action.
+        """
         return self.time is TriggerTime.AFTER
     def is_db_trigger(self) -> bool:
-        "Returns True if this trigger is database trigger."
+        """Returns True if this trigger is database trigger.
+        """
         return self.trigger_type is TriggerType.DB
     def is_ddl_trigger(self) -> bool:
-        "Returns True if this trigger is DDL trigger."
+        """Returns True if this trigger is DDL trigger.
+        """
         return self.trigger_type is TriggerType.DDL
     def is_insert(self) -> bool:
-        "Returns True if this trigger is set for INSERT operation."
+        """Returns True if this trigger is set for INSERT operation.
+        """
         return DMLTrigger.INSERT in self.action if self.trigger_type is TriggerType.DML else False
     def is_update(self) -> bool:
-        "Returns True if this trigger is set for UPDATE operation."
+        """Returns True if this trigger is set for UPDATE operation.
+        """
         return DMLTrigger.UPDATE in self.action if self.trigger_type is TriggerType.DML else False
     def is_delete(self) -> bool:
-        "Returns True if this trigger is set for DELETE operation."
+        """Returns True if this trigger is set for DELETE operation.
+        """
         return DMLTrigger.DELETE in self.action if self.trigger_type is TriggerType.DML else False
     def get_type_as_string(self) -> str:
-        "Return string with action and operation specification."
+        """Return string with action and operation specification.
+        """
         l = []
         if self.is_ddl_trigger():
             l.append(self.time.name)
@@ -3205,22 +3417,26 @@ class Trigger(SchemaItem):
         return ' '.join(l)
     @property
     def relation(self) -> Union[Table, View, None]:
-        "`.Table` or `.View` that the trigger is for, or None for database triggers"
+        """`.Table` or `.View` that the trigger is for, or None for database triggers.
+        """
         rel = self.schema.all_tables.get(relname := self._attributes['RDB$RELATION_NAME'])
         if not rel:
             rel = self.schema.all_views.get(relname)
         return rel
     @property
     def sequence(self) -> int:
-        "Sequence (position) of trigger. Zero usually means no sequence defined."
+        """Sequence (position) of trigger. Zero usually means no sequence defined.
+        """
         return self._attributes['RDB$TRIGGER_SEQUENCE']
     @property
     def trigger_type(self) -> TriggerType:
-        "Trigger type"
+        """Trigger type.
+        """
         return TriggerType(self._attributes['RDB$TRIGGER_TYPE'] & (0x3 << 13))
     @property
     def action(self) -> Union[DMLTrigger, DBTrigger, DDLTrigger]:
-        "Trigger action type"
+        """Trigger action type.
+        """
         if self.trigger_type == TriggerType.DDL:
             return DDLTrigger((self._attributes['RDB$TRIGGER_TYPE'] & ~TriggerType.DDL) >> 1)
         elif self.trigger_type == TriggerType.DB:
@@ -3233,32 +3449,39 @@ class Trigger(SchemaItem):
         return result
     @property
     def time(self) -> TriggerTime:
-        "Trigger time (BEFORE/AFTER event)"
+        """Trigger time (BEFORE/AFTER event).
+        """
         return TriggerTime((self._attributes['RDB$TRIGGER_TYPE'] + (0 if self.is_ddl_trigger() else 1)) & 1)
     @property
     def source(self) -> str:
-        "PSQL source code."
+        """PSQL source code.
+        """
         return self._attributes['RDB$TRIGGER_SOURCE']
     @property
     def flags(self) -> int:
-        "Internal flags."
+        """Internal flags.
+        """
         return self._attributes['RDB$FLAGS']
     @property
     def valid_blr(self) -> bool:
-        "Trigger BLR invalidation flag. Coul be True/False or None."
+        """Trigger BLR invalidation flag. Coul be True/False or None.
+        """
         result = self._attributes.get('RDB$VALID_BLR')
         return bool(result) if result is not None else None
     @property
     def engine_name(self) -> str:
-        "Engine name."
+        """Engine name.
+        """
         return self._attributes.get('RDB$ENGINE_NAME')
     @property
     def entrypoint(self) -> str:
-        "Entrypoint."
+        """Entrypoint.
+        """
         return self._attributes.get('RDB$ENTRYPOINT')
     @property
     def active(self) -> bool:
-        "True if this trigger is active."
+        """True if this trigger is active.
+        """
         return self._attributes['RDB$TRIGGER_INACTIVE'] == 0
 
 class ProcedureParameter(SchemaItem):
@@ -3269,7 +3492,6 @@ class ProcedureParameter(SchemaItem):
     """
     def __init__(self, schema: Schema, proc: Procedure, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self.__proc: Procedure = proc
         self._strip_attribute('RDB$PARAMETER_NAME')
         self._strip_attribute('RDB$PROCEDURE_NAME')
@@ -3277,9 +3499,7 @@ class ProcedureParameter(SchemaItem):
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$PACKAGE_NAME')
-
         self._actions.append('comment')
-
     def _get_comment_sql(self, **params) -> str:
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
@@ -3287,7 +3507,8 @@ class ProcedureParameter(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$PARAMETER_NAME']
     def get_sql_definition(self) -> str:
-        "Returns SQL definition for parameter."
+        """Returns SQL definition for parameter.
+        """
         typedef = self.datatype
         if self.type_from is TypeFrom.DOMAIN:
             typedef = self.domain.get_quoted_name()
@@ -3303,36 +3524,45 @@ class ProcedureParameter(SchemaItem):
             result += f' = {self.default}'
         return result
     def is_input(self) -> bool:
-        "Returns True if parameter is INPUT parameter."
+        """Returns True if parameter is INPUT parameter.
+        """
         return self.parameter_type is ParameterType.INPUT
     def is_nullable(self) -> bool:
-        "Returns True if parameter allows NULL."
+        """Returns True if parameter allows NULL.
+        """
         return not bool(self._attributes.get('RDB$NULL_FLAG'))
     def has_default(self) -> bool:
-        "Returns True if parameter has default value."
+        """Returns True if parameter has default value.
+        """
         return bool(self._attributes.get('RDB$DEFAULT_SOURCE'))
     def is_packaged(self) -> bool:
-        "Returns True if procedure parameter is defined in package."
+        """Returns True if procedure parameter is defined in package.
+        """
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def procedure(self) -> Procedure:
-        "`.Procedure` instance to which this parameter belongs."
+        """`.Procedure` instance to which this parameter belongs.
+        """
         return self.schema.all_procedures.get(self._attributes['RDB$PROCEDURE_NAME'])
     @property
     def sequence(self) -> int:
-        "Sequence (position) of parameter."
+        """Sequence (position) of parameter.
+        """
         return self._attributes['RDB$PARAMETER_NUMBER']
     @property
     def domain(self) -> Domain:
-        "`.Domain` for this parameter."
+        """`.Domain` for this parameter.
+        """
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
     def parameter_type(self) -> ParameterType:
-        "Parameter type (INPUT/OUTPUT)"
+        """Parameter type (INPUT/OUTPUT).
+        """
         return ParameterType(self._attributes['RDB$PARAMETER_TYPE'])
     @property
     def datatype(self) -> str:
-        "Comlete SQL datatype definition."
+        """Comlete SQL datatype definition.
+        """
         if self.type_from is TypeFrom.DATATYPE:
             return self.domain.datatype
         elif self.type_from is TypeFrom.DOMAIN:
@@ -3345,7 +3575,8 @@ class ProcedureParameter(SchemaItem):
                    f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
     @property
     def type_from(self) -> TypeFrom:
-        "Source for parameter data type"
+        """Source for parameter data type.
+        """
         m = self.mechanism
         if m is None:
             return TypeFrom.DATATYPE
@@ -3360,7 +3591,8 @@ class ProcedureParameter(SchemaItem):
             raise Error(f"Unknown parameter mechanism code: {m}")
     @property
     def default(self) -> str:
-        "Default value."
+        """Default value.
+        """
         if result := self._attributes.get('RDB$DEFAULT_SOURCE'):
             if result.upper().startswith('= '):
                 result = result[2:]
@@ -3369,21 +3601,25 @@ class ProcedureParameter(SchemaItem):
         return result
     @property
     def collation(self) -> Collation:
-        "`.Collation` for this parameter."
+        """`.Collation` for this parameter.
+        """
         return (None if (cid := self._attributes.get('RDB$COLLATION_ID')) is None
                 else self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'], cid))
     @property
     def mechanism(self) -> Mechanism:
-        "Parameter mechanism code."
+        """Parameter mechanism code.
+        """
         return Mechanism(code) if (code := self._attributes.get('RDB$PARAMETER_MECHANISM')) is not None else None
     @property
     def column(self) -> TableColumn:
-        "`.TableColumn` for this parameter."
+        """`.TableColumn` for this parameter.
+        """
         return (None if (rname := self._attributes.get('RDB$RELATION_NAME')) is None
                 else self.schema.all_tables.get(rname).columns.get(self._attributes['RDB$FIELD_NAME']))
     @property
     def package(self) -> Package:
-        "`.Package` this procedure belongs to."
+        """`.Package` this procedure belongs to.
+        """
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
 
 class Procedure(SchemaItem):
@@ -3398,27 +3634,22 @@ class Procedure(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super(Procedure, self).__init__(schema, attributes)
         self._type_code.append(ObjectType.PROCEDURE)
-
         self.__input_params = self.__output_params = None
-
         self._strip_attribute('RDB$PROCEDURE_NAME')
         self._strip_attribute('RDB$OWNER_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$ENGINE_NAME')
         self._strip_attribute('RDB$ENTRYPOINT')
         self._strip_attribute('RDB$PACKAGE_NAME')
-
         self.__colsql = "select RDB$PARAMETER_NAME, RDB$PROCEDURE_NAME, RDB$PARAMETER_NUMBER," \
                         "RDB$PARAMETER_TYPE, RDB$FIELD_SOURCE, RDB$DESCRIPTION, RDB$SYSTEM_FLAG," \
                         "RDB$DEFAULT_SOURCE, RDB$COLLATION_ID, RDB$NULL_FLAG, RDB$PARAMETER_MECHANISM," \
                         "RDB$FIELD_NAME, RDB$RELATION_NAME, RDB$PACKAGE_NAME " \
                         "from rdb$procedure_parameters where rdb$procedure_name = ? " \
                         "and rdb$parameter_type = ? order by rdb$parameter_number"
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, ['no_code'])
         no_code = params.get('no_code')
@@ -3520,7 +3751,8 @@ class Procedure(SchemaItem):
     def _get_name(self) -> str:
         return self._attributes['RDB$PROCEDURE_NAME']
     def get_param(self, name: str) -> ProcedureParameter:
-        "Returns `.ProcedureParameter` with specified name or None"
+        """Returns `.ProcedureParameter` with specified name or None.
+        """
         for p in self.output_params:
             if p.name == name:
                 return p
@@ -3529,33 +3761,41 @@ class Procedure(SchemaItem):
                 return p
         return None
     def has_input(self) -> bool:
-        "Returns True if procedure has any input parameters."
+        """Returns True if procedure has any input parameters.
+        """
         return bool(self._attributes['RDB$PROCEDURE_INPUTS'])
     def has_output(self) -> bool:
-        "Returns True if procedure has any output parameters."
+        """Returns True if procedure has any output parameters.
+        """
         return bool(self._attributes['RDB$PROCEDURE_OUTPUTS'])
     def is_packaged(self) -> bool:
-        "Returns True if procedure is defined in package."
+        """Returns True if procedure is defined in package.
+        """
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def id(self) -> int:
-        "Internal unique ID number."
+        """Internal unique ID number.
+        """
         return self._attributes['RDB$PROCEDURE_ID']
     @property
     def source(self) -> str:
-        "PSQL source code."
+        """PSQL source code.
+        """
         return self._attributes['RDB$PROCEDURE_SOURCE']
     @property
     def security_class(self) -> str:
-        "Security class that define access limits to the procedure."
+        """Security class that define access limits to the procedure.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def owner_name(self) -> str:
-        "User name of procedure's creator."
+        """User name of procedure's creator.
+        """
         return self._attributes['RDB$OWNER_NAME']
     @property
     def input_params(self) -> DataList[ProcedureParameter]:
-        "List of input parameters."
+        """List of input parameters.
+        """
         if self.__input_params is None:
             if self.has_input():
                 self.__input_params = DataList((ProcedureParameter(self.schema, self, row) for row in
@@ -3567,7 +3807,8 @@ class Procedure(SchemaItem):
         return self.__input_params
     @property
     def output_params(self) -> DataList[ProcedureParameter]:
-        "List of output parameters."
+        """List of output parameters.
+        """
         if self.__output_params is None:
             if self.has_output():
                 self.__output_params = DataList((ProcedureParameter(self.schema, self, row) for row in
@@ -3579,33 +3820,40 @@ class Procedure(SchemaItem):
         return self.__output_params
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges granted to procedure."
+        """List of privileges granted to procedure.
+        """
         return self.schema.privileges.extract(lambda p: ((p.subject_name == self.name) and
                                                          (p.subject_type in self._type_code)),
                                                      copy=True)
     @property
     def proc_type(self) -> ProcedureType:
-        "Procedure type."
+        """Procedure type.
+        """
         return ProcedureType(self._attributes.get('RDB$PROCEDURE_TYPE', 0))
     @property
     def valid_blr(self) -> bool:
-        "Procedure BLR invalidation flag. Coul be True/False or None."
+        """Procedure BLR invalidation flag. Coul be True/False or None.
+        """
         return bool(result) if (result := self._attributes.get('RDB$VALID_BLR')) is not None else None
     @property
     def engine_name(self) -> str:
-        "Engine name."
+        """Engine name.
+        """
         return self._attributes.get('RDB$ENGINE_NAME')
     @property
     def entrypoint(self) -> str:
-        "Entrypoint."
+        """Entrypoint.
+        """
         return self._attributes.get('RDB$ENTRYPOINT')
     @property
     def package(self) -> Package:
-        "Package this procedure belongs to."
+        """Package this procedure belongs to.
+        """
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def privacy(self) -> Privacy:
-        "Privacy flag."
+        """Privacy flag.
+        """
         return Privacy(code) if (code := self._attributes.get('RDB$PRIVATE_FLAG')) is not None else None
 
 class Role(SchemaItem):
@@ -3618,15 +3866,12 @@ class Role(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super(Role, self).__init__(schema, attributes)
         self._type_code.append(ObjectType.ROLE)
-
         self._strip_attribute('RDB$ROLE_NAME')
         self._strip_attribute('RDB$OWNER_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
-
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         return f'CREATE ROLE {self.get_quoted_name()}'
@@ -3641,17 +3886,20 @@ class Role(SchemaItem):
         return self._attributes['RDB$ROLE_NAME']
     @property
     def owner_name(self) -> str:
-        "User name of role owner."
+        """User name of role owner.
+        """
         return self._attributes['RDB$OWNER_NAME']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def privileges(self) -> DataList[Privilege]:
-        "List of privileges granted to role."
+        """List of privileges granted to role.
+        """
         return self.schema.privileges.extract(lambda p: ((p.user_name == self.name) and
-                                                        (p.user_type in self._type_code)),
+                                                         (p.user_type in self._type_code)),
                                                      copy=True)
 
 class FunctionArgument(SchemaItem):
@@ -3664,7 +3912,6 @@ class FunctionArgument(SchemaItem):
         super(FunctionArgument, self).__init__(schema, attributes)
         self._type_code.append(ObjectType.UDF)
         self.__function = function
-
         self._strip_attribute('RDB$FUNCTION_NAME')
         self._strip_attribute('RDB$PACKAGE_NAME')
         self._strip_attribute('RDB$ARGUMENT_NAME')
@@ -3673,12 +3920,12 @@ class FunctionArgument(SchemaItem):
         self._strip_attribute('RDB$FIELD_NAME')
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$DESCRIPTION')
-
     def _get_name(self) -> str:
         return self.argument_name if self.argument_name \
                else f'{self.function.name}_{self.position}'
     def get_sql_definition(self) -> str:
-        "Returns SQL definition for parameter."
+        """Returns SQL definition for parameter.
+        """
         if self.function.is_external():
             return f"{self.datatype}" \
                    f"{' BY DESCRIPTOR' if self.is_by_descriptor() else ''}" \
@@ -3692,10 +3939,12 @@ class FunctionArgument(SchemaItem):
                 result += f' = {self.default}'
             return result
     def is_by_value(self) -> bool:
-        "Returns True if argument is passed by value."
+        """Returns True if argument is passed by value.
+        """
         return self.mechanism == Mechanism.BY_VALUE
     def is_by_reference(self) -> bool:
-        "Returns True if argument is passed by reference."
+        """Returns True if argument is passed by reference.
+        """
         return self.mechanism in [Mechanism.BY_REFERENCE, Mechanism.BY_REFERENCE_WITH_NULL]
     def is_by_descriptor(self, any=False) -> bool:
         """Returns True if argument is passed by descriptor.
@@ -3708,66 +3957,84 @@ class FunctionArgument(SchemaItem):
                                   Mechanism.BY_SCALAR_ARRAY_DESCRIPTOR] if any \
                else self.mechanism == Mechanism.BY_VMS_DESCRIPTOR
     def is_with_null(self) -> bool:
-        "Returns True if argument is passed by reference with NULL support."
+        """Returns True if argument is passed by reference with NULL support.
+        """
         return self.mechanism is Mechanism.BY_REFERENCE_WITH_NULL
     def is_freeit(self) -> bool:
-        "Returns True if (return) argument is declared as FREE_IT."
+        """Returns True if (return) argument is declared as FREE_IT.
+        """
         return self._attributes['RDB$MECHANISM'] < 0
     def is_returning(self) -> bool:
-        "Returns True if argument represents return value for function."
+        """Returns True if argument represents return value for function.
+        """
         return self.position == self.function._attributes['RDB$RETURN_ARGUMENT']
     def is_nullable(self) -> bool:
-        "Returns True if parameter allows NULL."
+        """Returns True if parameter allows NULL.
+        """
         return not bool(self._attributes.get('RDB$NULL_FLAG'))
     def has_default(self) -> bool:
-        "Returns True if parameter has default value."
+        """Returns True if parameter has default value.
+        """
         return bool(self._attributes.get('RDB$DEFAULT_SOURCE'))
     def is_packaged(self) -> bool:
-        "Returns True if function argument is defined in package."
+        """Returns True if function argument is defined in package.
+        """
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def function(self) -> Function:
-        "`.Function` to which this argument belongs."
+        """`.Function` to which this argument belongs.
+        """
         return self.__function
     @property
     def position(self) -> int:
-        "Argument position."
+        """Argument position.
+        """
         return self._attributes['RDB$ARGUMENT_POSITION']
     @property
     def mechanism(self) -> Mechanism:
-        "How argument is passed."
+        """How argument is passed.
+        """
         return None if (x := self._attributes['RDB$MECHANISM']) is None else Mechanism(abs(x))
     @property
     def field_type(self) -> FieldType:
-        "Number code of the data type defined for the argument."
+        """Number code of the data type defined for the argument.
+        """
         return None if (code := self._attributes['RDB$FIELD_TYPE']) is None else FieldType(code)
     @property
     def length(self) -> int:
-        "Length of the argument in bytes."
+        """Length of the argument in bytes.
+        """
         return self._attributes['RDB$FIELD_LENGTH']
     @property
     def scale(self) -> int:
-        "Negative number representing the scale of NUMBER and DECIMAL argument."
+        """Negative number representing the scale of NUMBER and DECIMAL argument.
+        """
         return self._attributes['RDB$FIELD_SCALE']
     @property
     def precision(self) -> int:
-        "Indicates the number of digits of precision available to the data type of the argument."
+        """Indicates the number of digits of precision available to the data type of the
+        argument.
+        """
         return self._attributes['RDB$FIELD_PRECISION']
     @property
     def sub_type(self) -> FieldSubType:
-        "BLOB subtype."
+        """BLOB subtype.
+        """
         return None if (x := self._attributes['RDB$FIELD_SUB_TYPE']) is None else FieldSubType(x)
     @property
     def character_length(self) -> int:
-        "Length of CHAR and VARCHAR column, in characters (not bytes)."
+        """Length of CHAR and VARCHAR column, in characters (not bytes).
+        """
         return self._attributes['RDB$CHARACTER_LENGTH']
     @property
     def character_set(self) -> CharacterSet:
-        "`.CharacterSet` for a character/text BLOB argument, or None."
+        """`.CharacterSet` for a character/text BLOB argument, or None.
+        """
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
     def datatype(self) -> str:
-        "Comlete SQL datatype definition."
+        """Comlete SQL datatype definition.
+        """
         if self.field_type is None:
             # FB3 PSQL function, datatype defined via internal domain
             if self.type_from is TypeFrom.DATATYPE:
@@ -3814,7 +4081,8 @@ class FunctionArgument(SchemaItem):
             return ''.join(l)
     @property
     def type_from(self) -> TypeFrom:
-        "Source for parameter data type"
+        """Source for parameter data type.
+        """
         m = self.argument_mechanism
         if m is None:
             return TypeFrom.DATATYPE
@@ -3829,15 +4097,18 @@ class FunctionArgument(SchemaItem):
             raise Error(f"Unknown parameter mechanism code: {m}")
     @property
     def argument_name(self) -> str:
-        "Argument name."
+        """Argument name.
+        """
         return self._attributes.get('RDB$ARGUMENT_NAME')
     @property
     def domain(self) -> Domain:
-        "`.Domain` for this parameter."
+        """`.Domain` for this parameter.
+        """
         return self.schema.all_domains.get(self._attributes.get('RDB$FIELD_SOURCE'))
     @property
     def default(self) -> str:
-        "Default value."
+        """Default value.
+        """
         if result := self._attributes.get('RDB$DEFAULT_SOURCE'):
             if result.upper().startswith('= '):
                 result = result[2:]
@@ -3846,21 +4117,25 @@ class FunctionArgument(SchemaItem):
         return result
     @property
     def collation(self) -> Collation:
-        "`.Collation` for this parameter."
+        """`.Collation` for this parameter.
+        """
         return (None if (cid := self._attributes.get('RDB$COLLATION_ID')) is None
                 else self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'], cid))
     @property
     def argument_mechanism(self) -> Mechanism:
-        "Argument mechanism."
+        """Argument mechanism.
+        """
         return None if (code := self._attributes.get('RDB$ARGUMENT_MECHANISM')) is None else Mechanism(code)
     @property
     def column(self) -> TableColumn:
-        "`.TableColumn` for this parameter."
+        """`.TableColumn` for this parameter.
+        """
         return (None if (rname := self._attributes.get('RDB$RELATION_NAME')) is None
                 else self.schema.all_tables.get(rname).columns.get(self._attributes['RDB$FIELD_NAME']))
     @property
     def package(self) -> Package:
-        "`.Package` this function belongs to."
+        """`.Package` this function belongs to.
+        """
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
 
 class Function(SchemaItem):
@@ -3878,7 +4153,6 @@ class Function(SchemaItem):
         self._type_code.append(ObjectType.UDF)
         self.__arguments = None
         self.__returns = None
-
         self._strip_attribute('RDB$FUNCTION_NAME')
         self._strip_attribute('RDB$MODULE_NAME')
         self._strip_attribute('RDB$ENTRYPOINT')
@@ -3886,7 +4160,6 @@ class Function(SchemaItem):
         self._strip_attribute('RDB$PACKAGE_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
         if not self.is_sys_object():
             if self.is_external():
                 self._actions.extend(['comment', 'declare', 'drop'])
@@ -4002,81 +4275,100 @@ where rdb$function_name = ? order by rdb$argument_position""" % ','.join(cols), 
     def _get_name(self) -> str:
         return self._attributes['RDB$FUNCTION_NAME']
     def is_external(self) -> bool:
-        "Returns True if function is external UDF, False for PSQL functions."
+        """Returns True if function is external UDF, False for PSQL functions.
+        """
         return bool(self.module_name)
     def has_arguments(self) -> bool:
-        "Returns True if function has input arguments."
+        """Returns True if function has input arguments.
+        """
         return bool(self.arguments)
     def has_return(self) -> bool:
-        "Returns True if function returns a value."
+        """Returns True if function returns a value.
+        """
         return self.returns is not None
     def has_return_argument(self) -> bool:
-        "Returns True if function returns a value in input argument."
+        """Returns True if function returns a value in input argument.
+        """
         return self.returns.position != 0 if self.returns is not None else False
     def is_packaged(self) -> bool:
-        "Returns True if function is defined in package."
+        """Returns True if function is defined in package.
+        """
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def module_name(self) -> str:
-        "Module name."
+        """Module name.
+        """
         return self._attributes['RDB$MODULE_NAME']
     @property
     def entrypoint(self) -> str:
-        "Entrypoint in module."
+        """Entrypoint in module.
+        """
         return self._attributes['RDB$ENTRYPOINT']
     @property
     def returns(self) -> FunctionArgument:
-        "Returning `.FunctionArgument` or None."
+        """Returning `.FunctionArgument` or None.
+        """
         if self.__arguments is None:
             self._load_arguments()
         return None if self.__returns is None else self.__returns()
     @property
     def arguments(self) -> DataList[FunctionArgument]:
-        "List of function arguments."
+        """List of function arguments.
+        """
         if self.__arguments is None:
             self._load_arguments()
         return self.__arguments.extract(lambda a: a.position != 0, copy=True)
     @property
     def engine_mame(self) -> str:
-        "Engine name."
+        """Engine name.
+        """
         return self._attributes.get('RDB$ENGINE_NAME')
     @property
     def package(self) -> Package:
-        "Package this function belongs to. "
+        """Package this function belongs to.
+        """
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def private_flag(self) -> Privacy:
-        "Private flag."
+        """Private flag.
+        """
         return None if (code := self._attributes.get('RDB$PRIVATE_FLAG')) is None \
                else Privacy(code)
     @property
     def source(self) -> str:
-        "Function source."
+        """Function source.
+        """
         return self._attributes.get('RDB$FUNCTION_SOURCE')
     @property
     def id(self) -> int:
-        "Function ID."
+        """Function ID.
+        """
         return self._attributes.get('RDB$FUNCTION_ID')
     @property
     def valid_blr(self) -> bool:
-        "BLR validity flag."
+        """BLR validity flag.
+        """
         return None if (value := self._attributes.get('RDB$VALID_BLR')) is None \
                else bool(value)
     @property
     def security_class(self) -> str:
-        "Security class."
+        """Security class.
+        """
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def owner_name(self) -> str:
-        "Owner name."
+        """Owner name.
+        """
         return self._attributes.get('RDB$OWNER_NAME')
     @property
     def legacy_flag(self) -> Legacy:
-        "Legacy flag."
+        """Legacy flag.
+        """
         return Legacy(self._attributes.get('RDB$LEGACY_FLAG'))
     @property
     def deterministic_flag(self) -> int:
-        "Deterministic flag."
+        """Deterministic flag.
+        """
         return self._attributes.get('RDB$DETERMINISTIC_FLAG')
 
 class DatabaseFile(SchemaItem):
@@ -4087,28 +4379,32 @@ class DatabaseFile(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self._strip_attribute('RDB$FILE_NAME')
     def _get_name(self) -> str:
         return f'FILE_{self.sequence}'
     def is_sys_object(self) -> bool:
-        "Always returns True."
+        """Always returns True.
+        """
         return True
     @property
     def filename(self) -> str:
-        "File name."
+        """File name.
+        """
         return self._attributes['RDB$FILE_NAME']
     @property
     def sequence(self) -> int:
-        "File sequence number."
+        """File sequence number.
+        """
         return self._attributes['RDB$FILE_SEQUENCE']
     @property
     def start(self) -> int:
-        "File start page number."
+        """File start page number.
+        """
         return self._attributes['RDB$FILE_START']
     @property
     def length(self) -> str:
-        "File length in pages."
+        """File length in pages.
+        """
         return self._attributes['RDB$FILE_LENGTH']
 
 class Shadow(SchemaItem):
@@ -4119,10 +4415,8 @@ class Shadow(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self.__files = None
         self._actions.extend(['create', 'drop'])
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, [])
         result = f"CREATE SHADOW {self.id} " \
@@ -4148,28 +4442,35 @@ class Shadow(SchemaItem):
     def _get_name(self) -> str:
         return f'SHADOW_{self.id}'
     def is_sys_object(self) -> bool:
-        "Always returns False."
+        """Always returns False.
+        """
         return False
     def is_manual(self) -> bool:
-        "Returns True if it's MANUAL shadow."
+        """Returns True if it's MANUAL shadow.
+        """
         return ShadowFlag.MANUAL in self.flags
     def is_inactive(self) -> bool:
-        "Returns True if it's INACTIVE shadow."
+        """Returns True if it's INACTIVE shadow.
+        """
         return ShadowFlag.INACTIVE in self.flags
     def is_conditional(self) -> bool:
-        "Returns True if it's CONDITIONAL shadow."
+        """Returns True if it's CONDITIONAL shadow.
+        """
         return ShadowFlag.CONDITIONAL in self.flags
     @property
     def id(self) -> int:
-        "Shadow ID number."
+        """Shadow ID number.
+        """
         return self._attributes['RDB$SHADOW_NUMBER']
     @property
     def flags(self) -> ShadowFlag:
-        "Shadow flags."
+        """Shadow flags.
+        """
         return ShadowFlag(self._attributes['RDB$FILE_FLAGS'])
     @property
     def files(self) -> DataList[DatabaseFile]:
-        "List of shadow files."
+        """List of shadow files.
+        """
         if self.__files is None:
             self.__files = DataList((DatabaseFile(self, row) for row
                             in self.schema._select("""select RDB$FILE_NAME, RDB$FILE_SEQUENCE,
@@ -4186,9 +4487,7 @@ class Privilege(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self._actions.extend(['grant', 'revoke'])
-
         self._strip_attribute('RDB$USER')
         self._strip_attribute('RDB$GRANTOR')
         self._strip_attribute('RDB$PRIVILEGE')
@@ -4260,60 +4559,77 @@ class Privilege(SchemaItem):
         return f'REVOKE {admin_option}{privilege}{self.subject_name}' \
                f' FROM {utype}{self.user_name}{granted_by}'
     def is_sys_object(self) -> bool:
-        "Always returns True."
+        """Always returns True.
+        """
         return True
     def has_grant(self) -> bool:
-        "Returns True if privilege comes with GRANT OPTION."
+        """Returns True if privilege comes with GRANT OPTION.
+        """
         return self.grant_option and self.grant_option is not GrantOption.NONE
     def is_select(self) -> bool:
-        "Returns True if this is SELECT privilege."
+        """Returns True if this is SELECT privilege.
+        """
         return self.privilege is PrivilegeCode.SELECT
     def is_insert(self) -> bool:
-        "Returns True if this is INSERT privilege."
+        """Returns True if this is INSERT privilege.
+        """
         return self.privilege is PrivilegeCode.INSERT
     def is_update(self) -> bool:
-        "Returns True if this is UPDATE privilege."
+        """Returns True if this is UPDATE privilege.
+        """
         return self.privilege is PrivilegeCode.UPDATE
     def is_delete(self) -> bool:
-        "Returns True if this is DELETE privilege."
+        """Returns True if this is DELETE privilege.
+        """
         return self.privilege is PrivilegeCode.DELETE
     def is_execute(self) -> bool:
-        "Returns True if this is EXECUTE privilege."
+        """Returns True if this is EXECUTE privilege.
+        """
         return self.privilege is PrivilegeCode.EXECUTE
     def is_reference(self) -> bool:
-        "Returns True if this is REFERENCE privilege."
+        """Returns True if this is REFERENCE privilege.
+        """
         return self.privilege is  PrivilegeCode.REFERENCES
     def is_membership(self) -> bool:
-        "Returns True if this is ROLE membership privilege."
+        """Returns True if this is ROLE membership privilege.
+        """
         return self.privilege is PrivilegeCode.MEMBERSHIP
     @property
     def user(self) -> Union[UserInfo, Role, Procedure, Trigger, View]:
-        "Grantee. Either `~firebird.driver.UserInfo`, `.Role`, `.Procedure`, `.Trigger` or `.View` object."
+        """Grantee. Either `~firebird.driver.UserInfo`, `.Role`, `.Procedure`, `.Trigger`
+        or `.View` object.
+        """
         return self.schema.get_item(self._attributes['RDB$USER'],
                                      ObjectType(self._attributes['RDB$USER_TYPE']))
     @property
     def grantor(self) -> UserInfo:
-        "Grantor `~firebird.driver.User` object."
+        """Grantor `~firebird.driver.User` object.
+        """
         return UserInfo(user_name=self._attributes['RDB$GRANTOR'])
     @property
     def privilege(self) -> PrivilegeCode:
-        "Privilege code."
+        """Privilege code.
+        """
         return PrivilegeCode(self._attributes['RDB$PRIVILEGE'])
     @property
     def subject_name(self) -> str:
-        "Subject name."
+        """Subject name.
+        """
         return self._attributes['RDB$RELATION_NAME']
     @property
     def subject_type(self) -> ObjectType:
-        "Subject type."
+        """Subject type.
+        """
         return ObjectType(self._attributes['RDB$OBJECT_TYPE'])
     @property
     def field_name(self) -> str:
-        "Field name."
+        """Field name.
+        """
         return self._attributes['RDB$FIELD_NAME']
     @property
     def subject(self) -> Union[Role, Table, View, Procedure]:
-        "Priviledge subject. Either `.Role`, `.Table`, `.View` or `.Procedure` instance."
+        """Priviledge subject. Either `.Role`, `.Table`, `.View` or `.Procedure` instance.
+        """
         result = self.schema.get_item(self.subject_name, self.subject_type, self.field_name)
         if result is None and self.subject_type == ObjectType.TABLE:
             # Views are logged as tables, so try again for view code
@@ -4321,19 +4637,23 @@ class Privilege(SchemaItem):
         return result
     @property
     def user_name(self) -> str:
-        "User name."
+        """User name.
+        """
         return self._attributes['RDB$USER']
     @property
     def user_type(self) -> ObjectType:
-        "User type."
+        """User type.
+        """
         return ObjectType(self._attributes['RDB$USER_TYPE'])
     @property
     def grantor_name(self) -> str:
-        "Grantor name."
+        """Grantor name.
+        """
         return self._attributes['RDB$GRANTOR']
     @property
     def grant_option(self) -> GrantOption:
-        "Grant option"
+        """Grant option.
+        """
         return None if (value := self._attributes['RDB$GRANT_OPTION']) is None \
                else GrantOption(value)
 
@@ -4347,14 +4667,11 @@ class Package(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
         self._type_code.extend([ObjectType.PACKAGE, ObjectType.PACKAGE_BODY])
-
         self._actions.extend(['create', 'recreate', 'create_or_alter', 'alter', 'drop',
                               'comment'])
-
         self._strip_attribute('RDB$PACKAGE_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
-
     def _get_create_sql(self, **params) -> str:
         self._check_params(params, ['body'])
         body = params.get('body')
@@ -4385,28 +4702,34 @@ class Package(SchemaItem):
                else bool(result)
     @property
     def header(self) -> str:
-        "Package header source."
+        """Package header source.
+        """
         return self._attributes['RDB$PACKAGE_HEADER_SOURCE']
     @property
     def body(self) -> str:
-        "Package body source."
+        """Package body source.
+        """
         return self._attributes['RDB$PACKAGE_BODY_SOURCE']
     @property
     def security_class(self) -> str:
-        "Security class name or None."
+        """Security class name or None.
+        """
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def owner_name(self) -> str:
-        "User name of package creator."
+        """User name of package creator.
+        """
         return self._attributes['RDB$OWNER_NAME']
     @property
     def functions(self) -> DataList[Function]:
-        "List of package functions."
+        """List of package functions.
+        """
         return self.schema.functions.extract(lambda fn: fn._attributes['RDB$PACKAGE_NAME'] == self.name,
                                              copy=True)
     @property
     def procedures(self) -> DataList[Procedure]:
-        "List of package procedures."
+        """List of package procedures.
+        """
         return self.schema.procedures.extract(lambda proc: proc._attributes['RDB$PACKAGE_NAME'] == self.name,
                                               copy=True)
 
@@ -4418,37 +4741,42 @@ class BackupHistory(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-
         self._strip_attribute('RDB$FILE_NAME')
-
     def _get_name(self) -> str:
         return f'BCKP_{self.scn}'
     def is_sys_object(self) -> bool:
-        "Always returns True."
+        """Always returns True.
+        """
         return True
     @property
     def id(self) -> int:
-        "The identifier assigned by the engine."
+        """The identifier assigned by the engine.
+        """
         return self._attributes['RDB$BACKUP_ID']
     @property
     def filename(self) -> str:
-        "Full path and file name of backup file."
+        """Full path and file name of backup file.
+        """
         return self._attributes['RDB$FILE_NAME']
     @property
     def created(self) -> datetime.datetime:
-        "Backup date and time."
+        """Backup date and time.
+        """
         return self._attributes['RDB$TIMESTAMP']
     @property
     def level(self) -> int:
-        "Backup level."
+        """Backup level.
+        """
         return self._attributes['RDB$BACKUP_LEVEL']
     @property
     def scn(self) -> int:
-        "System (scan) number."
+        """System (scan) number.
+        """
         return self._attributes['RDB$SCN']
     @property
     def guid(self) -> str:
-        "Unique identifier."
+        """Unique identifier.
+        """
         return self._attributes['RDB$GUID']
 
 class Filter(SchemaItem):
@@ -4461,14 +4789,11 @@ class Filter(SchemaItem):
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super(Filter, self).__init__(schema, attributes)
         self._type_code.append(ObjectType.BLOB_FILTER)
-
         self._strip_attribute('RDB$FUNCTION_NAME')
         self._strip_attribute('RDB$MODULE_NAME')
         self._strip_attribute('RDB$ENTRYPOINT')
-
         if not self.is_sys_object():
             self._actions.extend(['comment', 'declare', 'drop'])
-
     def _get_declare_sql(self, **params) -> str:
         self._check_params(params, [])
         fdef = f'DECLARE FILTER {self.get_quoted_name()}\n' \
@@ -4485,17 +4810,22 @@ class Filter(SchemaItem):
         return self._attributes['RDB$FUNCTION_NAME']
     @property
     def module_name(self) -> str:
-        "The name of the dynamic library or shared object where the code of the BLOB filter is located."
+        """The name of the dynamic library or shared object where the code of the BLOB
+        filter is located.
+        """
         return self._attributes['RDB$MODULE_NAME']
     @property
     def entrypoint(self) -> str:
-        "The exported name of the BLOB filter in the filter library."
+        """The exported name of the BLOB filter in the filter library.
+        """
         return self._attributes['RDB$ENTRYPOINT']
     @property
     def input_sub_type(self) -> int:
-        "The BLOB subtype of the data to be converted by the function."
+        """The BLOB subtype of the data to be converted by the function.
+        """
         return self._attributes.get('RDB$INPUT_SUB_TYPE')
     @property
     def output_sub_type(self) -> int:
-        "The BLOB subtype of the converted data."
+        """The BLOB subtype of the converted data.
+        """
         return self._attributes.get('RDB$OUTPUT_SUB_TYPE')

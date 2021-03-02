@@ -33,7 +33,6 @@
 
 """firebird.lib.gstat - Module for work with Firebird gstat output
 
-
 """
 
 from __future__ import annotations
@@ -124,7 +123,8 @@ items_idx3 = [('Root page:', 'i', None),
 items_fill = ['0 - 19%', '20 - 39%', '40 - 59%', '60 - 79%', '80 - 99%']
 
 class DbAttribute(Enum):
-    "Database attributes stored in header page clumplets."
+    """Database attributes stored in header page clumplets.
+    """
     WRITE = 'force write'
     NO_RESERVE = 'no reserve'
     NO_SHARED_CACHE = 'shared cache disabled'
@@ -139,7 +139,8 @@ class DbAttribute(Enum):
 
 @dataclass(frozen=True)
 class FillDistribution:
-    "Data/Index page fill distribution"
+    """Data/Index page fill distribution.
+    """
     d20: int
     d40: int
     d60: int
@@ -148,7 +149,8 @@ class FillDistribution:
 
 @dataclass(frozen=True)
 class Encryption:
-    "Page encryption status"
+    """Page encryption status.
+    """
     pages: int
     encrypted: int
     unencrypted: int
@@ -163,11 +165,13 @@ class _ParserState:
     step: int = 0
 
 def empty_str(value: str) -> bool:
-    "Return True if string is empty (whitespace don't count) or None"
+    """Return True if string is empty (whitespace don't count) or None.
+    """
     return True if value is None else value.strip() == ''
 
 class StatTable:
-    "Statisctics for single database table."
+    """Statisctics for single database table.
+    """
     def __init__(self):
         #: Table name
         self.name: str = None
@@ -237,7 +241,8 @@ class StatTable:
         self.level_2: int = None
 
 class StatIndex:
-    "Statisctics for single database index."
+    """Statisctics for single database index.
+    """
     def __init__(self, table):
         #: wekref.proxy: Proxy to parent `.StatTable`
         self.table: weakref.ProxyType = weakref.proxy(table)
@@ -276,7 +281,8 @@ class StatIndex:
         self.ratio: float = None
 
 class StatDatabase:
-    """Firebird database statistics (produced by gstat)."""
+    """Firebird database statistics (produced by gstat).
+    """
     def __init__(self):
         #: GSTAT version
         self.gstat_version: int = None
@@ -552,26 +558,30 @@ class StatDatabase:
         else:
             raise Error(f'Unknown encryption information (line {self.__line_no})')
     def has_table_stats(self) -> bool:
-        """Return True if instance contains information about tables.
+        """Returns True if instance contains information about tables.
 
         .. important::
 
-           This is not the same as check for empty :data:`tables` list. When gstat is run with `-i` without
-           `-d` option, :data:`tables` list contains instances that does not have any other information about table
-           but table name and its indices.
-"""
+           This is not the same as check for empty :data:`tables` list. When gstat is run
+           with `-i` without `-d` option, :data:`tables` list contains instances that does
+           not have any other information about table but table name and its indices.
+        """
         return self.tables[0].primary_pointer_page is not None if len(self.tables) > 0 else False
     def has_row_stats(self) -> bool:
-        "Return True if instance contains information about table rows."
+        """Returns True if instance contains information about table rows.
+        """
         return self.has_table_stats() and self.tables[0].avg_version_length is not None
     def has_index_stats(self) -> bool:
-        "Return True if instance contains information about indices."
+        """Returns True if instance contains information about indices.
+        """
         return self.indices[0].depth is not None if len(self.indices) > 0 else False
     def has_encryption_stats(self) -> bool:
-        "Return True if instance contains information about database encryption."
+        """Returns True if instance contains information about database encryption.
+        """
         return self.encrypted_data_pages is not None
     def has_system(self) -> bool:
-        "Return True if instance contains information about system tables."
+        """Returns True if instance contains information about system tables.
+        """
         return self.tables.contains("item.name.startswith('RDB$DATABASE')")
     def parse(self, lines: Iterable[str]) -> None:
         """Parses gstat output.
@@ -666,9 +676,11 @@ class StatDatabase:
                             self.__parse_index(line)
     @property
     def tables(self) -> DataList[StatTable]:
-        "`~firebird.base.collections.DataList` of `.StatTable` instances"
+        """`~firebird.base.collections.DataList` of `.StatTable` instances.
+        """
         return self.__tables
     @property
     def indices(self) -> DataList[StatIndex]:
-        "`~firebird.base.collections.DataList` of `StatIndex` instances"
+        """`~firebird.base.collections.DataList` of `StatIndex` instances.
+        """
         return self.__indices

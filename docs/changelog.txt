@@ -2,6 +2,15 @@
 Changelog
 #########
 
+Version 1.0.1
+=============
+
+* Build scheme changed to `PEP 517`.
+* Various changes to documentation and type hint adjustments.
+* trace: New `has_statement_free` parsing option indicating that parsed trace contains
+  `FREE_STATEMENT` events.
+* trace: Adjustments to seen items cache management.
+
 Version 1.0.0
 =============
 

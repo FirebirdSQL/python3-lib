@@ -1024,7 +1024,11 @@ def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
                 p_value = value_str
                 p_format, p_name = chunk[1:-1].split(':')
                 if p_format == 'd':
-                    p_value = int(p_value)
+                    try:
+                        p_value = int(p_value)
+                    except ValueError:
+                        # wrong pattern?
+                        break
                 #
                 params[p_name] = p_value
                 i += 1

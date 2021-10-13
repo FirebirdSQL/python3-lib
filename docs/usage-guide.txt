@@ -59,7 +59,7 @@ Database schema could be accessed in two different ways, each suitable for diffe
 
    The `Connection.schema` property will raise an exception on access if `firebird-lib` package is not installed.
    While firebird-lib sets the dependency on `firebird-driver`_ package, the `firebird-driver`_ does not sets (symetric) dependency on `firebird-lib`. It means that installing the driver itself will not automatically install the firebird-lib package, while installing the library will ensure that the driver is also installed.
-   
+
 .. note::
 
    Individual metadata information (i.e. information about `domains <firebird.lib.schema.Schema.domains>`, `tables <firebird.lib.schema.Schema.tables>` etc.) are loaded on first access and cached for further reference until it's `clared <firebird.lib.schema.Schema.clear>` or `reload <firebird.lib.schema.Schema.reload>` is
@@ -76,31 +76,31 @@ Available information
 
 The `.Schema` provides information about:
 
-- **Database:** `Owner name <.Schema.owner_name>`, 
-  `default character set <.Schema.default_character_set>`, 
-  `description <.Schema.description>`, 
-  `security class <.Schema.security_class>`, `linger option <.Schema.linger>` and whether database consist 
+- **Database:** `Owner name <.Schema.owner_name>`,
+  `default character set <.Schema.default_character_set>`,
+  `description <.Schema.description>`,
+  `security class <.Schema.security_class>`, `linger option <.Schema.linger>` and whether database consist
   from `single or multiple files <.Schema.is_multifile>`.
-- **Facilities:** Available `character sets <.Schema.character_sets>`, 
-  `collations <.Schema.collations>`, BLOB `filters <.Schema.filters>`, database `files <.Schema.files>` and 
+- **Facilities:** Available `character sets <.Schema.character_sets>`,
+  `collations <.Schema.collations>`, BLOB `filters <.Schema.filters>`, database `files <.Schema.files>` and
   `shadows <.Schema.shadows>`.
-- **User database objects:** `exceptions <.Schema.exceptions>`, 
-  `generators <.Schema.generators>`, `domains <.Schema.domains>`, 
-  `tables <.Schema.tables>` and their `constraints <.Schema.constraints>`, 
-  `indices <.Schema.indices>`, `views <.Schema.views>`, 
-  `triggers <.Schema.triggers>`, `procedures <.Schema.procedures>`, 
+- **User database objects:** `exceptions <.Schema.exceptions>`,
+  `generators <.Schema.generators>`, `domains <.Schema.domains>`,
+  `tables <.Schema.tables>` and their `constraints <.Schema.constraints>`,
+  `indices <.Schema.indices>`, `views <.Schema.views>`,
+  `triggers <.Schema.triggers>`, `procedures <.Schema.procedures>`,
   user `roles <.Schema.roles>`, `user defined functions <.Schema.functions>` and `packages <.Schema.packages>`.
-- **System database objects:** `generators <.Schema.sys_generators>`, 
-  `domains <.Schema.sys_domains>`, `tables <.Schema.sys_tables>` and their 
-  constraints,  `indices <.Schema.sys_indices>`, `views <.Schema.sys_views>`, 
+- **System database objects:** `generators <.Schema.sys_generators>`,
+  `domains <.Schema.sys_domains>`, `tables <.Schema.sys_tables>` and their
+  constraints,  `indices <.Schema.sys_indices>`, `views <.Schema.sys_views>`,
   `triggers <.Schema.sys_triggers>`, `procedures <.Schema.sys_procedures>`, `functions <.Schema.sys_functions>` and `backup history <.Schema.backup_history>`.
-- **Relations between objects:** Through direct links between metadata objects and 
+- **Relations between objects:** Through direct links between metadata objects and
   `dependencies <.Schema.dependencies>`.
-- **Privileges:** `All <.Schema.privileges>` privileges, or privileges granted for specific 
-  `table <.Table.privileges>`, `table column <.TableColumn.privileges>`, 
-  `view <.View.privileges>`, `view column <.ViewColumn.privileges>`, 
+- **Privileges:** `All <.Schema.privileges>` privileges, or privileges granted for specific
+  `table <.Table.privileges>`, `table column <.TableColumn.privileges>`,
+  `view <.View.privileges>`, `view column <.ViewColumn.privileges>`,
   `procedure <.Procedure.privileges>` or `role <.Role.privileges>`. It's also
-  possible to get all privileges `granted to <.Schema.get_privileges_of>` specific user, role, 
+  possible to get all privileges `granted to <.Schema.get_privileges_of>` specific user, role,
   procedure, trigger or view.
 
 .. index::
@@ -148,13 +148,13 @@ Next code uses visitor pattern to print all DROP SQL statements necessary to dro
 
    from firebird.driver import connect
    from firebird.lib.schema import Visitor
-   
+
    # Object dropper
    class ObjectDropper(Visitor):
        def __init__(self):
            self.seen = []
        def drop(self, obj):
-           self.seen = [] 
+           self.seen = []
            obj.accept(self) # You can call self.visit(obj) directly here as well
        def default_action(self, obj):
            if not obj.is_sys_object() and 'drop' in obj.actions:
@@ -173,7 +173,7 @@ Next code uses visitor pattern to print all DROP SQL statements necessary to dro
            param.procedure.accept(self)
        def visit_FunctionArgument(self, arg):
            arg.function.accept(self)
- 
+
    # Sample use:
 
    with connect('employee',user='sysdba', password='masterkey') as con:
@@ -208,7 +208,7 @@ Close relations between metadata object like `ownership` (Table vs. TableColumn,
 Enhanced list of objects
 ------------------------
 
-Whenever possible, schema module uses enhanced `firebird.base.collections.DataList` list descendant for collections of metadata objects. This enhanced list provides several convenient methods for advanced list processing: 
+Whenever possible, schema module uses enhanced `firebird.base.collections.DataList` list descendant for collections of metadata objects. This enhanced list provides several convenient methods for advanced list processing:
 
 - filtering - :meth:`~firebird.base.collections.BaseObjectCollection.filter()` and :meth:`~firebird.base.collections.BaseObjectCollection.filterfalse()`
 - sorting - :meth:`~firebird.base.collections.DataList.sort()`
@@ -225,7 +225,7 @@ Whenever possible, schema module uses enhanced `firebird.base.collections.DataLi
 .. code-block:: python
 
    with connect('employee',user='sysdba',password='masterkey') as con:
-   
+
        print("All tables that have column named 'JOB_CODE'")
        for table in con.schema.tables.filter(lambda tbl: tbl.columns.any("item.name=='JOB_CODE'")):
            print(table.name)
@@ -308,455 +308,475 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
      - Description
    * - `.Collation`
      - create
-     - 
-     - 
-     - 
-   * - 
+     -
+     -
+     -
+   * -
      - drop
-     - 
      -
-     - 
-   * - 
+     -
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.CharacterSet`
      - alter
      - collation
      - Yes
      - `.Collation` instance or collation name
-   * - 
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.DatabaseException`
      - create
-     - 
-     - 
      -
-   * - 
+     -
+     -
+   * -
      - recreate
-     - 
      -
-     - 
-   * - 
+     -
+     -
+   * -
      - alter
      - message
      - Yes
      - string.
-   * - 
+   * -
      - create_or_alter
-     - 
-     - 
-     - 
-   * - 
+     -
+     -
+     -
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Sequence`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - alter
      - value
      - Yes
      - integer
-   * - 
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Domain`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - alter
-     - 
-     - 
+     -
+     -
      - One from next parameters required
-   * - 
-     - 
+   * -
+     -
      - name
      - No
      - string
-   * - 
-     - 
+   * -
+     -
      - default
      - No
      - string definition or None to drop default
-   * - 
-     - 
+   * -
+     -
      - check
      - No
      - string definition or None to drop check
-   * - 
-     - 
+   * -
+     -
      - datatype
      - No
      - string SQL datatype definition
-   * - 
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Constraint`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - drop
-     - 
+     -
      -
      -
    * - `.Index`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - activate
-     - 
      -
      -
-   * - 
+     -
+   * -
      - deactivate
-     - 
      -
      -
-   * - 
+     -
+   * -
      - recompute
-     - 
      -
      -
-   * - 
+     -
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Table`
      - create
-     - 
      -
      -
-   * - 
-     - 
+     -
+   * -
+     -
      - no_pk
      - No
      - Do not generate PK constraint
-   * - 
-     - 
+   * -
+     -
      - no_unique
      - No
      - Do not generate unique constraints
-   * - 
+   * -
      - recreate
-     - 
      -
      -
-   * - 
-     - 
+     -
+   * -
+     -
      - no_pk
      - No
      - Do not generate PK constraint
-   * - 
-     - 
+   * -
+     -
      - no_unique
      - No
      - Do not generate unique constraints
-   * - 
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
+   * -
+     - insert
+     -
+     -
+     -
+   * -
+     -
+     - update
+     - No
+     - When set to True it generates UPDATE OR INSERT. Default False.
+   * -
+     -
+     - returning
+     - No
+     - List of column names for RETURNING clause.
+   * -
+     -
+     - matching
+     - No
+     - List of column names for MATCHING clause.
    * - `.TableColumn`
      - alter
-     - 
-     - 
+     -
+     -
      - One from next parameters required
-   * - 
-     - 
+   * -
+     -
      - name
      - No
      - string
-   * - 
-     - 
+   * -
+     -
      - datatype
      - No
      - string SQL type definition
-   * - 
-     - 
+   * -
+     -
      - position
      - No
      - integer
-   * - 
-     - 
+   * -
+     -
      - expression
      - No
      - string with COMPUTED BY expression
-   * - 
-     - 
+   * -
+     -
      - restart
      - No
      - None or initial value
-   * - 
+   * -
      - drop
-     - 
      -
-     - 
-   * - 
+     -
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.View`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - recreate
-     - 
      -
      -
-   * - 
+     -
+   * -
      - alter
      - columns
      - No
      - string or list of strings
-   * - 
-     - 
+   * -
+     -
      - query
      - Yes
      - string
-   * - 
-     - 
+   * -
+     -
      - check
      - No
      - True for WITH CHECK OPTION clause
-   * - 
+   * -
      - create_or_alter
-     - 
-     - 
-     - 
-   * - 
+     -
+     -
+     -
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Trigger`
      - create
      - inactive
      - No
      - Create inactive trigger
-   * - 
+   * -
      - recreate
-     - 
      -
      -
-   * - 
+     -
+   * -
      - create_or_alter
-     - 
      -
      -
-   * - 
+     -
+   * -
      - alter
-     - 
+     -
      -
      - Requires parameters for either header or body definition.
-   * - 
-     - 
+   * -
+     -
      - fire_on
      - No
      - string
-   * - 
-     - 
+   * -
+     -
      - active
      - No
      - bool
-   * - 
-     - 
+   * -
+     -
      - sequence
      - No
      - integer
-   * - 
-     - 
+   * -
+     -
      - declare
      - No
      - string or list of strings
-   * - 
-     - 
+   * -
+     -
      - code
      - No
      - string or list of strings
-   * - 
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Procedure`
      - create
      - no_code
      - No
      - True to suppress procedure body from output
-   * - 
+   * -
      - recreate
      - no_code
      - No
      - True to suppress procedure body from output
-   * - 
+   * -
      - create_or_alter
      - no_code
      - No
      - True to suppress procedure body from output
-   * - 
+   * -
      - alter
      - input
      - No
      - Input parameters
-   * - 
+   * -
      -
      - output
      - No
      - Output parameters
-   * - 
+   * -
      -
      - declare
      - No
      - Variable declarations
-   * - 
+   * -
      -
      - code
      - Yes
      - Procedure code / body
-   * - 
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Role`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.Function`
      - declare
-     - 
      -
      -
-   * - 
+     -
+   * -
      - drop
-     - 
      -
      -
-   * - 
+     -
+   * -
      - create
      - no_code
      - No
      - Generate PSQL function code or not
-   * - 
+   * -
      - create_or_alter
      - no_code
      - No
      - Generate PSQL function code or not
-   * - 
+   * -
      - recreate
      - no_code
      - No
      - Generate PSQL function code or not
-   * - 
+   * -
      - alter
      - arguments
      - No
      - Function arguments
-   * - 
-     - 
+   * -
+     -
      - returns
      - Yes
      - Function return value
-   * - 
-     - 
+   * -
+     -
      - declare
      - No
      - Variable declarations
-   * - 
-     - 
+   * -
+     -
      - code
      - Yes
      - PSQL function body / code
-   * - 
+   * -
      - comment
-     - 
      -
-     - 
+     -
+     -
    * - `.DatabaseFile`
      - create
-     - 
+     -
      -
      -
    * - `.Shadow`
      - create
-     - 
      -
      -
-   * - 
+     -
+   * -
      - drop
      - preserve
      - No
@@ -766,13 +786,13 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
      - grantors
      - No
      - List of grantor names. Generates GRANTED BY clause if grantor is not in list.
-   * - 
+   * -
      - revoke
      - grantors
      - No
      - List of grantor names. Generates GRANTED BY clause if grantor is not in list.
-   * - 
-     - 
+   * -
+     -
      - grant_option
      - No
      - True to get REVOKE of GRANT/ADMIN OPTION only. Raises Error if privilege
@@ -782,22 +802,22 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
      - body
      - No
      - (bool) Generate package body
-   * - 
+   * -
      - recreate
      - body
      - No
      - (bool) Generate package body
-   * - 
+   * -
      - create_or_alter
      - body
      - No
      - (bool) Generate package body
-   * - 
+   * -
      - alter
      - header
      - No
      - (string_or_list) Package header
-   * - 
+   * -
      - drop
      - body
      - No
@@ -829,11 +849,11 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
    >>> for i in t.indices:
    ...    if 'create' in i.actions:
    ...        print(i.get_sql_for('create'))
-   ...      
+   ...
    CREATE ASCENDING INDEX NAMEX ON EMPLOYEE (LAST_NAME,FIRST_NAME)
    >>> for c in [x for x in t.constraints if x.is_check() or x.is_fkey()]:
    ...    print(c.get_sql_for('create'))
-   ... 
+   ...
    ALTER TABLE EMPLOYEE ADD FOREIGN KEY (DEPT_NO)
      REFERENCES DEPARTMENT (DEPT_NO)
    ALTER TABLE EMPLOYEE ADD FOREIGN KEY (JOB_CODE,JOB_GRADE,JOB_COUNTRY)
@@ -865,7 +885,7 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
 		INTO :proj_id
 	DO
 		SUSPEND;
-   END 
+   END
    >>> print(p.get_sql_for('alter',input=['In1 INTEGER','In2 VARCHAR(5)'],
    ... output='Out1 INETEGER,\nOut2 VARCHAR(10)',declare=['declare variable i integer = 1;'],
    ... code=['/* body */','Out1 = i',"Out2 = 'Value'"]))
@@ -889,7 +909,7 @@ Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `
 Working with user privileges
 ============================
 
-User or database object privileges are part of database metadata accessible through `.Schema` class. Each discrete privilege is represented by `.Privilege` instance. You can access either `all <.Schema.privileges>` privileges, or privileges granted for specific 
+User or database object privileges are part of database metadata accessible through `.Schema` class. Each discrete privilege is represented by `.Privilege` instance. You can access either `all <.Schema.privileges>` privileges, or privileges granted for specific
 `table <.Table.privileges>`, `table column <.TableColumn.privileges>`, `view <.View.privileges>`, `view column <.ViewColumn.privileges>`, `procedure <.Procedure.privileges>` or `role <.Role.privileges>`. It's also possible to get all privileges `granted to <.Schema.get_privileges_of>` specific user, role, procedure, trigger or view.
 
 `.Privilege` class supports `~.SchemaItem.get_sql_for()` method to generate GRANT and REVOKE SQL statements for given privilege. If you want to generate grant/revoke statements for
@@ -905,7 +925,7 @@ set of privileges (for example all privileges granted on specific object or grat
    >>> t = con.schema.tables.get('EMPLOYEE')
    >>> for p in t.privileges:
    ...    print(p.get_sql_for('grant'))
-   ... 
+   ...
    GRANT SELECT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
    GRANT INSERT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
    GRANT UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
@@ -918,7 +938,7 @@ set of privileges (for example all privileges granted on specific object or grat
    GRANT REFERENCES ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
    >>> for p in get_grants(t.privileges):
    ...    print(p)
-   ...    
+   ...
    GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
    GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
 
@@ -966,7 +986,7 @@ Like database schema, monitoring tables could be accessed in two different ways,
 Available information
 ---------------------
 
-The `.Monitor` provides information about: 
+The `.Monitor` provides information about:
 
 - `Database <.Monitor.db>`.
 - Connections <.Monitor.attachments>` to database and `current <.Monitor.this_attachment>` connection.
@@ -1031,7 +1051,7 @@ There are two methods how to parse the gstat output:
 1. Using `~.StatDatabase.parse()` method that takes an iterable that return lines from database analysis produced by Firebird gstat. The source could be for example open file, list of strings, or generator expression yielding these lines.
 
    Example::
-   
+
        from firebird.lib.gstat import StatDatabase
        db = StatDatabase()
        with open(filename) as f:
@@ -1040,7 +1060,7 @@ There are two methods how to parse the gstat output:
 2. Using `~.StatDatabase.push()` to pass gstat report line by line, in a loop. When all lines are stored, it's necessary to call `~.StatDatabase.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing.
 
    Example::
-   
+
        from firebird.lib.gstat import StatDatabase
        from firebird.base.type import STOP
        db = StatDatabase()
@@ -1051,7 +1071,7 @@ There are two methods how to parse the gstat output:
 
 
 When gstat report is fully parsed, you can start processing the information stored in `.StatDatabase` instance.
-       
+
 .. currentModule:: firebird.lib.log
 
 .. index::
@@ -1072,7 +1092,7 @@ There are three methods how to parse the Firebird server log:
 1. Using `~.LogParser.parse()` method that takes an iterable that return lines from Firebird server log. The source could be for example open file, list of strings, or generator expression yielding these lines. This method yields `.LogMessage` instances. These instances contain information about `~.LogMessage.origin`, `~.LogMessage.timestamp`, severity `~.LogMessage.level`, unique event `~.LogMessage.code`,  server `~.LogMessage.facility`,  `~.LogMessage.message` and additional `~.LogMessage.params`.
 
    Example::
-   
+
        from firebird.lib.log import LogParser
        parser = LogParser()
        with open(filename) as f:
@@ -1082,7 +1102,7 @@ There are three methods how to parse the Firebird server log:
 2. Using `~.LogParser.parse_entry()` method that takes list of lines consisting **single** log entry, and returns it as single `.LogMessage`.
 
    Example::
-   
+
        from firebird.lib.log import LogParser
        parser = LogParser()
        print(str(parser.parse_entry(entry_lines)))
@@ -1090,7 +1110,7 @@ There are three methods how to parse the Firebird server log:
 3. Using `~.LogParser.push()` to pass server log line by line, in a loop. When last line is stored, it's necessary to call `~.LogParser.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing. This method returns either `.LogMessage`, or None if lines accumulated so far does not contain whole log entry.
 
    Example::
-   
+
        from firebird.lib.log import LogParser
        from firebird.base.type import STOP
        parser = LogParser()
@@ -1121,7 +1141,7 @@ There are three methods how to parse the Firebird trace session log:
 1. Using `~.TraceParser.parse()` method that takes an iterable that return lines produced by Firebird trace session. The source could be for example open file, list of strings, or generator expression yielding these lines from service. This method yields instances of dataclasses that descend from `.TraceInfo` or `.TraceEvent`.
 
    Example::
-   
+
        from firebird.lib.trace import TraceParser
        parser = TraceParser()
        with open(filename) as f:
@@ -1131,7 +1151,7 @@ There are three methods how to parse the Firebird trace session log:
 2. Using `~.TraceParser.parse_event()` method that takes list of lines consisting **single** trace event, and returns single `.TraceEvent` instance. However, this method may also produce `.TraceInfo` instances that relate to tre returned entry, which must be retrieved with `~.TraceParser.retrieve_info()` call.
 
    Example::
-   
+
        from firebird.lib.trace import TraceParser
        parser = TraceParser()
        print(str(parser.parse_event(event_lines)))
@@ -1141,7 +1161,7 @@ There are three methods how to parse the Firebird trace session log:
 3. Using `~.TraceParser.push()` to pass trace session line by line, in a loop. When last line is stored, it's necessary to call `~.TraceParser.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing. This method returns either a list of `.TraceInfo` / `.TraceEvent` instances, or None if lines accumulated so far does not contain whole trace event.
 
    Example::
-   
+
        from firebird.lib.trace import TraceParser
        from firebird.base.type import STOP
        parser = LogParser()

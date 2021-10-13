@@ -2,6 +2,28 @@
 Changelog
 #########
 
+Version 1.2.0
+=============
+
+.. module:: firebird.lib.schema
+   :noindex:
+
+* schema: `Sequence` ALTER SQL uses RESTART instead START keyword.
+* schema: Fix index type in `Constraint` and `Table` CREATE SQL.
+* schema: Added `insert` SQL for `.Table`.
+
+.. module:: firebird.lib.trace
+   :noindex:
+
+* trace: Add `TransactionInfo.initial_id`.
+* trace: Add `EventCommitRetaining.new_transaction_id` and `EventRollbackRetaining.new_transaction_id`.
+* trace: `EventFreeStatement.transaction_id` and `EventCloseCursor.transaction_id` were removed.
+* trace: Added events `.EventFunctionStart` and `.EventFunctionFinish`.
+* trace: `EventServiceQuery.parameters` was replaced by `EventServiceQuery.sent` and
+         `EventServiceQuery.received`.
+* trace: Added `EventSweepFinish.access`.
+* trace: Fixed several unregistered bugs in parser.
+
 Version 1.0.1
 =============
 

@@ -1978,7 +1978,7 @@ class Sequence(SchemaItem):
         value = params.get('value')
         inc = params.get('increment')
         cmd = f'ALTER {self.schema.opt_generator_keyword} {self.get_quoted_name()} ' \
-              f'{f"START WITH {value}" if isinstance(value,int) else ""} ' \
+              f'{f"RESTART WITH {value}" if isinstance(value,int) else ""} ' \
               f'{f"INCREMENT BY {inc}" if inc else ""}'
         return cmd.strip()
     def _get_drop_sql(self, **params) -> str:
@@ -2830,7 +2830,7 @@ class Constraint(SchemaItem):
             i = self.index
             const_def += f" ({','.join(i.segment_names)})"
             if not i.is_sys_object():
-                const_def += f'\n  USING {i.index_type} INDEX {i.get_quoted_name()}'
+                const_def += f'\n  USING {i.index_type.value} INDEX {i.get_quoted_name()}'
         elif self.is_fkey():
             const_def += f"FOREIGN KEY ({','.join(self.index.segment_names)})\n  "
             p = self.partner_constraint
@@ -2841,7 +2841,7 @@ class Constraint(SchemaItem):
                 const_def += f'\n  ON UPDATE {self.update_rule}'
             i = self.index
             if not i.is_sys_object():
-                const_def += f'\n  USING {i.index_type} INDEX {i.get_quoted_name()}'
+                const_def += f'\n  USING {i.index_type.value} INDEX {i.get_quoted_name()}'
         else:
             raise Error(f"Unrecognized constraint type '{self.constraint_type}'")
         return const_def
@@ -2946,7 +2946,7 @@ class Table(SchemaItem):
 
     Supported SQL actions:
         - User table: `create` (no_pk=bool, no_unique=bool), `recreate` (no_pk=bool, no_unique=bool),
-          `drop`, `comment`
+          `drop`, `comment`, `insert (update=bool, returning=list[str], matching=list[str])`
         - System table: `comment`
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
@@ -2960,6 +2960,23 @@ class Table(SchemaItem):
         self._actions.append('comment')
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'drop'])
+    def _get_insert_sql(self, **params) -> str:
+        try:
+            self._check_params(params, ['update', 'returning', 'matching'])
+            update = params.get('update', False)
+            returning = params.get('returning')
+            matching = params.get('returning')
+            #
+            result = f"{'UPDATE OR ' if update else ''}INSERT TABLE {self.get_quoted_name()}"
+            result += f" ({','.join(col.get_quoted_name() for col in self.columns)})"
+            result += f" VALUES ({','.join('?' for col in self.columns)})"
+            if matching:
+                result += f" MATCHING ({','.join(matching)})"
+            if returning:
+                result += f" RETURNING ({','.join(returning)})"
+            return result
+        except Exception as e:
+            raise e
     def _get_create_sql(self, **params) -> str:
         try:
             self._check_params(params, ['no_pk', 'no_unique'])
@@ -3009,7 +3026,7 @@ class Table(SchemaItem):
                 i = pk.index
                 pkdef += f"PRIMARY KEY ({','.join(i.segment_names)})"
                 if not i.is_sys_object():
-                    pkdef += f'\n    USING {i.index_type} INDEX {i.get_quoted_name()}'
+                    pkdef += f'\n    USING {i.index_type.value} INDEX {i.get_quoted_name()}'
                 partdefs.append(pkdef)
             if not no_unique:
                 for uq in self.constraints:
@@ -3020,7 +3037,7 @@ class Table(SchemaItem):
                         i = uq.index
                         uqdef += f"UNIQUE ({','.join(i.segment_names)})"
                         if not i.is_sys_object():
-                            uqdef += f'\n    USING {i.index_type} INDEX {i.get_quoted_name()}'
+                            uqdef += f'\n    USING {i.index_type.value} INDEX {i.get_quoted_name()}'
                         partdefs.append(uqdef)
             tabdef += ','.join(partdefs)
             tabdef += '\n)'

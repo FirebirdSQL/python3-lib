@@ -42,7 +42,7 @@ from sys import intern
 import datetime
 import decimal
 import collections
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 from dataclasses import dataclass
 from firebird.base.types import Error, STOP, Sentinel
 
@@ -57,42 +57,44 @@ class Status(Enum):
 class Event(IntEnum):
     """Trace event codes.
     """
-    TRACE_INIT = 0
-    TRACE_SUSPENDED = 1
-    TRACE_FINI = 2
-    CREATE_DATABASE = 3
-    DROP_DATABASE = 4
-    ATTACH_DATABASE = 5
-    DETACH_DATABASE = 6
-    START_TRANSACTION = 7
-    COMMIT_TRANSACTION = 8
-    ROLLBACK_TRANSACTION = 9
-    COMMIT_RETAINING = 10
-    ROLLBACK_RETAINING = 11
-    PREPARE_STATEMENT = 12
-    EXECUTE_STATEMENT_START = 13
-    EXECUTE_STATEMENT_FINISH = 14
-    FREE_STATEMENT = 15
-    CLOSE_CURSOR = 16
-    EXECUTE_TRIGGER_START = 17
-    EXECUTE_TRIGGER_FINISH = 18
-    EXECUTE_PROCEDURE_START = 19
-    EXECUTE_PROCEDURE_FINISH = 20
-    START_SERVICE = 21
-    ATTACH_SERVICE = 22
-    DETACH_SERVICE = 23
-    QUERY_SERVICE = 24
-    SET_CONTEXT = 25
-    ERROR = 26
-    WARNING = 27
-    SWEEP_START = 28
-    SWEEP_PROGRESS = 29
-    SWEEP_FINISH = 30
-    SWEEP_FAILED = 31
-    COMPILE_BLR = 32
-    EXECUTE_BLR = 33
-    EXECUTE_DYN = 34
-    UNKNOWN = 35
+    UNKNOWN = auto()
+    TRACE_INIT = auto()
+    TRACE_SUSPENDED = auto()
+    TRACE_FINI = auto()
+    CREATE_DATABASE = auto()
+    DROP_DATABASE = auto()
+    ATTACH_DATABASE = auto()
+    DETACH_DATABASE = auto()
+    START_TRANSACTION = auto()
+    COMMIT_TRANSACTION = auto()
+    ROLLBACK_TRANSACTION = auto()
+    COMMIT_RETAINING = auto()
+    ROLLBACK_RETAINING = auto()
+    PREPARE_STATEMENT = auto()
+    EXECUTE_STATEMENT_START = auto()
+    EXECUTE_STATEMENT_FINISH = auto()
+    FREE_STATEMENT = auto()
+    CLOSE_CURSOR = auto()
+    EXECUTE_TRIGGER_START = auto()
+    EXECUTE_TRIGGER_FINISH = auto()
+    EXECUTE_FUNCTION_START = auto()
+    EXECUTE_FUNCTION_FINISH = auto()
+    EXECUTE_PROCEDURE_START = auto()
+    EXECUTE_PROCEDURE_FINISH = auto()
+    START_SERVICE = auto()
+    ATTACH_SERVICE = auto()
+    DETACH_SERVICE = auto()
+    QUERY_SERVICE = auto()
+    SET_CONTEXT = auto()
+    ERROR = auto()
+    WARNING = auto()
+    SWEEP_START = auto()
+    SWEEP_PROGRESS = auto()
+    SWEEP_FINISH = auto()
+    SWEEP_FAILED = auto()
+    COMPILE_BLR = auto()
+    EXECUTE_BLR = auto()
+    EXECUTE_DYN = auto()
 
 class TraceInfo:
     """Base class for trace info blocks.
@@ -135,6 +137,8 @@ class TransactionInfo(TraceInfo):
     attachment_id: int
     #: Transaction ID
     transaction_id: int
+    #: Initial transaction ID (for retained ones)
+    initial_id: int
     #: List of transaction options
     options: List[str]
 
@@ -418,6 +422,8 @@ class EventCommitRetaining(TraceEvent):
     transaction_id: int
     #: List of transaction options
     options: List[str]
+    #: New transaction number
+    new_transaction_id: int
     #: Execution time in ms
     run_time: int
     #: Number of page reads
@@ -443,6 +449,8 @@ class EventRollbackRetaining(TraceEvent):
     transaction_id: int
     #: List of transaction options
     options: List[str]
+    #: New transaction number
+    new_transaction_id: int
     #: Execution time in ms
     run_time: int
     #: Number of page reads
@@ -534,8 +542,8 @@ class EventFreeStatement(TraceEvent):
     timestamp: datetime.datetime
     #: Database attachent ID
     attachment_id: int
-    #: Transaction ID
-    transaction_id: int
+    ##: Transaction ID
+    #transaction_id: int
     #: Statement ID
     statement_id: int
     #: SQL ID (SQLInfo)
@@ -549,8 +557,8 @@ class EventCloseCursor(TraceEvent):
     timestamp: datetime.datetime
     #: Database attachent ID
     attachment_id: int
-    #: Transaction ID
-    transaction_id: int
+    ##: Transaction ID
+    #transaction_id: int
     #: Statement ID
     statement_id: int
     #: SQL ID (SQLInfo)
@@ -653,7 +661,54 @@ class EventProcedureFinish(TraceEvent):
     marks: int
     #: List with table access statistics
     access: List[AccessStats]
+# 
+@dataclass(frozen=True)
+class EventFunctionStart(TraceEvent):
+    #: Trace event ID
+    event_id: int
+    #: Timestamp when the event occurred
+    timestamp: datetime.datetime
+    #: Event status
+    status: Status
+    #: Database attachent ID
+    attachment_id: int
+    #: Transaction ID
+    transaction_id: int
+    #: procedure name
+    function: str
+    #: Param set ID (ParamSet)
+    param_id: int
 
+@dataclass(frozen=True)
+class EventFunctionFinish(TraceEvent):
+    #: Trace event ID
+    event_id: int
+    #: Timestamp when the event occurred
+    timestamp: datetime.datetime
+    #: Event status
+    status: Status
+    #: Database attachent ID
+    attachment_id: int
+    #: Transaction ID
+    transaction_id: int
+    #: procedure name
+    function: str
+    #: Param set ID (ParamSet)
+    param_id: int
+    #: Return value
+    returns: Tuple[str, Any]
+    #: Execution time in ms
+    run_time: int
+    #: Number of page reads
+    reads: int
+    #: Number of page writes
+    writes: int
+    #: Number of page fetches
+    fetches: int
+    #: Number of pages with changes pending
+    marks: int
+    #: List with table access statistics
+    access: List[AccessStats]
 #
 @dataclass(frozen=True)
 class EventServiceAttach(TraceEvent):
@@ -704,8 +759,10 @@ class EventServiceQuery(TraceEvent):
     service_id: int
     #: Action performed by service
     action: str
-    #: List of action parameters
-    parameters: List[str]
+    #: List of sent items
+    sent: List[str]
+    #: List of received items
+    received: List[str]
 
 #
 @dataclass(frozen=True)
@@ -843,6 +900,8 @@ class EventSweepFinish(TraceEvent):
     fetches: int
     #: Number of pages with changes pending
     marks: int
+    #: List with table access statistics
+    access: List[AccessStats]
 
 @dataclass(frozen=True)
 class EventSweepFailed(TraceEvent):
@@ -980,6 +1039,8 @@ class TraceParser:
                             Event.CLOSE_CURSOR: self.__parser_close_cursor,
                             Event.EXECUTE_TRIGGER_START: self.__parser_trigger_start,
                             Event.EXECUTE_TRIGGER_FINISH: self.__parser_trigger_finish,
+                            Event.EXECUTE_FUNCTION_START: self.__parser_func_start,
+                            Event.EXECUTE_FUNCTION_FINISH: self.__parser_func_finish,
                             Event.EXECUTE_PROCEDURE_START: self.__parser_procedure_start,
                             Event.EXECUTE_PROCEDURE_FINISH: self.__parser_procedure_finish,
                             Event.CREATE_DATABASE: self.__parser_create_db,
@@ -1089,12 +1150,20 @@ class TraceParser:
         self.seen_attachments.add(values['attachment_id'])
     def _parse_transaction_info(self, values: Dict[str, Any], check: bool=True) -> None:
         # Transaction parameters
-        transaction_id, transaction_options = self.__current_block.popleft().strip('\t ()').split(',')
+        items = self.__current_block.popleft().strip('\t ()').split(',')
+        if len(items) == 2:
+            transaction_id, transaction_options = items
+            initial_id = None
+        else:
+            transaction_id, initial_id, transaction_options = items
+            initial_id = int(initial_id[6:])
         _, s = transaction_id.split('_')
         values['transaction_id'] = int(s)
         values['options'] = [intern(x.strip()) for x in transaction_options.split('|')]
+        values['initial_id'] = initial_id
         if check and values['transaction_id'] not in self.seen_transactions:
             self.__infos.append(TransactionInfo(**values))
+        del values['initial_id']       
         self.seen_transactions.add(values['transaction_id'])
     def _parse_transaction_performance(self) -> None:
         self.__event_values['run_time'] = None
@@ -1130,9 +1199,14 @@ class TraceParser:
     def _parse_statement_id(self) -> None:
         self.__event_values['plan'] = None
         self.__event_values['sql'] = None
-        _, s = self.__current_block.popleft().split()
-        self.__event_values['statement_id'] = int(s[:-1])
-        if self.__current_block.popleft() != '-'*79:
+        line = self.__current_block.popleft()
+        if line.startswith('Statement'):
+            _, s = line.split()
+            self.__event_values['statement_id'] = int(s[:-1])
+            line = self.__current_block.popleft()
+        else:
+            self.__event_values['statement_id'] = 0
+        if line != '-'*79:
             raise Error("Separator '-'*79 line expected")
     def _parse_blr_statement_id(self) -> None:
         line = self.__current_block[0].strip()
@@ -1188,27 +1262,32 @@ class TraceParser:
             if line:
                 self.__current_block.appendleft(line)
             self.__event_values['plan'] = intern('\n'.join(plan))
-    def _parse_parameters(self, for_procedure: bool=False) -> None:
+    def _parse_value_spec(self, param_def: str) -> Tuple[str, Any]:
+        param_type, param_value = param_def.rsplit(',', 1)
+        param_type = intern(param_type)
+        param_value = param_value.strip(' "')
+        if param_value == '<NULL>':
+            param_value = None
+        elif param_type in ['smallint', 'integer', 'bigint']:
+            param_value = int(param_value)
+        elif param_type == 'timestamp':
+            param_value = datetime.datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%f')
+        elif param_type == 'date':
+            param_value = datetime.datetime.strptime(param_value, '%Y-%m-%d')
+        elif param_type == 'time':
+            param_value = datetime.datetime.strptime(param_value, '%H:%M:%S.%f')
+        elif param_type in ['float', 'double precision']:
+            param_value = decimal.Decimal(param_value)
+        return (param_type, param_value,)
+    def _parse_parameters_block(self) -> List[Tuple[str, Any]]: 
         parameters = []
         while self.__current_block and self.__current_block[0].startswith('param'):
             line = self.__current_block.popleft()
             param_id, param_def = line.split(' = ')
-            param_type, param_value = param_def.rsplit(',', 1)
-            param_type = intern(param_type)
-            param_value = param_value.strip(' "')
-            if param_value == '<NULL>':
-                param_value = None
-            elif param_type in ['smallint', 'integer', 'bigint']:
-                param_value = int(param_value)
-            elif param_type == 'timestamp':
-                param_value = datetime.datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%f')
-            elif param_type == 'date':
-                param_value = datetime.datetime.strptime(param_value, '%Y-%m-%d')
-            elif param_type == 'time':
-                param_value = datetime.datetime.strptime(param_value, '%H:%M:%S.%f')
-            elif param_type in ['float', 'double precision']:
-                param_value = decimal.Decimal(param_value)
-            parameters.append((param_type, param_value,))
+            parameters.append(self._parse_value_spec(param_def))
+        return parameters
+    def _parse_parameters(self, for_procedure: bool=False) -> None:
+        parameters = self._parse_parameters_block()
         while self.__current_block and self.__current_block[0].endswith('more arguments skipped...'):
             self.__current_block.popleft()
         #
@@ -1297,7 +1376,12 @@ class TraceParser:
         if 'service_mgr' not in line:
             raise Error("Service connection description expected.")
         _, _, s = line.partition(' (')
-        svc_id, user, protocol_address, remote_process_id = s.strip('()').split(',')
+        items = s.strip('()').split(',')
+        if len(items) == 4:
+            svc_id, user, protocol_address, remote_process_id = items
+        else:
+            svc_id, user, protocol_address = items
+            remote_process_id = None
         _, svc_id = svc_id.split(' ')
         svc_id = int(svc_id if svc_id.startswith('0x') else f'0x{svc_id}', 0)
         if svc_id not in self.seen_services:
@@ -1305,16 +1389,20 @@ class TraceParser:
             svc_values['service_id'] = svc_id
             svc_values['user'] = intern(user.strip())
             protocol_address = protocol_address.strip()
-            if protocol_address == '<internal>':
+            if protocol_address == 'internal':
                 protocol = address = protocol_address
             else:
-                protocol, address = protocol_address.split(':')
+                protocol, address = protocol_address.split(':', 1)
             svc_values['protocol'] = intern(protocol)
             svc_values['address'] = intern(address)
-            remote_process_id = remote_process_id.strip()
-            remote_process, remote_pid = remote_process_id.rsplit(':', 1)
-            svc_values['remote_process'] = intern(remote_process)
-            svc_values['remote_pid'] = int(remote_pid)
+            if remote_process_id is not None:
+                remote_process_id = remote_process_id.strip()
+                remote_process, remote_pid = remote_process_id.rsplit(':', 1)
+                svc_values['remote_process'] = intern(remote_process)
+                svc_values['remote_pid'] = int(remote_pid)
+            else:
+                svc_values['remote_process'] = None
+                svc_values['remote_pid'] = None
             self.__infos.append(ServiceInfo(**svc_values))
             self.seen_services.add(svc_id)
         self.__event_values['service_id'] = svc_id
@@ -1338,7 +1426,7 @@ class TraceParser:
                 self.__event_values['ost'] = int(line.rsplit(' ', 1)[1])
             elif 'Next transaction' in line:
                 self.__event_values['next'] = int(line.rsplit(' ', 1)[1])
-            elif 'ms' in line and len(self.__current_block) == 0:
+            elif 'ms' in line and len(self.__current_block) >= 0:
                 # Put back performance counters
                 self.__current_block.appendleft(line)
                 break
@@ -1418,6 +1506,10 @@ class TraceParser:
         self.__event_values['attachment_id'] = values['attachment_id']
         # Transaction parameters
         self._parse_transaction_info(self.__event_values, check=False)
+        if self.__current_block and self.__current_block[0].startswith('New number'):
+            self.__event_values['new_transaction_id'] = int(self.__current_block.popleft().strip()[11:])
+        else:
+            self.__event_values['new_transaction_id'] = None
         self._parse_transaction_performance()
         return EventCommitRetaining(**self.__event_values)
     def __parser_rollback_retaining(self) -> EventRollbackRetaining:
@@ -1428,6 +1520,10 @@ class TraceParser:
         self.__event_values['attachment_id'] = values['attachment_id']
         # Transaction parameters
         self._parse_transaction_info(self.__event_values, check=False)
+        if self.__current_block and self.__current_block[0].startswith('New number'):
+            self.__event_values['new_transaction_id'] = int(self.__current_block.popleft().strip()[11:])
+        else:
+            self.__event_values['new_transaction_id'] = None
         self._parse_transaction_performance()
         return EventRollbackRetaining(**self.__event_values)
     def __parser_prepare_statement(self) -> EventPrepareStatement:
@@ -1472,7 +1568,10 @@ class TraceParser:
         return EventStatementFinish(**self.__event_values)
     def __parser_free_statement(self) -> EventFreeStatement:
         self.__parse_trace_header()
-        self._parse_attachment_and_transaction()
+        att_values = {}
+        self._parse_attachment_info(att_values)
+        self.__event_values['attachment_id'] = att_values['attachment_id']
+        #self._parse_attachment_and_transaction()
         self._parse_statement_id()
         self._parse_sql_statement()
         self._parse_plan()
@@ -1485,7 +1584,10 @@ class TraceParser:
         return EventFreeStatement(**self.__event_values)
     def __parser_close_cursor(self) -> EventCloseCursor:
         self.__parse_trace_header()
-        self._parse_attachment_and_transaction()
+        att_values = {}
+        self._parse_attachment_info(att_values)
+        self.__event_values['attachment_id'] = att_values['attachment_id']
+        #self._parse_attachment_and_transaction()
         self._parse_statement_id()
         self._parse_sql_statement()
         self._parse_plan()
@@ -1521,6 +1623,23 @@ class TraceParser:
         self._parse_parameters(for_procedure=True)
         self._parse_performance()
         return EventProcedureFinish(**self.__event_values)
+    def __parser_func_start(self) -> EventProcedureStart:
+        self.__parse_trace_header()
+        self._parse_attachment_and_transaction()
+        pad, s = self.__current_block.popleft().split()
+        self.__event_values['function'] = intern(s[:-1])
+        self._parse_parameters(for_procedure=True)
+        return EventFunctionStart(**self.__event_values)
+    def __parser_func_finish(self) -> EventProcedureFinish:
+        self.__parse_trace_header()
+        self._parse_attachment_and_transaction()
+        pad, s = self.__current_block.popleft().split()
+        self.__event_values['function'] = intern(s[:-1])
+        self._parse_parameters(for_procedure=True)
+        self.__current_block.popleft() # returns:
+        self.__event_values['returns'] = self._parse_parameters_block()[0]
+        self._parse_performance()
+        return EventFunctionFinish(**self.__event_values)
     def __parser_create_db(self) -> EventCreate:
         self.__parse_trace_header()
         # Attachment parameters
@@ -1571,12 +1690,25 @@ class TraceParser:
         if line[0] == '"' and line[-1] == '"':
             action = line.strip('"')
             self.__event_values['action'] = intern(action)
+            if len(self.__current_block) > 0:
+                line = self.__current_block.popleft().strip()
         else:
             self.__event_values['action'] = None
-        parameters = []
+        sent = []
+        received = []
         while len(self.__current_block) > 0:
-            parameters.append(self.__current_block.popleft())
-        self.__event_values['parameters'] = parameters
+            #line = self.__current_block.popleft().strip()
+            if line.startswith('Send portion of the query:'):
+                while not line.startswith('Receive portion of the query:'):
+                    line = self.__current_block.popleft().strip()
+                    sent.append(line)
+                    if len(self.__current_block) == 0:
+                        break
+            if line.startswith('Receive portion of the query:'):
+                while len(self.__current_block) > 0:
+                    received.append(self.__current_block.popleft().strip())
+        self.__event_values['sent'] = sent
+        self.__event_values['received'] = received
         #
         return EventServiceQuery(**self.__event_values)
     def __parser_set_context(self) -> EventSetContext:
@@ -1587,7 +1719,7 @@ class TraceParser:
         key, value = line.split('=', 1)
         self.__event_values['context'] = intern(context[1:])
         self.__event_values['key'] = intern(key.strip())
-        self.__event_values['value'] = value.strip()
+        self.__event_values['value'] = value.strip(' "')
         del self.__event_values['status']
         return EventSetContext(**self.__event_values)
     def __parser_error(self) -> Union[EventServiceError, EventError]:
@@ -1642,7 +1774,7 @@ class TraceParser:
         self._parse_sweep_tr_counters()
         self._parse_performance()
         del self.__event_values['status']
-        del self.__event_values['access']
+        #del self.__event_values['access']
         return EventSweepFinish(**self.__event_values)
     def __parser_sweep_failed(self) -> EventSweepFailed:
         self.__parse_trace_header()

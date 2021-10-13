@@ -115,6 +115,7 @@ class TestBase(unittest.TestCase):
         super(TestBase, self).__init__(methodName)
         self.output = StringIO()
         self.FBTEST_DB = 'fbtest'
+        self.maxDiff = None
     def setUp(self):
         with connect_server('local') as svc:
             self.version = svc.info.version
@@ -454,7 +455,7 @@ EventRollback(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 95
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
-EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=0, reads=1, writes=1, fetches=1, marks=1)
+EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=0, reads=1, writes=1, fetches=1, marks=1)
 """
         self._check_events(trace_lines, output)
     def test_20_commit_retaining_no_performance(self):
@@ -475,7 +476,7 @@ EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0,
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
-EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=None, reads=None, writes=None, fetches=None, marks=None)
+EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=None, reads=None, writes=None, fetches=None, marks=None)
 """
         self._check_events(trace_lines, output)
     def test_21_commit_retaining_without_attachment_and_start(self):
@@ -487,7 +488,7 @@ EventCommitRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0,
 
 """
         output = """AttachmentInfo(attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-EventCommitRetaining(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=0, reads=1, writes=1, fetches=1, marks=1)
+EventCommitRetaining(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=0, reads=1, writes=1, fetches=1, marks=1)
 """
         self._check_events(trace_lines, output)
     def test_22_rollback_retaining(self):
@@ -509,7 +510,7 @@ EventCommitRetaining(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0,
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
-EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=0, reads=None, writes=None, fetches=None, marks=None)
+EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=0, reads=None, writes=None, fetches=None, marks=None)
 """
         self._check_events(trace_lines, output)
     def test_23_rollback_retaining_no_performance(self):
@@ -530,7 +531,7 @@ EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
-EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=None, reads=None, writes=None, fetches=None, marks=None)
+EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=None, reads=None, writes=None, fetches=None, marks=None)
 """
         self._check_events(trace_lines, output)
     def test_24_rollback_retaining_without_attachment_and_start(self):
@@ -542,7 +543,7 @@ EventRollbackRetaining(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 
 
 """
         output = """AttachmentInfo(attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-EventRollbackRetaining(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=0, reads=None, writes=None, fetches=None, marks=None)
+EventRollbackRetaining(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 29, 957000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], new_transaction_id=None, run_time=0, reads=None, writes=None, fetches=None, marks=None)
 """
         self._check_events(trace_lines, output)
     def test_25_prepare_statement(self):
@@ -645,7 +646,7 @@ PLAN (RDB$DATABASE NATURAL)
 
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='SELECT GEN_ID(GEN_NUM, 1) FROM RDB$DATABASE', plan='PLAN (RDB$DATABASE NATURAL)')
 EventPrepareStatement(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=181, sql_id=1, prepare_time=13)
 """
@@ -665,7 +666,7 @@ PLAN (RDB$DATABASE NATURAL)
 
 """
         output = """AttachmentInfo(attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='SELECT GEN_ID(GEN_NUM, 1) FROM RDB$DATABASE', plan='PLAN (RDB$DATABASE NATURAL)')
 EventPrepareStatement(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=181, sql_id=1, prepare_time=13)
 """
@@ -791,7 +792,7 @@ param3 = varchar(20), "2810090906551"
 param4 = integer, "4199300"
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 ParamSet(par_id=1, params=[('timestamp', datetime.datetime(2017, 11, 9, 11, 23, 52, 157000)), ('integer', 100012829), ('integer', None), ('varchar(20)', '2810090906551'), ('integer', 4199300)])
 SQLInfo(sql_id=1, sql='UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?', plan='PLAN (TABLE_A INDEX (TABLE_A_PK))')
 EventStatementStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=166353, sql_id=1, param_id=1)
@@ -817,7 +818,7 @@ param3 = varchar(20), "2810090906551"
 param4 = integer, "4199300"
 """
         output = """AttachmentInfo(attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 ParamSet(par_id=1, params=[('timestamp', datetime.datetime(2017, 11, 9, 11, 23, 52, 157000)), ('integer', 100012829), ('integer', None), ('varchar(20)', '2810090906551'), ('integer', 4199300)])
 SQLInfo(sql_id=1, sql='UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?', plan='PLAN (TABLE_A INDEX (TABLE_A_PK))')
 EventStatementStart(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=166353, sql_id=1, param_id=1)
@@ -947,7 +948,7 @@ RDB$CHARACTER_SETS                                1
 RDB$COLLATIONS                                    1
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='SELECT GEN_ID(GEN_NUM, 1) NUMS FROM RDB$DATABASE', plan='PLAN (RDB$DATABASE NATURAL)')
 EventStatementFinish(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 542000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=181, sql_id=1, param_id=None, records=1, run_time=0, reads=2, writes=None, fetches=14, marks=1, access=[AccessStats(table='RDB$DATABASE', natural=1, index=0, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='RDB$CHARACTER_SETS', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='RDB$COLLATIONS', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0)])
 """
@@ -973,7 +974,7 @@ RDB$CHARACTER_SETS                                1
 RDB$COLLATIONS                                    1
 """
         output = """AttachmentInfo(attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
-TransactionInfo(attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=8, transaction_id=1570, initial_id=None, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='SELECT GEN_ID(GEN_NUM, 1) NUMS FROM RDB$DATABASE', plan='PLAN (RDB$DATABASE NATURAL)')
 EventStatementFinish(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 542000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, statement_id=181, sql_id=1, param_id=None, records=1, run_time=0, reads=2, writes=None, fetches=14, marks=1, access=[AccessStats(table='RDB$DATABASE', natural=1, index=0, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='RDB$CHARACTER_SETS', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='RDB$COLLATIONS', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0)])
 """
@@ -1018,9 +1019,7 @@ EventStatementFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0,
 2014-05-23T11:00:45.5260 (3720:0000000000EFD9E8) FREE_STATEMENT
 	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
 	/opt/firebird/bin/isql:8723
-		(TRA_1570, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
 
-Statement 166353:
 -------------------------------------------------------------------------------
 UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1029,7 +1028,7 @@ PLAN (TABLE_A INDEX (TABLE_A_PK))
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?', plan='PLAN (TABLE_A INDEX (TABLE_A_PK))')
-EventFreeStatement(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), attachment_id=8, transaction_id=1570, statement_id=166353, sql_id=1)
+EventFreeStatement(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), attachment_id=8, statement_id=0, sql_id=1)
 """
         self._check_events(trace_lines, output)
     def test_42_close_cursor(self):
@@ -1045,9 +1044,7 @@ EventFreeStatement(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 4
 2014-05-23T11:00:45.5260 (3720:0000000000EFD9E8) CLOSE_CURSOR
 	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
 	/opt/firebird/bin/isql:8723
-		(TRA_1570, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
 
-Statement 166353:
 -------------------------------------------------------------------------------
 UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1056,7 +1053,7 @@ PLAN (TABLE_A INDEX (TABLE_A_PK))
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 SQLInfo(sql_id=1, sql='UPDATE TABLE_A SET VAL_1=?, VAL_2=?, VAL_3=?, VAL_4=? WHERE ID_EX=?', plan='PLAN (TABLE_A INDEX (TABLE_A_PK))')
-EventCloseCursor(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), attachment_id=8, transaction_id=1570, statement_id=166353, sql_id=1)
+EventCloseCursor(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), attachment_id=8, statement_id=0, sql_id=1)
 """
         self._check_events(trace_lines, output)
     def test_43_trigger_start(self):
@@ -1269,19 +1266,19 @@ EventServiceStart(event_id=1, timestamp=datetime.datetime(2017, 11, 13, 11, 49, 
 	"Repair Database"
 """
         output = """ServiceInfo(service_id=140646174008648, user='SYSDBA', protocol='TCPv4', address='127.0.0.1', remote_process='/job/fbtrace', remote_pid=385)
-EventServiceQuery(event_id=1, timestamp=datetime.datetime(2018, 3, 29, 14, 2, 10, 918000), status=<Status.OK: ' '>, service_id=140646174008648, action='Start Trace Session', parameters=['Receive portion of the query:', 'retrieve 1 line of service output per call'])
+EventServiceQuery(event_id=1, timestamp=datetime.datetime(2018, 3, 29, 14, 2, 10, 918000), status=<Status.OK: ' '>, service_id=140646174008648, action='Start Trace Session', sent=[], received=['retrieve 1 line of service output per call'])
 ServiceInfo(service_id=140138600699200, user='SYSDBA', protocol='TCPv4', address='127.0.0.1', remote_process='/job/fbtrace', remote_pid=4631)
-EventServiceQuery(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 1, 797000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, parameters=['retrieve the version of the server engine'])
-EventServiceQuery(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 30, 784000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, parameters=['retrieve the implementation of the Firebird server'])
-EventServiceQuery(event_id=4, timestamp=datetime.datetime(2018, 4, 3, 12, 56, 27, 559000), status=<Status.OK: ' '>, service_id=140138600699200, action='Repair Database', parameters=[])
+EventServiceQuery(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 1, 797000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, sent=[], received=['retrieve the version of the server engine'])
+EventServiceQuery(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 30, 784000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, sent=[], received=['retrieve the implementation of the Firebird server'])
+EventServiceQuery(event_id=4, timestamp=datetime.datetime(2018, 4, 3, 12, 56, 27, 559000), status=<Status.OK: ' '>, service_id=140138600699200, action='Repair Database', sent=[], received=[])
 """
         if sys.version_info.major == 2 and sys.version_info.minor == 7 and sys.version_info.micro > 13:
             output = """ServiceInfo(service_id=140646174008648, user='SYSDBA', protocol='TCPv4', address='127.0.0.1', remote_process='/job/fbtrace', remote_pid=385)
-EventServiceQuery(event_id=1, timestamp=datetime.datetime(2018, 3, 29, 14, 2, 10, 918000), status=<Status.OK: ' '>, service_id=140646174008648, action='Start Trace Session', parameters=['Receive portion of the query:', 'retrieve 1 line of service output per call'])
+EventServiceQuery(event_id=1, timestamp=datetime.datetime(2018, 3, 29, 14, 2, 10, 918000), status=<Status.OK: ' '>, service_id=140646174008648, action='Start Trace Session', sent=[], received=['retrieve 1 line of service output per call'])
 ServiceInfo(service_id=140138600699200, user='SYSDBA', protocol='TCPv4', address='127.0.0.1', remote_process='/job/fbtrace', remote_pid=4631)
-EventServiceQuery(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 1, 797000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, parameters=['retrieve the version of the server engine'])
-EventServiceQuery(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 30, 784000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, parameters=['retrieve the implementation of the Firebird server'])
-EventServiceQuery(event_id=4, timestamp=datetime.datetime(2018, 4, 3, 12, 56, 27, 559000), status=<Status.OK: ' '>, service_id=140138600699200, action='Repair Database', parameters=[])
+EventServiceQuery(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 1, 797000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, sent=[], received=['retrieve the version of the server engine'])
+EventServiceQuery(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 12, 41, 30, 784000), status=<Status.OK: ' '>, service_id=140138600699200, action=None, sent=[], received=['retrieve the implementation of the Firebird server'])
+EventServiceQuery(event_id=4, timestamp=datetime.datetime(2018, 4, 3, 12, 56, 27, 559000), status=<Status.OK: ' '>, service_id=140138600699200, action='Repair Database', sent=[], received=[])
 """
         self._check_events(trace_lines, output)
     def test_51_set_context(self):
@@ -1308,8 +1305,8 @@ EventServiceQuery(event_id=4, timestamp=datetime.datetime(2018, 4, 3, 12, 56, 27
 """
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
-EventSetContext(event_id=3, timestamp=datetime.datetime(2017, 11, 9, 11, 21, 59, 27000), attachment_id=8, transaction_id=1570, context='USER_TRANSACTION', key='TRANSACTION_TIMESTAMP', value='"2017-11-09 11:21:59.0270"')
-EventSetContext(event_id=4, timestamp=datetime.datetime(2017, 11, 9, 11, 21, 59, 30000), attachment_id=8, transaction_id=1570, context='USER_SESSION', key='MY_KEY', value='"1"')
+EventSetContext(event_id=3, timestamp=datetime.datetime(2017, 11, 9, 11, 21, 59, 27000), attachment_id=8, transaction_id=1570, context='USER_TRANSACTION', key='TRANSACTION_TIMESTAMP', value='2017-11-09 11:21:59.0270')
+EventSetContext(event_id=4, timestamp=datetime.datetime(2017, 11, 9, 11, 21, 59, 30000), attachment_id=8, transaction_id=1570, context='USER_SESSION', key='MY_KEY', value='1')
 """
         self._check_events(trace_lines, output)
     def test_52_error(self):
@@ -1934,7 +1931,7 @@ Transaction counters:
 
 """
         output = """AttachmentInfo(attachment_id=8, database='/opt/firebird/examples/empbuild/employee.fdb', charset='NONE', protocol='<internal>', address='<internal>', user='SYSDBA', role='NONE', remote_process=None, remote_pid=None)
-EventSweepFinish(event_id=1, timestamp=datetime.datetime(2018, 3, 22, 17, 33, 57, 227000), attachment_id=8, oit=156, oat=156, ost=156, next=157, run_time=257, reads=177, writes=30, fetches=8279, marks=945)
+EventSweepFinish(event_id=1, timestamp=datetime.datetime(2018, 3, 22, 17, 33, 57, 227000), attachment_id=8, oit=156, oat=156, ost=156, next=157, run_time=257, reads=177, writes=30, fetches=8279, marks=945, access=None)
 """
         self._check_events(trace_lines, output)
     def test_58_sweep_finish(self):
@@ -2060,7 +2057,7 @@ Statement 22:
       0 ms, 3 read(s), 7 fetch(es), 5 mark(s)
 """
         output = """AttachmentInfo(attachment_id=5, database='/home/data/db/employee.fdb', charset='NONE', protocol='TCPv4', address='127.0.0.1', user='SYSDBA', role='NONE', remote_process='/home/job/python/envs/pyfirebird/bin/python', remote_pid=9737)
-TransactionInfo(attachment_id=5, transaction_id=9, options=['CONCURRENCY', 'NOWAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=5, transaction_id=9, initial_id=None, options=['CONCURRENCY', 'NOWAIT', 'READ_WRITE'])
 EventBLRExecute(event_id=1, timestamp=datetime.datetime(2018, 4, 3, 17, 0, 43, 428000), status=<Status.OK: ' '>, attachment_id=5, transaction_id=9, statement_id=None, content="0 blr_version5,\\n1 blr_begin,\\n2    blr_message, 0, 4,0,\\n6       blr_varying2, 0,0, 15,0,\\n11       blr_varying2, 0,0, 10,0,\\n16       blr_short, 0,\\n18       blr_short, 0,\\n20    blr_loop,\\n21       blr_receive, 0,\\n23          blr_store,\\n24             blr_relation, 7, 'C','O','U','N','T','R','Y', 0,\\n34             blr_begin,\\n35                blr_assignment,\\n36                   blr_parameter2, 0, 0,0, 2,0,\\n42                   blr_field, 0, 7, 'C','O','U','N','T','R','Y',\\n52                blr_assignment,\\n53                   blr_parameter2, 0, 1,0, 3,0,\\n59                   blr_field, 0, 8, 'C','U','R','R','E','N','C','Y',\\n70                blr_end,\\n71    blr_end,\\n72 blr_eoc", run_time=0, reads=3, writes=None, fetches=7, marks=5, access=[AccessStats(table='COUNTRY', natural=0, index=0, update=0, insert=1, delete=0, backout=0, purge=0, expunge=0)])
 EventBLRExecute(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 17, 0, 43, 428000), status=<Status.OK: ' '>, attachment_id=5, transaction_id=9, statement_id=None, content='0 blr_version5,\\n1 blr_begin,\\n2    blr_message, 0, 4,0,\\n6       blr_varying2, 0,0, 15,0,\\n11       blr_varying2, 0,0, 10,0,\\n16       blr_short, 0,\\n18       blr_short, 0...', run_time=0, reads=3, writes=None, fetches=7, marks=5, access=[AccessStats(table='COUNTRY', natural=0, index=0, update=0, insert=1, delete=0, backout=0, purge=0, expunge=0)])
 EventBLRExecute(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 17, 0, 43, 428000), status=<Status.OK: ' '>, attachment_id=5, transaction_id=9, statement_id=22, content=None, run_time=0, reads=3, writes=None, fetches=7, marks=5, access=None)
@@ -2107,12 +2104,12 @@ EventBLRExecute(event_id=3, timestamp=datetime.datetime(2018, 4, 3, 17, 0, 43, 4
      26 ms
 """
         output = """AttachmentInfo(attachment_id=40, database='/opt/firebird/examples/empbuild/employee.fdb', charset='NONE', protocol='<internal>', address='<internal>', user='SYSDBA', role='NONE', remote_process=None, remote_pid=None)
-TransactionInfo(attachment_id=40, transaction_id=221, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=40, transaction_id=221, initial_id=None, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
 EventDYNExecute(event_id=1, timestamp=datetime.datetime(2018, 4, 3, 17, 42, 53, 559000), status=<Status.OK: ' '>, attachment_id=40, transaction_id=221, content="0 gds__dyn_version_1,\\n1    gds__dyn_delete_rel, 1,0, 'T',\\n5       gds__dyn_end,\\n0 gds__dyn_eoc", run_time=20)
-TransactionInfo(attachment_id=40, transaction_id=222, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=40, transaction_id=222, initial_id=None, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
 EventDYNExecute(event_id=2, timestamp=datetime.datetime(2018, 4, 3, 17, 43, 21, 365000), status=<Status.OK: ' '>, attachment_id=40, transaction_id=222, content="0 gds__dyn_version_1,\\n1    gds__dyn_begin,\\n2       gds__dyn_def_local_fld, 31,0, 'C','O','U','N','T','R','Y',32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,\\n36          gds__dyn_fld_source, 31,0, 'C','O','U','N','T','R','Y','N','A','M','E',32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,\\n70          gds__dyn_rel_name, 1,0, 'T',\\n74          gds__dyn_fld_position, 2,0, 0,0,\\n79          gds__dyn_update_flag, 2,0, 1,0,\\n84          gds__dyn_system_flag, 2,0, 0,0,\\n89          gds__dyn_end,\\n90       gds__dyn_def_sql_fld, 31,0, 'C','U','R','R','E','N','C','Y',32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,\\n124          gds__dyn_fld_type, 2,0, 37,0,\\n129          gds__dyn_fld_length, 2,0, 10,0,\\n134          gds__dyn_fld_scale, 2,0, 0,0,\\n139          gds__dyn_rel_name, 1,0, 'T',\\n143          gds__dyn_fld_position, 2,0, 1,0,\\n148          gds__dyn_update_flag, 2,0, 1,0,\\n153          gds__dyn_system_flag, 2,0, 0,0,\\n158          gds__dyn_end,\\n159       gds__dyn_end,\\n0 gds__dyn_eoc", run_time=0)
 AttachmentInfo(attachment_id=20, database='/opt/firebird/examples/empbuild/employee.fdb', charset='NONE', protocol='<internal>', address='<internal>', user='SYSDBA', role='NONE', remote_process=None, remote_pid=None)
-TransactionInfo(attachment_id=20, transaction_id=189, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
+TransactionInfo(attachment_id=20, transaction_id=189, initial_id=None, options=['CONCURRENCY', 'WAIT', 'READ_WRITE'])
 EventDYNExecute(event_id=3, timestamp=datetime.datetime(2018, 3, 29, 13, 28, 45, 891000), status=<Status.OK: ' '>, attachment_id=20, transaction_id=189, content=None, run_time=26)
 """
         self._check_events(trace_lines, output)

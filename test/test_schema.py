@@ -592,7 +592,7 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_sql_for('create'), "CREATE SEQUENCE EMP_NO_GEN")
         self.assertEqual(c.get_sql_for('drop'), "DROP SEQUENCE EMP_NO_GEN")
         self.assertEqual(c.get_sql_for('alter', value=10),
-                         "ALTER SEQUENCE EMP_NO_GEN START WITH 10")
+                         "ALTER SEQUENCE EMP_NO_GEN RESTART WITH 10")
         with self.assertRaises(ValueError) as cm:
             c.get_sql_for('alter', badparam=10)
         self.assertTupleEqual(cm.exception.args,
@@ -3523,8 +3523,8 @@ DROP TABLE JOB
                                       'ALTER INDEX SALESTATX ACTIVE',
                                       'ALTER INDEX QTYX ACTIVE'])
         script = s.get_metadata_ddl(sections=[sm.Section.SET_GENERATORS])
-        self.assertListEqual(script, ['ALTER SEQUENCE EMP_NO_GEN START WITH 145',
-                                      'ALTER SEQUENCE CUST_NO_GEN START WITH 1015'])
+        self.assertListEqual(script, ['ALTER SEQUENCE EMP_NO_GEN RESTART WITH 145',
+                                      'ALTER SEQUENCE CUST_NO_GEN RESTART WITH 1015'])
         script = s.get_metadata_ddl(sections=[sm.Section.TRIGGER_DEACTIVATIONS])
         self.assertListEqual(script, ['ALTER TRIGGER SET_EMP_NO INACTIVE',
                                       'ALTER TRIGGER SAVE_SALARY_CHANGE INACTIVE',

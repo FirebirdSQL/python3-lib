@@ -135,6 +135,14 @@ EventProcedureFinish
 --------------------
 .. autoclass:: EventProcedureFinish
 
+EventFunctionStart
+------------------
+.. autoclass:: EventFunctionStart
+
+EventFunctionFinish
+-------------------
+.. autoclass:: EventFunctionFinish
+
 EventServiceAttach
 ------------------
 .. autoclass:: EventServiceAttach

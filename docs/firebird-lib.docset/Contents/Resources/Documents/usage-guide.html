@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="Docutils 0.17: http://docutils.sourceforge.net/" name="generator"/>
+<title>Usage Guide — firebird-lib 1.2.1 documentation</title>
+<link href="_static/pygments.css" rel="stylesheet" type="text/css"/>
+<link href="_static/bootstrap-sphinx.css" rel="stylesheet" type="text/css"/>
+<script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+<script src="_static/jquery.js"></script>
+<script src="_static/underscore.js"></script>
+<script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+<script src="_static/doctools.js"></script>
+<script src="_static/sphinx_highlight.js"></script>
+<link href="genindex.html" rel="index" title="Index"/>
+<link href="search.html" rel="search" title="Search"/>
+<link href="reference.html" rel="next" title="Firebird-lib Reference"/>
+<link href="index.html" rel="prev" title="The Python library for Firebird"/>
+<meta charset="utf-8"/>
+<meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1" name="viewport"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<script src="_static/js/jquery-1.12.4.min.js" type="text/javascript"></script>
+<script src="_static/js/jquery-fix.js" type="text/javascript"></script>
+<script src="_static/bootstrap-2.3.2/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="_static/bootstrap-sphinx.js" type="text/javascript"></script>
+</head><body>
+<div class="navbar navbar-inverse navbar-fixed-top" id="navbar">
+<div class="navbar-inner">
+<div class="container">
+<!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+<button class="btn btn-navbar" data-target=".nav-collapse" data-toggle="collapse">
+<span class="icon-bar"></span>
+<span class="icon-bar"></span>
+<span class="icon-bar"></span>
+</button>
+<a class="brand" href="index.html">
+          firebird-lib</a>
+<span class="navbar-text pull-left"><b>1.2.1</b></span>
+<div class="nav-collapse">
+<ul class="nav">
+<li class="divider-vertical"></li>
+<li><a href="#">Usage Guide</a></li>
+<li><a href="reference.html">Reference</a></li>
+<li><a href="genindex.html">Index</a></li>
+<li class="dropdown globaltoc-container">
+<a data-target="#" data-toggle="dropdown" href="index.html" id="dLabelGlobalToc" role="button">Content <b class="caret"></b></a>
+<ul aria-labelledby="dLabelGlobalToc" class="dropdown-menu globaltoc" role="menu"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-database-schema">Working with database schema</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#available-information">Available information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-objects">Metadata objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visitor-pattern-support">Visitor Pattern support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#index-5">Object dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enhanced-list-of-objects">Enhanced list of objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sql-operations">SQL operations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-user-privileges">Working with user privileges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-monitoring-tables">Working with monitoring tables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">Available information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#activity-snapshot">Activity snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#i-o-statistics">I/O statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#processing-output-from-gstat-utility">Processing output from gstat utility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parsing-gstat-output">Parsing gstat output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#processing-firebird-server-log">Processing Firebird server log</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parsing-the-log">Parsing the log</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#processing-output-from-firebird-server-trace-sessions">Processing output from Firebird server trace sessions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parsing-the-output-from-trace-session">Parsing the output from trace session</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">Firebird-lib Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#package-modules">Package modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ref-schema.html">firebird.lib.schema</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ref-monitor.html">firebird.lib.monitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ref-trace.html">firebird.lib.trace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ref-gstat.html">firebird.lib.gstat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ref-log.html">firebird.lib.log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ref-logmsgs.html">firebird.lib.logmsgs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-2-1">Version 1.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-2-0">Version 1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-0-1">Version 1.0.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-0-0">Version 1.0.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</ul>
+</li>
+<li class="dropdown">
+<a data-target="#" data-toggle="dropdown" href="#" id="dLabelLocalToc" role="button">Page <b class="caret"></b></a>
+<ul aria-labelledby="dLabelLocalToc" class="dropdown-menu localtoc" role="menu"><ul>
+<li><a class="reference internal" href="#">Usage Guide</a><ul>
+<li><a class="reference internal" href="#working-with-database-schema">Working with database schema</a><ul>
+<li><a class="reference internal" href="#available-information">Available information</a></li>
+<li><a class="reference internal" href="#metadata-objects">Metadata objects</a></li>
+<li><a class="reference internal" href="#visitor-pattern-support">Visitor Pattern support</a></li>
+<li><a class="reference internal" href="#index-5">Object dependencies</a></li>
+<li><a class="reference internal" href="#enhanced-list-of-objects">Enhanced list of objects</a></li>
+<li><a class="reference internal" href="#sql-operations">SQL operations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-with-user-privileges">Working with user privileges</a></li>
+<li><a class="reference internal" href="#working-with-monitoring-tables">Working with monitoring tables</a><ul>
+<li><a class="reference internal" href="#id6">Available information</a></li>
+<li><a class="reference internal" href="#activity-snapshot">Activity snapshot</a></li>
+<li><a class="reference internal" href="#i-o-statistics">I/O statistics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#processing-output-from-gstat-utility">Processing output from gstat utility</a><ul>
+<li><a class="reference internal" href="#parsing-gstat-output">Parsing gstat output</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#processing-firebird-server-log">Processing Firebird server log</a><ul>
+<li><a class="reference internal" href="#parsing-the-log">Parsing the log</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#processing-output-from-firebird-server-trace-sessions">Processing output from Firebird server trace sessions</a><ul>
+<li><a class="reference internal" href="#parsing-the-output-from-trace-session">Parsing the output from trace session</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+</ul>
+<form action="search.html" class="navbar-form navbar-right" method="get">
+<div class="form-group">
+<input class="form-control" name="q" placeholder="Search" type="text"/>
+</div>
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="body span12 content" role="main">
+<section id="usage-guide">
+<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this heading">¶</a></h1>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird-lib</span></code> package provides extensions to the <a class="reference external" href="https://pypi.org/project/firebird-driver/">firebird-driver</a> - an official Python driver for the open source relational database <a class="reference external" href="http://www.firebirdsql.org">Firebird</a> ®. While the <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird-driver</span></code> package provides the Python DB API 2.0 compliant interface to the Firebird RDBMS, the <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird-lib</span></code> contains higher level modules to work with various information and data structures provided by Firebird.</p>
+<p>This package provides next modules:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="ref-schema.html#module-firebird.lib.schema" title="firebird.lib.schema: Module for work with Firebird database schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schema</span></code></a> - for work with Firebird <a class="reference internal" href="#working-with-database-schema"><span class="std std-ref">database schema</span></a> stored in system tables.</p></li>
+<li><p><a class="reference internal" href="ref-monitor.html#module-firebird.lib.monitor" title="firebird.lib.monitor: Module for work with Firebird monitoring tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor</span></code></a> - for work with Firebird <a class="reference internal" href="#working-with-monitoring-tables"><span class="std std-ref">monitoring tables</span></a>.</p></li>
+<li><p><a class="reference internal" href="ref-gstat.html#module-firebird.lib.gstat" title="firebird.lib.gstat: Module for work with Firebird gstat output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gstat</span></code></a> - for processing output from <a class="reference internal" href="#processing-gstat-output"><span class="std std-ref">gstat Firebird utility</span></a>.</p></li>
+<li><p><a class="reference internal" href="ref-log.html#module-firebird.lib.log" title="firebird.lib.log: Module for parsing Firebird server log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log</span></code></a> - for processing Firebird <a class="reference internal" href="#processing-firebrid-log"><span class="std std-ref">server log</span></a>.</p></li>
+<li><p><a class="reference internal" href="ref-trace.html#module-firebird.lib.trace" title="firebird.lib.trace: Module for parsing Firebird trace &amp; audit protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a> - Processing output from Firebird server <a class="reference internal" href="#processing-firebrid-trace"><span class="std std-ref">trace &amp; audit sessions</span></a>.</p></li>
+</ul>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Working with database schema"></a><section id="working-with-database-schema">
+<span id="index-0"></span><span id="id1"></span><h2>Working with database schema<a class="headerlink" href="#working-with-database-schema" title="Permalink to this heading">¶</a></h2>
+<p>Description of database objects like tables, views, stored procedures, triggers or UDF functions that represent database schema is stored in set of system tables present in every database. Firebird users can query these tables to get information about these objects and their relations. But querying system tables is inconvenient, as it requires good knowledge how this information is structured and requires significant amount of Python code. Changes in system tables between Firebird versions further add to this complexity. The <a class="reference internal" href="ref-schema.html#module-firebird.lib.schema" title="firebird.lib.schema: Module for work with Firebird database schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.lib.schema</span></code></a> module provides set of classes that transform information stored in system tables into set of Python objects that surface the vital information in meaningful way, and additionally provide set of methods for most commonly used operations or checks.</p>
+<p>Database schema could be accessed in two different ways, each suitable for different use case:</p>
+<ul class="simple">
+<li><p>By direct creation of <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a> instances that are then <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.bind" title="firebird.lib.schema.Schema.bind"><code class="xref py py-obj docutils literal notranslate"><span class="pre">binded</span></code></a> to particular <a class="reference external" href="https://firebird-driver.readthedocs.io/en/latest/ref-core.html#firebird.driver.core.Connection" title="(in firebird-driver v1.5.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection</span></code></a> instance. This method is best if you want to work with schema only occasionally, or you want to keep connections as lightweight as possible.</p></li>
+<li><p>Accessing <a class="reference external" href="https://firebird-driver.readthedocs.io/en/latest/ref-core.html#firebird.driver.core.Connection.schema" title="(in firebird-driver v1.5.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection.schema</span></code></a> property. This method is more convenient than previous one, and represents a compromise between convenience and resource consumption because <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a> instance is not created until first reference and is managed by connection itself. Individual metadata objects are not loaded from system tables until first reference.</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<ol class="arabic simple">
+<li><p>Using Schema instance:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.lib.schema</span> <span class="kn">import</span> <span class="n">Schema</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">schema</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+<span class="go">['COUNTRY', 'JOB', 'DEPARTMENT', 'EMPLOYEE', 'CUSTOMER', 'PROJECT', 'EMPLOYEE_PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Using Connection.schema:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+<span class="go">['COUNTRY', 'JOB', 'DEPARTMENT', 'EMPLOYEE', 'CUSTOMER', 'PROJECT', 'EMPLOYEE_PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection.schema</span></code> property will raise an exception on access if <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird-lib</span></code> package is not installed.
+While firebird-lib sets the dependency on <a class="reference external" href="https://pypi.org/project/firebird-driver/">firebird-driver</a> package, the <a class="reference external" href="https://pypi.org/project/firebird-driver/">firebird-driver</a> does not sets (symetric) dependency on <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird-lib</span></code>. It means that installing the driver itself will not automatically install the firebird-lib package, while installing the library will ensure that the driver is also installed.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Individual metadata information (i.e. information about <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.domains" title="firebird.lib.schema.Schema.domains"><code class="xref py py-obj docutils literal notranslate"><span class="pre">domains</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.tables" title="firebird.lib.schema.Schema.tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tables</span></code></a> etc.) are loaded on first access and cached for further reference until it’s <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.clear" title="firebird.lib.schema.Schema.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clared</span></code></a> or <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.reload" title="firebird.lib.schema.Schema.reload"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reload</span></code></a> is
+requested.</p>
+<p>Because once loaded information is cached, it’s good to <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.clear" title="firebird.lib.schema.Schema.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code></a> it
+when it’s no longer needed to conserve memory.</p>
+</div>
+<section id="available-information">
+<span id="index-1"></span><h3>Available information<a class="headerlink" href="#available-information" title="Permalink to this heading">¶</a></h3>
+<p>The <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a> provides information about:</p>
+<ul class="simple">
+<li><p><strong>Database:</strong> <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.owner_name" title="firebird.lib.schema.Schema.owner_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Owner</span> <span class="pre">name</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.default_character_set" title="firebird.lib.schema.Schema.default_character_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default</span> <span class="pre">character</span> <span class="pre">set</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.description" title="firebird.lib.schema.Schema.description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">description</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.security_class" title="firebird.lib.schema.Schema.security_class"><code class="xref py py-obj docutils literal notranslate"><span class="pre">security</span> <span class="pre">class</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.linger" title="firebird.lib.schema.Schema.linger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linger</span> <span class="pre">option</span></code></a> and whether database consist
+from <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.is_multifile" title="firebird.lib.schema.Schema.is_multifile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single</span> <span class="pre">or</span> <span class="pre">multiple</span> <span class="pre">files</span></code></a>.</p></li>
+<li><p><strong>Facilities:</strong> Available <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.character_sets" title="firebird.lib.schema.Schema.character_sets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">character</span> <span class="pre">sets</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.collations" title="firebird.lib.schema.Schema.collations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">collations</span></code></a>, BLOB <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.filters" title="firebird.lib.schema.Schema.filters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filters</span></code></a>, database <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.files" title="firebird.lib.schema.Schema.files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">files</span></code></a> and
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.shadows" title="firebird.lib.schema.Schema.shadows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shadows</span></code></a>.</p></li>
+<li><p><strong>User database objects:</strong> <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.exceptions" title="firebird.lib.schema.Schema.exceptions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exceptions</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.generators" title="firebird.lib.schema.Schema.generators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generators</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.domains" title="firebird.lib.schema.Schema.domains"><code class="xref py py-obj docutils literal notranslate"><span class="pre">domains</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.tables" title="firebird.lib.schema.Schema.tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tables</span></code></a> and their <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.constraints" title="firebird.lib.schema.Schema.constraints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">constraints</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.indices" title="firebird.lib.schema.Schema.indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">indices</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.views" title="firebird.lib.schema.Schema.views"><code class="xref py py-obj docutils literal notranslate"><span class="pre">views</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.triggers" title="firebird.lib.schema.Schema.triggers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">triggers</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.procedures" title="firebird.lib.schema.Schema.procedures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">procedures</span></code></a>,
+user <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.roles" title="firebird.lib.schema.Schema.roles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">roles</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.functions" title="firebird.lib.schema.Schema.functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">user</span> <span class="pre">defined</span> <span class="pre">functions</span></code></a> and <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.packages" title="firebird.lib.schema.Schema.packages"><code class="xref py py-obj docutils literal notranslate"><span class="pre">packages</span></code></a>.</p></li>
+<li><p><strong>System database objects:</strong> <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_generators" title="firebird.lib.schema.Schema.sys_generators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generators</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_domains" title="firebird.lib.schema.Schema.sys_domains"><code class="xref py py-obj docutils literal notranslate"><span class="pre">domains</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_tables" title="firebird.lib.schema.Schema.sys_tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tables</span></code></a> and their
+constraints,  <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_indices" title="firebird.lib.schema.Schema.sys_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">indices</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_views" title="firebird.lib.schema.Schema.sys_views"><code class="xref py py-obj docutils literal notranslate"><span class="pre">views</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_triggers" title="firebird.lib.schema.Schema.sys_triggers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">triggers</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_procedures" title="firebird.lib.schema.Schema.sys_procedures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">procedures</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.sys_functions" title="firebird.lib.schema.Schema.sys_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">functions</span></code></a> and <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.backup_history" title="firebird.lib.schema.Schema.backup_history"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backup</span> <span class="pre">history</span></code></a>.</p></li>
+<li><p><strong>Relations between objects:</strong> Through direct links between metadata objects and
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.dependencies" title="firebird.lib.schema.Schema.dependencies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dependencies</span></code></a>.</p></li>
+<li><p><strong>Privileges:</strong> <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.privileges" title="firebird.lib.schema.Schema.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">All</span></code></a> privileges, or privileges granted for specific
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Table.privileges" title="firebird.lib.schema.Table.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">table</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.TableColumn.privileges" title="firebird.lib.schema.TableColumn.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">table</span> <span class="pre">column</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.View.privileges" title="firebird.lib.schema.View.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.ViewColumn.privileges" title="firebird.lib.schema.ViewColumn.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span> <span class="pre">column</span></code></a>,
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Procedure.privileges" title="firebird.lib.schema.Procedure.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">procedure</span></code></a> or <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Role.privileges" title="firebird.lib.schema.Role.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">role</span></code></a>. It’s also
+possible to get all privileges <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.get_privileges_of" title="firebird.lib.schema.Schema.get_privileges_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">granted</span> <span class="pre">to</span></code></a> specific user, role,
+procedure, trigger or view.</p></li>
+</ul>
+</section>
+<section id="metadata-objects">
+<span id="index-2"></span><h3>Metadata objects<a class="headerlink" href="#metadata-objects" title="Permalink to this heading">¶</a></h3>
+<p>Schema information is presented as Python objects of various classes with common parent class <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem" title="firebird.lib.schema.SchemaItem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SchemaItem</span></code></a> (except <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a> itself), that defines several common attributes and methods:</p>
+<p><strong>Attributes:</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.name" title="firebird.lib.schema.SchemaItem.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a>: Name of database object or None if object doesn’t have a name.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.description" title="firebird.lib.schema.SchemaItem.description"><code class="xref py py-obj docutils literal notranslate"><span class="pre">description</span></code></a>: Description (documentation text) for object or None if object doesn’t have a description.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.actions" title="firebird.lib.schema.SchemaItem.actions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">actions</span></code></a>: List of supported SQL operations on schema object instance.</p></li>
+</ul>
+<p><strong>Methods:</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Visitable.accept" title="firebird.lib.schema.Visitable.accept"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept()</span></code></a>: <a class="reference internal" href="#visitor-pattern-support"><span class="std std-ref">Visitor Pattern support</span></a>.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.is_sys_object" title="firebird.lib.schema.SchemaItem.is_sys_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_sys_object()</span></code></a>: Returns True if this database object is system object.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_quoted_name" title="firebird.lib.schema.SchemaItem.get_quoted_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_quoted_name()</span></code></a>: Returns quoted (if necessary) name of database object.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_dependents" title="firebird.lib.schema.SchemaItem.get_dependents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dependents()</span></code></a>: Returns list of all database objects that <a class="reference internal" href="#object-dependencies"><span class="std std-ref">depend</span></a> on this one.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_dependencies" title="firebird.lib.schema.SchemaItem.get_dependencies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dependencies()</span></code></a>: Returns list of database objects that this object <a class="reference internal" href="#object-dependencies"><span class="std std-ref">depend</span></a> on.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_sql_for" title="firebird.lib.schema.SchemaItem.get_sql_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sql_for()</span></code></a>: Returns <a class="reference internal" href="#sql-operations"><span class="std std-ref">SQL command string</span></a> for specified action on database object.</p></li>
+</ul>
+<p>There are next schema objects: <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Collation" title="firebird.lib.schema.Collation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Collation</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.CharacterSet" title="firebird.lib.schema.CharacterSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CharacterSet</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.DatabaseException" title="firebird.lib.schema.DatabaseException"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DatabaseException</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Sequence" title="firebird.lib.schema.Sequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sequence</span></code></a> (Generator), <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Domain" title="firebird.lib.schema.Domain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Domain</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Index" title="firebird.lib.schema.Index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Index</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Table" title="firebird.lib.schema.Table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Table</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.TableColumn" title="firebird.lib.schema.TableColumn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TableColumn</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Constraint" title="firebird.lib.schema.Constraint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Constraint</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.View" title="firebird.lib.schema.View"><code class="xref py py-obj docutils literal notranslate"><span class="pre">View</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.ViewColumn" title="firebird.lib.schema.ViewColumn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ViewColumn</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Trigger" title="firebird.lib.schema.Trigger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trigger</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Procedure" title="firebird.lib.schema.Procedure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Procedure</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.ProcedureParameter" title="firebird.lib.schema.ProcedureParameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProcedureParameter</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Function" title="firebird.lib.schema.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.FunctionArgument" title="firebird.lib.schema.FunctionArgument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FunctionArgument</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Role" title="firebird.lib.schema.Role"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Role</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Dependency" title="firebird.lib.schema.Dependency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dependency</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.DatabaseFile" title="firebird.lib.schema.DatabaseFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DatabaseFile</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Shadow" title="firebird.lib.schema.Shadow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Shadow</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Package" title="firebird.lib.schema.Package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Package</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Filter" title="firebird.lib.schema.Filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Filter</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.BackupHistory" title="firebird.lib.schema.BackupHistory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BackupHistory</span></code></a> and <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Privilege" title="firebird.lib.schema.Privilege"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Privilege</span></code></a>.</p>
+</section>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Visitor Pattern support"></a><section id="visitor-pattern-support">
+<span id="index-3"></span><span id="id2"></span><h3>Visitor Pattern support<a class="headerlink" href="#visitor-pattern-support" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://en.wikipedia.org/wiki/Visitor_pattern">Visitor Pattern</a> is particularly useful when you need to process various objects that need special handling in common algorithm (for example display information about them or generate SQL commands to create them in new database). Each metadata objects (including <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a>) descend from <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Visitable" title="firebird.lib.schema.Visitable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Visitable</span></code></a> class and thus support <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Visitable.accept" title="firebird.lib.schema.Visitable.accept"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept()</span></code></a> method that calls visitor’s <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Visitor.visit" title="firebird.lib.schema.Visitor.visit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Visitor.visit()</span></code></a> method. This method dispatch calls to specific class-handling method or <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Visitor.default_action" title="firebird.lib.schema.Visitor.default_action"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Visitor.default_action()</span></code></a> if there is no such special class-handling method defined in your visitor class. Special class-handling methods must have a name that follows <em>visit_&lt;class_name&gt;</em> pattern, for example method that should handle <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Table" title="firebird.lib.schema.Table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Table</span></code></a> (or its descendants) objects must be named as <em>visit_Table</em>.</p>
+<p id="index-4">Next code uses visitor pattern to print all DROP SQL statements necessary to drop database object, taking its dependencies into account, i.e. it could be necessary to first drop other - dependent objects before it could be dropped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="kn">from</span> <span class="nn">firebird.lib.schema</span> <span class="kn">import</span> <span class="n">Visitor</span>
+
+<span class="c1"># Object dropper</span>
+<span class="k">class</span> <span class="nc">ObjectDropper</span><span class="p">(</span><span class="n">Visitor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="c1"># You can call self.visit(obj) directly here as well</span>
+    <span class="k">def</span> <span class="nf">default_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">is_sys_object</span><span class="p">()</span> <span class="ow">and</span> <span class="s1">'drop'</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_dependents</span><span class="p">():</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">dependency</span><span class="o">.</span><span class="n">dependent</span>
+                <span class="k">if</span> <span class="n">d</span> <span class="ow">and</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seen</span><span class="p">:</span>
+                    <span class="n">d</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seen</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'drop'</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">visit_TableColumn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="n">column</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">visit_ViewColumn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="n">column</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">visit_ProcedureParameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="n">param</span><span class="o">.</span><span class="n">procedure</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">visit_FunctionArgument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="n">arg</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<span class="c1"># Sample use:</span>
+
+<span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span><span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'JOB'</span><span class="p">)</span>
+    <span class="n">dropper</span> <span class="o">=</span> <span class="n">ObjectDropper</span><span class="p">()</span>
+    <span class="n">dropper</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Will produce next result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DROP</span> <span class="n">PROCEDURE</span> <span class="n">ALL_LANGS</span>
+<span class="n">DROP</span> <span class="n">PROCEDURE</span> <span class="n">SHOW_LANGS</span>
+<span class="n">DROP</span> <span class="n">TABLE</span> <span class="n">JOB</span>
+</pre></div>
+</div>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/object-dependencies"></a><span class="target" id="object-dependencies"></span></section>
+<section id="index-5">
+<span id="id3"></span><h3>Object dependencies<a class="headerlink" href="#index-5" title="Permalink to this heading">¶</a></h3>
+<p>Close relations between metadata object like <code class="xref py py-obj docutils literal notranslate"><span class="pre">ownership</span></code> (Table vs. TableColumn, Index or Trigger) or <code class="xref py py-obj docutils literal notranslate"><span class="pre">cooperation</span></code> (like FK Index vs. partner UQ/PK Index) are defined directly using properties of particular schema objects. Besides close relations Firebird also uses <code class="xref py py-obj docutils literal notranslate"><span class="pre">dependencies</span></code>, that describe functional dependency between otherwise independent metadata objects. For example stored procedure can call other stored procedures, define its parameters using domains or work with tables or views. Removing or changing these objects may/will cause the procedure to stop working correctly, so Firebird tracks these dependencies. Schema module surfaces these dependencies as <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Dependency" title="firebird.lib.schema.Dependency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dependency</span></code></a> schema objects, and all schema objects have <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_dependents" title="firebird.lib.schema.SchemaItem.get_dependents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dependents()</span></code></a> and <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_dependencies" title="firebird.lib.schema.SchemaItem.get_dependencies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dependencies()</span></code></a> methods to get list of <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Dependency" title="firebird.lib.schema.Dependency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dependency</span></code></a> instances that describe these dependencies.</p>
+<p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Dependency" title="firebird.lib.schema.Dependency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dependency</span></code></a> object provides names and types of dependent/depended on database objects, and access to their respective schema Python objects as well.</p>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/enhanced-object-list"></a><span class="target" id="enhanced-object-list"></span></section>
+<section id="enhanced-list-of-objects">
+<span id="index-6"></span><h3>Enhanced list of objects<a class="headerlink" href="#enhanced-list-of-objects" title="Permalink to this heading">¶</a></h3>
+<p>Whenever possible, schema module uses enhanced <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.base.collections.DataList</span></code></a> list descendant for collections of metadata objects. This enhanced list provides several convenient methods for advanced list processing:</p>
+<ul class="simple">
+<li><p>filtering - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.filter" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter()</span></code></a> and <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.filterfalse" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filterfalse()</span></code></a></p></li>
+<li><p>sorting - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.sort" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sort()</span></code></a></p></li>
+<li><p>finding - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.find" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">find()</span></code></a></p></li>
+<li><p>extracting/splitting - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.extract" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">extract()</span></code></a> and <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.split" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">split()</span></code></a></p></li>
+<li><p>testing - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.contains" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">contains()</span></code></a>, <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.all" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">all()</span></code></a> and <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.any" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">any()</span></code></a></p></li>
+<li><p>reporting - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.occurrence" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">occurrence()</span></code></a> and <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.BaseObjectCollection.report" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">report()</span></code></a></p></li>
+<li><p>fast key access - <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.key_expr" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">key_expr</span></code></a>, <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.frozen" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">frozen</span></code></a>, <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.freeze" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">freeze()</span></code></a> and <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.get" title="(in Firebird-base v1.4.1)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get()</span></code></a></p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Schema module uses <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList.frozen" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">frozen</span></code></a> DataLists for fast access to individual list items using their <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.name" title="firebird.lib.schema.SchemaItem.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a> as a key.</p>
+</div>
+<p><strong>Examples:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span><span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span><span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span> <span class="k">as</span> <span class="n">con</span><span class="p">:</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"All tables that have column named 'JOB_CODE'"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">tbl</span><span class="p">:</span> <span class="n">tbl</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="s2">"item.name=='JOB_CODE'"</span><span class="p">)):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Order of tables"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Tables sorted by name"</span><span class="p">)</span>
+    <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">'name'</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Tables sorted by number of columns"</span><span class="p">)</span>
+    <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="s1">'len(item.columns)'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Report: Tables with number of columns"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">num_columns</span> <span class="ow">in</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">report</span><span class="p">(</span><span class="s1">'item.name'</span><span class="p">,</span> <span class="s1">'len(item.columns)'</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">table_name</span><span class="si">:</span><span class="s1">32</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">num_columns</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="n">computed</span><span class="p">,</span> <span class="n">no_computed</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="k">lambda</span> <span class="n">tbl</span><span class="p">:</span> <span class="n">tbl</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="s1">'item.is_computed()'</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Tables with computed columns"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">computed</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Tables with without computed columns"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">no_computed</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Will produce next result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">All</span> <span class="n">tables</span> <span class="n">that</span> <span class="n">have</span> <span class="n">column</span> <span class="n">named</span> <span class="s1">'JOB_CODE'</span>
+<span class="n">JOB</span>
+<span class="n">EMPLOYEE</span>
+<span class="n">Order</span> <span class="n">of</span> <span class="n">tables</span>
+<span class="p">[</span><span class="s1">'COUNTRY'</span><span class="p">,</span> <span class="s1">'JOB'</span><span class="p">,</span> <span class="s1">'DEPARTMENT'</span><span class="p">,</span> <span class="s1">'EMPLOYEE'</span><span class="p">,</span> <span class="s1">'CUSTOMER'</span><span class="p">,</span> <span class="s1">'PROJECT'</span><span class="p">,</span> <span class="s1">'EMPLOYEE_PROJECT'</span><span class="p">,</span> <span class="s1">'PROJ_DEPT_BUDGET'</span><span class="p">,</span> <span class="s1">'SALARY_HISTORY'</span><span class="p">,</span> <span class="s1">'SALES'</span><span class="p">]</span>
+<span class="n">Tables</span> <span class="nb">sorted</span> <span class="n">by</span> <span class="n">name</span>
+<span class="p">[</span><span class="s1">'COUNTRY'</span><span class="p">,</span> <span class="s1">'CUSTOMER'</span><span class="p">,</span> <span class="s1">'DEPARTMENT'</span><span class="p">,</span> <span class="s1">'EMPLOYEE'</span><span class="p">,</span> <span class="s1">'EMPLOYEE_PROJECT'</span><span class="p">,</span> <span class="s1">'JOB'</span><span class="p">,</span> <span class="s1">'PROJECT'</span><span class="p">,</span> <span class="s1">'PROJ_DEPT_BUDGET'</span><span class="p">,</span> <span class="s1">'SALARY_HISTORY'</span><span class="p">,</span> <span class="s1">'SALES'</span><span class="p">]</span>
+<span class="n">Tables</span> <span class="nb">sorted</span> <span class="n">by</span> <span class="n">number</span> <span class="n">of</span> <span class="n">columns</span>
+<span class="p">[</span><span class="s1">'COUNTRY'</span><span class="p">,</span> <span class="s1">'EMPLOYEE_PROJECT'</span><span class="p">,</span> <span class="s1">'PROJECT'</span><span class="p">,</span> <span class="s1">'PROJ_DEPT_BUDGET'</span><span class="p">,</span> <span class="s1">'SALARY_HISTORY'</span><span class="p">,</span> <span class="s1">'DEPARTMENT'</span><span class="p">,</span> <span class="s1">'JOB'</span><span class="p">,</span> <span class="s1">'EMPLOYEE'</span><span class="p">,</span> <span class="s1">'CUSTOMER'</span><span class="p">,</span> <span class="s1">'SALES'</span><span class="p">]</span>
+<span class="n">Report</span><span class="p">:</span> <span class="n">Tables</span> <span class="k">with</span> <span class="n">number</span> <span class="n">of</span> <span class="n">columns</span>
+<span class="n">COUNTRY</span>                         <span class="p">:</span><span class="mi">2</span>
+<span class="n">EMPLOYEE_PROJECT</span>                <span class="p">:</span><span class="mi">2</span>
+<span class="n">PROJECT</span>                         <span class="p">:</span><span class="mi">5</span>
+<span class="n">PROJ_DEPT_BUDGET</span>                <span class="p">:</span><span class="mi">5</span>
+<span class="n">SALARY_HISTORY</span>                  <span class="p">:</span><span class="mi">6</span>
+<span class="n">DEPARTMENT</span>                      <span class="p">:</span><span class="mi">7</span>
+<span class="n">JOB</span>                             <span class="p">:</span><span class="mi">8</span>
+<span class="n">EMPLOYEE</span>                        <span class="p">:</span><span class="mi">11</span>
+<span class="n">CUSTOMER</span>                        <span class="p">:</span><span class="mi">12</span>
+<span class="n">SALES</span>                           <span class="p">:</span><span class="mi">13</span>
+<span class="n">Tables</span> <span class="k">with</span> <span class="n">computed</span> <span class="n">columns</span>
+<span class="n">SALARY_HISTORY</span>
+<span class="n">EMPLOYEE</span>
+<span class="n">SALES</span>
+<span class="n">Tables</span> <span class="k">with</span> <span class="n">without</span> <span class="n">computed</span> <span class="n">columns</span>
+<span class="n">COUNTRY</span>
+<span class="n">EMPLOYEE_PROJECT</span>
+<span class="n">PROJECT</span>
+<span class="n">PROJ_DEPT_BUDGET</span>
+<span class="n">DEPARTMENT</span>
+<span class="n">JOB</span>
+<span class="n">CUSTOMER</span>
+</pre></div>
+</div>
+</section>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/SQL operations"></a><section id="sql-operations">
+<span id="id4"></span><h3>SQL operations<a class="headerlink" href="#sql-operations" title="Permalink to this heading">¶</a></h3>
+<p>The schema module doesn’t allow you to change database metadata directly using schema objects. Instead it supports generation of DDL SQL commands from schema objects using <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_sql_for" title="firebird.lib.schema.SchemaItem.get_sql_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schema.SchemaItem.get_sql_for()</span></code></a> method present on all schema objects except Schema itself. DDL commands that could be generated depend on object type and context (for example it’s not possible to generate all DDL commands for system database objects), and list of DDL commands that could be generated for particular schema object could be obtained from its <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.actions" title="firebird.lib.schema.SchemaItem.actions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SchemaItem.actions</span></code></a> attribute.</p>
+<p>Possible <code class="xref py py-obj docutils literal notranslate"><span class="pre">actions</span></code> could be: <code class="xref py py-obj docutils literal notranslate"><span class="pre">create</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">recreate</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">create_or_alter</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">alter</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">drop</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">activate</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">deactivate</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">recompute</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">declare</span></code>. Some actions require/allow additional parameters.</p>
+<table class="colwidths-given docutils align-default" id="id7">
+<caption><span class="caption-text">SQL actions</span><a class="headerlink" href="#id7" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 20%"/>
+<col style="width: 15%"/>
+<col style="width: 15%"/>
+<col style="width: 5%"/>
+<col style="width: 45%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Schema class</p></th>
+<th class="head"><p>Action</p></th>
+<th class="head"><p>Parameter</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Collation" title="firebird.lib.schema.Collation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Collation</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.CharacterSet" title="firebird.lib.schema.CharacterSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CharacterSet</span></code></a></p></td>
+<td><p>alter</p></td>
+<td><p>collation</p></td>
+<td><p>Yes</p></td>
+<td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Collation" title="firebird.lib.schema.Collation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Collation</span></code></a> instance or collation name</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.DatabaseException" title="firebird.lib.schema.DatabaseException"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DatabaseException</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recreate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>alter</p></td>
+<td><p>message</p></td>
+<td><p>Yes</p></td>
+<td><p>string.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>create_or_alter</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Sequence" title="firebird.lib.schema.Sequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sequence</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>alter</p></td>
+<td><p>value</p></td>
+<td><p>Yes</p></td>
+<td><p>integer</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Domain" title="firebird.lib.schema.Domain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Domain</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>alter</p></td>
+<td></td>
+<td></td>
+<td><p>One from next parameters required</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>name</p></td>
+<td><p>No</p></td>
+<td><p>string</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>default</p></td>
+<td><p>No</p></td>
+<td><p>string definition or None to drop default</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>check</p></td>
+<td><p>No</p></td>
+<td><p>string definition or None to drop check</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>datatype</p></td>
+<td><p>No</p></td>
+<td><p>string SQL datatype definition</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Constraint" title="firebird.lib.schema.Constraint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Constraint</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Index" title="firebird.lib.schema.Index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Index</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>activate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>deactivate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recompute</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Table" title="firebird.lib.schema.Table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Table</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>no_pk</p></td>
+<td><p>No</p></td>
+<td><p>Do not generate PK constraint</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>no_unique</p></td>
+<td><p>No</p></td>
+<td><p>Do not generate unique constraints</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recreate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>no_pk</p></td>
+<td><p>No</p></td>
+<td><p>Do not generate PK constraint</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>no_unique</p></td>
+<td><p>No</p></td>
+<td><p>Do not generate unique constraints</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>insert</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>update</p></td>
+<td><p>No</p></td>
+<td><p>When set to True it generates UPDATE OR INSERT. Default False.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>returning</p></td>
+<td><p>No</p></td>
+<td><p>List of column names for RETURNING clause.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>matching</p></td>
+<td><p>No</p></td>
+<td><p>List of column names for MATCHING clause.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.TableColumn" title="firebird.lib.schema.TableColumn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TableColumn</span></code></a></p></td>
+<td><p>alter</p></td>
+<td></td>
+<td></td>
+<td><p>One from next parameters required</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>name</p></td>
+<td><p>No</p></td>
+<td><p>string</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>datatype</p></td>
+<td><p>No</p></td>
+<td><p>string SQL type definition</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>position</p></td>
+<td><p>No</p></td>
+<td><p>integer</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>expression</p></td>
+<td><p>No</p></td>
+<td><p>string with COMPUTED BY expression</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>restart</p></td>
+<td><p>No</p></td>
+<td><p>None or initial value</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.View" title="firebird.lib.schema.View"><code class="xref py py-obj docutils literal notranslate"><span class="pre">View</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recreate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>alter</p></td>
+<td><p>columns</p></td>
+<td><p>No</p></td>
+<td><p>string or list of strings</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>query</p></td>
+<td><p>Yes</p></td>
+<td><p>string</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>check</p></td>
+<td><p>No</p></td>
+<td><p>True for WITH CHECK OPTION clause</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>create_or_alter</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Trigger" title="firebird.lib.schema.Trigger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trigger</span></code></a></p></td>
+<td><p>create</p></td>
+<td><p>inactive</p></td>
+<td><p>No</p></td>
+<td><p>Create inactive trigger</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recreate</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>create_or_alter</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>alter</p></td>
+<td></td>
+<td></td>
+<td><p>Requires parameters for either header or body definition.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>fire_on</p></td>
+<td><p>No</p></td>
+<td><p>string</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>active</p></td>
+<td><p>No</p></td>
+<td><p>bool</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>sequence</p></td>
+<td><p>No</p></td>
+<td><p>integer</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>declare</p></td>
+<td><p>No</p></td>
+<td><p>string or list of strings</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>code</p></td>
+<td><p>No</p></td>
+<td><p>string or list of strings</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Procedure" title="firebird.lib.schema.Procedure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Procedure</span></code></a></p></td>
+<td><p>create</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>True to suppress procedure body from output</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>recreate</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>True to suppress procedure body from output</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>create_or_alter</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>True to suppress procedure body from output</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>alter</p></td>
+<td><p>input</p></td>
+<td><p>No</p></td>
+<td><p>Input parameters</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>output</p></td>
+<td><p>No</p></td>
+<td><p>Output parameters</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>declare</p></td>
+<td><p>No</p></td>
+<td><p>Variable declarations</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>code</p></td>
+<td><p>Yes</p></td>
+<td><p>Procedure code / body</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Role" title="firebird.lib.schema.Role"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Role</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Function" title="firebird.lib.schema.Function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Function</span></code></a></p></td>
+<td><p>declare</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>drop</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>create</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>Generate PSQL function code or not</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>create_or_alter</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>Generate PSQL function code or not</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>recreate</p></td>
+<td><p>no_code</p></td>
+<td><p>No</p></td>
+<td><p>Generate PSQL function code or not</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>alter</p></td>
+<td><p>arguments</p></td>
+<td><p>No</p></td>
+<td><p>Function arguments</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>returns</p></td>
+<td><p>Yes</p></td>
+<td><p>Function return value</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>declare</p></td>
+<td><p>No</p></td>
+<td><p>Variable declarations</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>code</p></td>
+<td><p>Yes</p></td>
+<td><p>PSQL function body / code</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>comment</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.DatabaseFile" title="firebird.lib.schema.DatabaseFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DatabaseFile</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Shadow" title="firebird.lib.schema.Shadow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Shadow</span></code></a></p></td>
+<td><p>create</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>drop</p></td>
+<td><p>preserve</p></td>
+<td><p>No</p></td>
+<td><p>Preserve file or not</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Privilege" title="firebird.lib.schema.Privilege"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Privilege</span></code></a></p></td>
+<td><p>grant</p></td>
+<td><p>grantors</p></td>
+<td><p>No</p></td>
+<td><p>List of grantor names. Generates GRANTED BY clause if grantor is not in list.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>revoke</p></td>
+<td><p>grantors</p></td>
+<td><p>No</p></td>
+<td><p>List of grantor names. Generates GRANTED BY clause if grantor is not in list.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>grant_option</p></td>
+<td><p>No</p></td>
+<td><p>True to get REVOKE of GRANT/ADMIN OPTION only. Raises Error if privilege
+doesn’t have such option.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Package" title="firebird.lib.schema.Package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Package</span></code></a></p></td>
+<td><p>create</p></td>
+<td><p>body</p></td>
+<td><p>No</p></td>
+<td><p>(bool) Generate package body</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>recreate</p></td>
+<td><p>body</p></td>
+<td><p>No</p></td>
+<td><p>(bool) Generate package body</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>create_or_alter</p></td>
+<td><p>body</p></td>
+<td><p>No</p></td>
+<td><p>(bool) Generate package body</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>alter</p></td>
+<td><p>header</p></td>
+<td><p>No</p></td>
+<td><p>(string_or_list) Package header</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>drop</p></td>
+<td><p>body</p></td>
+<td><p>No</p></td>
+<td><p>(bool) Drop only package body</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">fdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'EMPLOYEE'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'create'</span><span class="p">))</span>
+<span class="go">CREATE TABLE EMPLOYEE</span>
+<span class="go">(</span>
+<span class="go">  EMP_NO EMPNO NOT NULL,</span>
+<span class="go">  FIRST_NAME "FIRSTNAME" NOT NULL,</span>
+<span class="go">  LAST_NAME "LASTNAME" NOT NULL,</span>
+<span class="go">  PHONE_EXT VARCHAR(4),</span>
+<span class="go">  HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,</span>
+<span class="go">  DEPT_NO DEPTNO NOT NULL,</span>
+<span class="go">  JOB_CODE JOBCODE NOT NULL,</span>
+<span class="go">  JOB_GRADE JOBGRADE NOT NULL,</span>
+<span class="go">  JOB_COUNTRY COUNTRYNAME NOT NULL,</span>
+<span class="go">  SALARY SALARY NOT NULL,</span>
+<span class="go">  FULL_NAME COMPUTED BY (last_name || ', ' || first_name),</span>
+<span class="go">  PRIMARY KEY (EMP_NO)</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="k">if</span> <span class="s1">'create'</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+<span class="gp">... </span>       <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'create'</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="go">CREATE ASCENDING INDEX NAMEX ON EMPLOYEE (LAST_NAME,FIRST_NAME)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">constraints</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">is_check</span><span class="p">()</span> <span class="ow">or</span> <span class="n">x</span><span class="o">.</span><span class="n">is_fkey</span><span class="p">()]:</span>
+<span class="gp">... </span>   <span class="nb">print</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'create'</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="go">ALTER TABLE EMPLOYEE ADD FOREIGN KEY (DEPT_NO)</span>
+<span class="go">  REFERENCES DEPARTMENT (DEPT_NO)</span>
+<span class="go">ALTER TABLE EMPLOYEE ADD FOREIGN KEY (JOB_CODE,JOB_GRADE,JOB_COUNTRY)</span>
+<span class="go">  REFERENCES JOB (JOB_CODE,JOB_GRADE,JOB_COUNTRY)</span>
+<span class="go">ALTER TABLE EMPLOYEE ADD CHECK ( salary &gt;= (SELECT min_salary FROM job WHERE</span>
+<span class="go">                        job.job_code = employee.job_code AND</span>
+<span class="go">                        job.job_grade = employee.job_grade AND</span>
+<span class="go">                        job.job_country = employee.job_country) AND</span>
+<span class="go">            salary &lt;= (SELECT max_salary FROM job WHERE</span>
+<span class="go">                        job.job_code = employee.job_code AND</span>
+<span class="go">                        job.job_grade = employee.job_grade AND</span>
+<span class="go">                        job.job_country = employee.job_country))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">procedures</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'GET_EMP_PROJ'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'recreate'</span><span class="p">,</span> <span class="n">no_code</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">RECREATE PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)</span>
+<span class="go">RETURNS (PROJ_ID CHAR(5))</span>
+<span class="go">AS</span>
+<span class="go">BEGIN</span>
+<span class="go">  SUSPEND;</span>
+<span class="go">END</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'create_or_alter'</span><span class="p">))</span>
+<span class="go">CREATE OR ALTER PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)</span>
+<span class="go">RETURNS (PROJ_ID CHAR(5))</span>
+<span class="go">AS</span>
+<span class="go">BEGIN</span>
+<span class="go">     FOR SELECT proj_id</span>
+<span class="go">             FROM employee_project</span>
+<span class="go">             WHERE emp_no = :emp_no</span>
+<span class="go">             INTO :proj_id</span>
+<span class="go">     DO</span>
+<span class="go">             SUSPEND;</span>
+<span class="go">END</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'alter'</span><span class="p">,</span><span class="nb">input</span><span class="o">=</span><span class="p">[</span><span class="s1">'In1 INTEGER'</span><span class="p">,</span><span class="s1">'In2 VARCHAR(5)'</span><span class="p">],</span>
+<span class="gp">... </span><span class="n">output</span><span class="o">=</span><span class="s1">'Out1 INETEGER,</span><span class="se">\n</span><span class="s1">Out2 VARCHAR(10)'</span><span class="p">,</span><span class="n">declare</span><span class="o">=</span><span class="p">[</span><span class="s1">'declare variable i integer = 1;'</span><span class="p">],</span>
+<span class="gp">... </span><span class="n">code</span><span class="o">=</span><span class="p">[</span><span class="s1">'/* body */'</span><span class="p">,</span><span class="s1">'Out1 = i'</span><span class="p">,</span><span class="s2">"Out2 = 'Value'"</span><span class="p">]))</span>
+<span class="go">ALTER PROCEDURE GET_EMP_PROJ (</span>
+<span class="go">  In1 INTEGER,</span>
+<span class="go">  In2 VARCHAR(5)</span>
+<span class="go">)</span>
+<span class="go">RETURNS (Out1 INETEGER,</span>
+<span class="go">Out2 VARCHAR(10))</span>
+<span class="go">AS</span>
+<span class="go">  declare variable i integer = 1;</span>
+<span class="go">BEGIN</span>
+<span class="go">  /* body */</span>
+<span class="go">  Out1 = i</span>
+<span class="go">  Out2 = 'Value'</span>
+<span class="go">END</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="working-with-user-privileges">
+<span id="index-7"></span><h2>Working with user privileges<a class="headerlink" href="#working-with-user-privileges" title="Permalink to this heading">¶</a></h2>
+<p>User or database object privileges are part of database metadata accessible through <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema" title="firebird.lib.schema.Schema"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a> class. Each discrete privilege is represented by <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Privilege" title="firebird.lib.schema.Privilege"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Privilege</span></code></a> instance. You can access either <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.privileges" title="firebird.lib.schema.Schema.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all</span></code></a> privileges, or privileges granted for specific
+<a class="reference internal" href="ref-schema.html#firebird.lib.schema.Table.privileges" title="firebird.lib.schema.Table.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">table</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.TableColumn.privileges" title="firebird.lib.schema.TableColumn.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">table</span> <span class="pre">column</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.View.privileges" title="firebird.lib.schema.View.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.ViewColumn.privileges" title="firebird.lib.schema.ViewColumn.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span> <span class="pre">column</span></code></a>, <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Procedure.privileges" title="firebird.lib.schema.Procedure.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">procedure</span></code></a> or <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Role.privileges" title="firebird.lib.schema.Role.privileges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">role</span></code></a>. It’s also possible to get all privileges <a class="reference internal" href="ref-schema.html#firebird.lib.schema.Schema.get_privileges_of" title="firebird.lib.schema.Schema.get_privileges_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">granted</span> <span class="pre">to</span></code></a> specific user, role, procedure, trigger or view.</p>
+<p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.Privilege" title="firebird.lib.schema.Privilege"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Privilege</span></code></a> class supports <a class="reference internal" href="ref-schema.html#firebird.lib.schema.SchemaItem.get_sql_for" title="firebird.lib.schema.SchemaItem.get_sql_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sql_for()</span></code></a> method to generate GRANT and REVOKE SQL statements for given privilege. If you want to generate grant/revoke statements for
+set of privileges (for example all privileges granted on specific object or grated to specific user), it’s more convenient to use function <a class="reference internal" href="ref-schema.html#firebird.lib.schema.get_grants" title="firebird.lib.schema.get_grants"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grants()</span></code></a> that returns list of minimal set of SQL commands required for task.</p>
+<p><strong>Examples:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.lib.schema</span> <span class="kn">import</span> <span class="n">get_grants</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'EMPLOYEE'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">privileges</span><span class="p">:</span>
+<span class="gp">... </span>   <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_sql_for</span><span class="p">(</span><span class="s1">'grant'</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="go">GRANT SELECT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+<span class="go">GRANT INSERT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+<span class="go">GRANT UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+<span class="go">GRANT DELETE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+<span class="go">GRANT REFERENCES ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+<span class="go">GRANT SELECT ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="go">GRANT INSERT ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="go">GRANT UPDATE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="go">GRANT DELETE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="go">GRANT REFERENCES ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">get_grants</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">privileges</span><span class="p">):</span>
+<span class="gp">... </span>   <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="go">GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION</span>
+<span class="go">GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION</span>
+</pre></div>
+</div>
+<p>Normally generated GRANT/REVOKE statements don’t contain grantor’s name. If you want to get GRANT/REVOKE statements including this clause, use <code class="xref py py-obj docutils literal notranslate"><span class="pre">grantors</span></code> parameter for <code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sql_for</span></code> and <a class="reference internal" href="ref-schema.html#firebird.lib.schema.get_grants" title="firebird.lib.schema.get_grants"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grants</span></code></a>. This parameter is a list of grantor names, and GRANTED BY clause is generated <strong>only</strong> for privileges not granted by user from this list. It’s useful to suppress GRANTED BY clause for SYSDBA or database owner.</p>
+</section>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Working with monitoring tables"></a><section id="working-with-monitoring-tables">
+<span id="index-8"></span><span id="id5"></span><h2>Working with monitoring tables<a class="headerlink" href="#working-with-monitoring-tables" title="Permalink to this heading">¶</a></h2>
+<p>The Firebird engine offers a set of “virtual” tables (so-called “monitoring tables”) that provides the user with a snapshot of the current activity within the given database. FDB provides access to this information through set of classes (isolated in separate module <a class="reference internal" href="ref-monitor.html#module-firebird.lib.monitor" title="firebird.lib.monitor: Module for work with Firebird monitoring tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.lib.monitor</span></code></a>) that transform information stored in monitoring tables into set of Python objects that surface the information in meaningful way, and additionally provide set of methods for available operations or checks.</p>
+<p>Like database schema, monitoring tables could be accessed in two different ways, each suitable for different use case:</p>
+<ul class="simple">
+<li><p>By direct creation of <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor" title="firebird.lib.monitor.Monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor</span></code></a> instances that are binded to particular <a class="reference external" href="https://firebird-driver.readthedocs.io/en/latest/ref-core.html#firebird.driver.core.Connection" title="(in firebird-driver v1.5.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection</span></code></a> instance. This method is best if you want to work with monitoring data only occasionally, or you want to keep connections as lightweight as possible.</p></li>
+<li><p>Accessing <a class="reference external" href="https://firebird-driver.readthedocs.io/en/latest/ref-core.html#firebird.driver.core.Connection.monitor" title="(in firebird-driver v1.5.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Connection.monitor</span></code></a> property. This method is more convenient than previous one, and represents a compromise between convenience and resource consumption because <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor" title="firebird.lib.monitor.Monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor</span></code></a> instance is not created until first reference and is managed by connection itself.</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<ol class="arabic simple">
+<li><p>Using Monitor instance:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.lib.monitor</span> <span class="kn">import</span> <span class="n">Monitor</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">monitor</span> <span class="o">=</span> <span class="n">Monitor</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">monitor</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">name</span>
+<span class="go">'/var/lib/firebird/sample/employee.fdb'</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Using Connection.monitor:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">connect</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="s1">'employee'</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">'sysdba'</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">'masterkey'</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">name</span>
+<span class="go">'/var/lib/firebird/sample/employee.fdb'</span>
+</pre></div>
+</div>
+<section id="id6">
+<h3>Available information<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<p>The <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor" title="firebird.lib.monitor.Monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor</span></code></a> provides information about:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.db" title="firebird.lib.monitor.Monitor.db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Database</span></code></a>.</p></li>
+<li><p>Connections &lt;.Monitor.attachments&gt;` to database and <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.this_attachment" title="firebird.lib.monitor.Monitor.this_attachment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current</span></code></a> connection.</p></li>
+<li><p><a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.transactions" title="firebird.lib.monitor.Monitor.transactions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transactions</span></code></a>.</p></li>
+<li><p>Executed <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.statements" title="firebird.lib.monitor.Monitor.statements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SQL</span> <span class="pre">statements</span></code></a>.</p></li>
+<li><p>PSQL <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.callstack" title="firebird.lib.monitor.Monitor.callstack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">callstack</span></code></a>.</p></li>
+<li><p><a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.iostats" title="firebird.lib.monitor.Monitor.iostats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Page</span> <span class="pre">and</span> <span class="pre">row</span> <span class="pre">I/O</span> <span class="pre">statistics</span></code></a>, including memory usage.</p></li>
+<li><p><a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.tablestats" title="firebird.lib.monitor.Monitor.tablestats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Table</span> <span class="pre">I/O</span> <span class="pre">statistics</span></code></a>.</p></li>
+<li><p><a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.variables" title="firebird.lib.monitor.Monitor.variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Context</span> <span class="pre">variables</span></code></a>.</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The monitor module uses enhanced <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/collections.html#firebird.base.collections.DataList" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.base.collections.DataList</span></code></a> list descendant for collections of monitoring information objects. For details, see section <a class="reference internal" href="#enhanced-object-list"><span class="std std-ref">Enhanced list of objects</span></a>.</p>
+</div>
+</section>
+<section id="activity-snapshot">
+<h3>Activity snapshot<a class="headerlink" href="#activity-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>The key term of the monitoring feature is an <code class="xref py py-obj docutils literal notranslate"><span class="pre">activity</span> <span class="pre">snapshot</span></code>. It represents the current state of the database, comprising a variety of information about the database itself, active attachments and users, transactions, prepared and running statements, and more.</p>
+<p>A snapshot is created the first time any of the monitoring information is being accessed from in the given <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor" title="firebird.lib.monitor.Monitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor</span></code></a> instance, or whenever <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.take_snapshot" title="firebird.lib.monitor.Monitor.take_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor.take_snapshot()</span></code></a> is called. All fetched information is preserved until instance is <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.close" title="firebird.lib.monitor.Monitor.close"><code class="xref py py-obj docutils literal notranslate"><span class="pre">closed</span></code></a>, <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.clear" title="firebird.lib.monitor.Monitor.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clared</span></code></a> or new snapshot is <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.take_snapshot" title="firebird.lib.monitor.Monitor.take_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taken</span></code></a>, in order that accessed information is always consistent.</p>
+<p>There are two ways to refresh the snapshot:</p>
+<ol class="arabic simple">
+<li><p>Call <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.clear" title="firebird.lib.monitor.Monitor.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear()</span></code></a> method. New snapshot will be taken on next access to monitoring information.</p></li>
+<li><p>Call <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.take_snapshot" title="firebird.lib.monitor.Monitor.take_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take_snapshot()</span></code></a> method to take the new snapshot immediately.</p></li>
+</ol>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>In both cases, any instances of information objects your application may hold would be obsolete. Using them may result in error, or (more likely) provide outdated information.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Individual monitoring information (i.e. information about <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.attachments" title="firebird.lib.monitor.Monitor.attachments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connections</span></code></a>, <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.transactions" title="firebird.lib.monitor.Monitor.transactions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transactions</span></code></a> etc.) is loaded from activity snapshot on first access and cached for further reference until it’s <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.clear" title="firebird.lib.monitor.Monitor.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clared</span></code></a> or new snapshot is <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.take_snapshot" title="firebird.lib.monitor.Monitor.take_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taken</span></code></a>.</p>
+<p>Because once loaded information is cached, it’s good to <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.clear" title="firebird.lib.monitor.Monitor.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code></a> it when it’s no longer needed to conserve memory.</p>
+</div>
+</section>
+<section id="i-o-statistics">
+<h3>I/O statistics<a class="headerlink" href="#i-o-statistics" title="Permalink to this heading">¶</a></h3>
+<p>Page &amp; row I/O statistics (as <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.IOStatsInfo" title="firebird.lib.monitor.IOStatsInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IOStatsInfo</span></code></a> instances) and table I/O statistics (as <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.TableStatsInfo" title="firebird.lib.monitor.TableStatsInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TableStatsInfo</span></code></a> instances) could be accessed in two different ways:</p>
+<ol class="arabic simple">
+<li><p>Properties <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.iostats" title="firebird.lib.monitor.Monitor.iostats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor.iostats</span></code></a> and <a class="reference internal" href="ref-monitor.html#firebird.lib.monitor.Monitor.tablestats" title="firebird.lib.monitor.Monitor.tablestats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor.tablestats</span></code></a> provide access to <strong>all</strong> information collected in
+current activity snapshot.</p></li>
+<li><p>Where applicable, the individual information item classes have their own <code class="xref py py-obj docutils literal notranslate"><span class="pre">iostats</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">tablestats</span></code> properties that provide access only to I/O statistics related to this particular object.</p></li>
+</ol>
+</section>
+</section>
+<section id="processing-output-from-gstat-utility">
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Processing output from gstat utility"></a><span id="processing-gstat-output"></span><span id="index-9"></span><h2>Processing output from gstat utility<a class="headerlink" href="#processing-output-from-gstat-utility" title="Permalink to this heading">¶</a></h2>
+<p>The GSTAT utility analyzes low-level database structures and produces textual reports, that could be used to evaluate efficiency of the database or diagnose various storage-related problems. However, these reports are not well-suited for machine processing. The <a class="reference internal" href="ref-gstat.html#module-firebird.lib.gstat" title="firebird.lib.gstat: Module for work with Firebird gstat output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gstat</span></code></a> module provides <a class="reference internal" href="ref-gstat.html#firebird.lib.gstat.StatDatabase" title="firebird.lib.gstat.StatDatabase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatDatabase</span></code></a> class that parses gstat reports into set of Python objects suitable for further processing.</p>
+<section id="parsing-gstat-output">
+<h3>Parsing gstat output<a class="headerlink" href="#parsing-gstat-output" title="Permalink to this heading">¶</a></h3>
+<p>There are two methods how to parse the gstat output:</p>
+<ol class="arabic">
+<li><p>Using <a class="reference internal" href="ref-gstat.html#firebird.lib.gstat.StatDatabase.parse" title="firebird.lib.gstat.StatDatabase.parse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse()</span></code></a> method that takes an iterable that return lines from database analysis produced by Firebird gstat. The source could be for example open file, list of strings, or generator expression yielding these lines.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.gstat</span> <span class="kn">import</span> <span class="n">StatDatabase</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">StatDatabase</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using <a class="reference internal" href="ref-gstat.html#firebird.lib.gstat.StatDatabase.push" title="firebird.lib.gstat.StatDatabase.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> to pass gstat report line by line, in a loop. When all lines are stored, it’s necessary to call <a class="reference internal" href="ref-gstat.html#firebird.lib.gstat.StatDatabase.push" title="firebird.lib.gstat.StatDatabase.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> with <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/types.html#firebird.base.types.STOP" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STOP</span></code></a> sentinel to indicate the end of processing.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.gstat</span> <span class="kn">import</span> <span class="n">StatDatabase</span>
+<span class="kn">from</span> <span class="nn">firebird.base.type</span> <span class="kn">import</span> <span class="n">STOP</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">StatDatabase</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="n">db</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">STOP</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>When gstat report is fully parsed, you can start processing the information stored in <a class="reference internal" href="ref-gstat.html#firebird.lib.gstat.StatDatabase" title="firebird.lib.gstat.StatDatabase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatDatabase</span></code></a> instance.</p>
+</section>
+</section>
+<section id="processing-firebird-server-log">
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Processing Firebird server log"></a><span id="processing-firebrid-log"></span><span id="index-10"></span><h2>Processing Firebird server log<a class="headerlink" href="#processing-firebird-server-log" title="Permalink to this heading">¶</a></h2>
+<p>The Firebird server log contains vital information about errors, warnings or other important events in Firebird engine. However, this log is not well-suited for machine processing, as individual entries may have different number of lines and also the event message format is not uniform. The <a class="reference internal" href="ref-log.html#module-firebird.lib.log" title="firebird.lib.log: Module for parsing Firebird server log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log</span></code></a> module provides <a class="reference internal" href="ref-log.html#firebird.lib.log.LogParser" title="firebird.lib.log.LogParser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogParser</span></code></a> class that parses Firebird server log into series of <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage" title="firebird.lib.log.LogMessage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogMessage</span></code></a> <a class="reference external" href="https://docs.python.org/3/library/dataclasses.html#dataclasses.dataclass" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataclass</span></code></a> objects.</p>
+<section id="parsing-the-log">
+<h3>Parsing the log<a class="headerlink" href="#parsing-the-log" title="Permalink to this heading">¶</a></h3>
+<p>There are three methods how to parse the Firebird server log:</p>
+<ol class="arabic">
+<li><p>Using <a class="reference internal" href="ref-log.html#firebird.lib.log.LogParser.parse" title="firebird.lib.log.LogParser.parse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse()</span></code></a> method that takes an iterable that return lines from Firebird server log. The source could be for example open file, list of strings, or generator expression yielding these lines. This method yields <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage" title="firebird.lib.log.LogMessage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogMessage</span></code></a> instances. These instances contain information about <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.origin" title="firebird.lib.log.LogMessage.origin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">origin</span></code></a>, <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.timestamp" title="firebird.lib.log.LogMessage.timestamp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">timestamp</span></code></a>, severity <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.level" title="firebird.lib.log.LogMessage.level"><code class="xref py py-obj docutils literal notranslate"><span class="pre">level</span></code></a>, unique event <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.code" title="firebird.lib.log.LogMessage.code"><code class="xref py py-obj docutils literal notranslate"><span class="pre">code</span></code></a>,  server <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.facility" title="firebird.lib.log.LogMessage.facility"><code class="xref py py-obj docutils literal notranslate"><span class="pre">facility</span></code></a>,  <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.message" title="firebird.lib.log.LogMessage.message"><code class="xref py py-obj docutils literal notranslate"><span class="pre">message</span></code></a> and additional <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage.params" title="firebird.lib.log.LogMessage.params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">params</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.log</span> <span class="kn">import</span> <span class="n">LogParser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">LogParser</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using <a class="reference internal" href="ref-log.html#firebird.lib.log.LogParser.parse_entry" title="firebird.lib.log.LogParser.parse_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_entry()</span></code></a> method that takes list of lines consisting <strong>single</strong> log entry, and returns it as single <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage" title="firebird.lib.log.LogMessage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogMessage</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.log</span> <span class="kn">import</span> <span class="n">LogParser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">LogParser</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_entry</span><span class="p">(</span><span class="n">entry_lines</span><span class="p">)))</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using <a class="reference internal" href="ref-log.html#firebird.lib.log.LogParser.push" title="firebird.lib.log.LogParser.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> to pass server log line by line, in a loop. When last line is stored, it’s necessary to call <a class="reference internal" href="ref-log.html#firebird.lib.log.LogParser.push" title="firebird.lib.log.LogParser.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> with <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/types.html#firebird.base.types.STOP" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STOP</span></code></a> sentinel to indicate the end of processing. This method returns either <a class="reference internal" href="ref-log.html#firebird.lib.log.LogMessage" title="firebird.lib.log.LogMessage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogMessage</span></code></a>, or None if lines accumulated so far does not contain whole log entry.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.log</span> <span class="kn">import</span> <span class="n">LogParser</span>
+<span class="kn">from</span> <span class="nn">firebird.base.type</span> <span class="kn">import</span> <span class="n">STOP</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">LogParser</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">event</span> <span class="o">:=</span> <span class="n">parser</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">event</span> <span class="o">:=</span> <span class="n">parser</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">STOP</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="processing-output-from-firebird-server-trace-sessions">
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Processing output from Firebird server trace sessions"></a><span id="processing-firebrid-trace"></span><span id="index-11"></span><h2>Processing output from Firebird server trace sessions<a class="headerlink" href="#processing-output-from-firebird-server-trace-sessions" title="Permalink to this heading">¶</a></h2>
+<p>The Firebird trace &amp; audit sessions are important tool to diagnose wide rande of problems (for example to identify slow queries, unused indices, problems with transactions etc.). However, this the output from trace session is quite verbose textual output not well-suited for machine processing, as individual entries have different number of lines and also the event format is not uniform. The <a class="reference internal" href="ref-trace.html#module-firebird.lib.trace" title="firebird.lib.trace: Module for parsing Firebird trace &amp; audit protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a> module provides <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser" title="firebird.lib.trace.TraceParser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceParser</span></code></a> class that parses output from Firebird trace session into series of <a class="reference external" href="https://docs.python.org/3/library/dataclasses.html#dataclasses.dataclass" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataclass</span></code></a> objects containing information about individual events.</p>
+<section id="parsing-the-output-from-trace-session">
+<h3>Parsing the output from trace session<a class="headerlink" href="#parsing-the-output-from-trace-session" title="Permalink to this heading">¶</a></h3>
+<p>There are three methods how to parse the Firebird trace session log:</p>
+<ol class="arabic">
+<li><p>Using <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser.parse" title="firebird.lib.trace.TraceParser.parse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse()</span></code></a> method that takes an iterable that return lines produced by Firebird trace session. The source could be for example open file, list of strings, or generator expression yielding these lines from service. This method yields instances of dataclasses that descend from <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceInfo" title="firebird.lib.trace.TraceInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceInfo</span></code></a> or <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceEvent" title="firebird.lib.trace.TraceEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceEvent</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.trace</span> <span class="kn">import</span> <span class="n">TraceParser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">TraceParser</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser.parse_event" title="firebird.lib.trace.TraceParser.parse_event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_event()</span></code></a> method that takes list of lines consisting <strong>single</strong> trace event, and returns single <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceEvent" title="firebird.lib.trace.TraceEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceEvent</span></code></a> instance. However, this method may also produce <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceInfo" title="firebird.lib.trace.TraceInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceInfo</span></code></a> instances that relate to tre returned entry, which must be retrieved with <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser.retrieve_info" title="firebird.lib.trace.TraceParser.retrieve_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">retrieve_info()</span></code></a> call.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.trace</span> <span class="kn">import</span> <span class="n">TraceParser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">TraceParser</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_event</span><span class="p">(</span><span class="n">event_lines</span><span class="p">)))</span>
+<span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">parser</span><span class="o">.</span><span class="n">retrieve_info</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser.push" title="firebird.lib.trace.TraceParser.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> to pass trace session line by line, in a loop. When last line is stored, it’s necessary to call <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceParser.push" title="firebird.lib.trace.TraceParser.push"><code class="xref py py-obj docutils literal notranslate"><span class="pre">push()</span></code></a> with <a class="reference external" href="https://firebird-base.readthedocs.io/en/latest/types.html#firebird.base.types.STOP" title="(in Firebird-base v1.4.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STOP</span></code></a> sentinel to indicate the end of processing. This method returns either a list of <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceInfo" title="firebird.lib.trace.TraceInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceInfo</span></code></a> / <a class="reference internal" href="ref-trace.html#firebird.lib.trace.TraceEvent" title="firebird.lib.trace.TraceEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TraceEvent</span></code></a> instances, or None if lines accumulated so far does not contain whole trace event.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebird.lib.trace</span> <span class="kn">import</span> <span class="n">TraceParser</span>
+<span class="kn">from</span> <span class="nn">firebird.base.type</span> <span class="kn">import</span> <span class="n">STOP</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">LogParser</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">events</span> <span class="o">:=</span> <span class="n">parser</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">events</span> <span class="o">:=</span> <span class="n">parser</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">STOP</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+</section>
+</div>
+</div>
+</div>
+<footer class="footer">
+<div class="container">
+<p class="pull-right">
+<a href="#">Back to top</a>
+</p>
+<p>
+        © Copyright 2020-2022, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.2.<br/>
+</p>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1180 @@
+
+===========
+Usage Guide
+===========
+
+.. currentModule:: firebird.lib
+
+The `firebird-lib` package provides extensions to the `firebird-driver`_ - an official Python driver for the open source relational database `Firebird`_ ®. While the `firebird-driver` package provides the Python DB API 2.0 compliant interface to the Firebird RDBMS, the `firebird-lib` contains higher level modules to work with various information and data structures provided by Firebird.
+
+This package provides next modules:
+
+- `schema` - for work with Firebird :ref:`database schema <working-with-database-schema>` stored in system tables.
+- `monitor` - for work with Firebird :ref:`monitoring tables <working-with-monitoring-tables>`.
+- `gstat` - for processing output from :ref:`gstat Firebird utility <processing-gstat-output>`.
+- `log` - for processing Firebird :ref:`server log <processing-firebrid-log>`.
+- `trace` - Processing output from Firebird server :ref:`trace & audit sessions <processing-firebrid-trace>`.
+
+.. currentModule:: firebird.lib.schema
+
+.. index::
+   pair: database schema; working with
+
+.. _working-with-database-schema:
+
+Working with database schema
+============================
+
+Description of database objects like tables, views, stored procedures, triggers or UDF functions that represent database schema is stored in set of system tables present in every database. Firebird users can query these tables to get information about these objects and their relations. But querying system tables is inconvenient, as it requires good knowledge how this information is structured and requires significant amount of Python code. Changes in system tables between Firebird versions further add to this complexity. The `firebird.lib.schema` module provides set of classes that transform information stored in system tables into set of Python objects that surface the vital information in meaningful way, and additionally provide set of methods for most commonly used operations or checks.
+
+Database schema could be accessed in two different ways, each suitable for different use case:
+
+- By direct creation of `.Schema` instances that are then `binded <firebird.lib.schema.Schema.bind>` to particular `~firebird.driver.core.Connection` instance. This method is best if you want to work with schema only occasionally, or you want to keep connections as lightweight as possible.
+- Accessing `Connection.schema <firebird.driver.core.Connection.schema>` property. This method is more convenient than previous one, and represents a compromise between convenience and resource consumption because `.Schema` instance is not created until first reference and is managed by connection itself. Individual metadata objects are not loaded from system tables until first reference.
+
+**Examples:**
+
+1. Using Schema instance:
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> from firebird.lib.schema import Schema
+   >>> with connect('employee', user='sysdba', password='masterkey') as con:
+   >>>     schema = Schema()
+   >>>     schema.bind(con)
+   >>>     print([t.name for t in schema.tables])
+   ['COUNTRY', 'JOB', 'DEPARTMENT', 'EMPLOYEE', 'CUSTOMER', 'PROJECT', 'EMPLOYEE_PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']
+
+2. Using Connection.schema:
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> with connect('employee', user='sysdba', password='masterkey') as con:
+   >>>     print([t.name for t in con.schema.tables])
+   ['COUNTRY', 'JOB', 'DEPARTMENT', 'EMPLOYEE', 'CUSTOMER', 'PROJECT', 'EMPLOYEE_PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']
+
+.. important::
+
+   The `Connection.schema` property will raise an exception on access if `firebird-lib` package is not installed.
+   While firebird-lib sets the dependency on `firebird-driver`_ package, the `firebird-driver`_ does not sets (symetric) dependency on `firebird-lib`. It means that installing the driver itself will not automatically install the firebird-lib package, while installing the library will ensure that the driver is also installed.
+
+.. note::
+
+   Individual metadata information (i.e. information about `domains <firebird.lib.schema.Schema.domains>`, `tables <firebird.lib.schema.Schema.tables>` etc.) are loaded on first access and cached for further reference until it's `clared <firebird.lib.schema.Schema.clear>` or `reload <firebird.lib.schema.Schema.reload>` is
+   requested.
+
+   Because once loaded information is cached, it's good to `clear <firebird.lib.schema.Schema.clear>` it
+   when it's no longer needed to conserve memory.
+
+.. index::
+   pair: Database schema; categories
+
+Available information
+---------------------
+
+The `.Schema` provides information about:
+
+- **Database:** `Owner name <.Schema.owner_name>`,
+  `default character set <.Schema.default_character_set>`,
+  `description <.Schema.description>`,
+  `security class <.Schema.security_class>`, `linger option <.Schema.linger>` and whether database consist
+  from `single or multiple files <.Schema.is_multifile>`.
+- **Facilities:** Available `character sets <.Schema.character_sets>`,
+  `collations <.Schema.collations>`, BLOB `filters <.Schema.filters>`, database `files <.Schema.files>` and
+  `shadows <.Schema.shadows>`.
+- **User database objects:** `exceptions <.Schema.exceptions>`,
+  `generators <.Schema.generators>`, `domains <.Schema.domains>`,
+  `tables <.Schema.tables>` and their `constraints <.Schema.constraints>`,
+  `indices <.Schema.indices>`, `views <.Schema.views>`,
+  `triggers <.Schema.triggers>`, `procedures <.Schema.procedures>`,
+  user `roles <.Schema.roles>`, `user defined functions <.Schema.functions>` and `packages <.Schema.packages>`.
+- **System database objects:** `generators <.Schema.sys_generators>`,
+  `domains <.Schema.sys_domains>`, `tables <.Schema.sys_tables>` and their
+  constraints,  `indices <.Schema.sys_indices>`, `views <.Schema.sys_views>`,
+  `triggers <.Schema.sys_triggers>`, `procedures <.Schema.sys_procedures>`, `functions <.Schema.sys_functions>` and `backup history <.Schema.backup_history>`.
+- **Relations between objects:** Through direct links between metadata objects and
+  `dependencies <.Schema.dependencies>`.
+- **Privileges:** `All <.Schema.privileges>` privileges, or privileges granted for specific
+  `table <.Table.privileges>`, `table column <.TableColumn.privileges>`,
+  `view <.View.privileges>`, `view column <.ViewColumn.privileges>`,
+  `procedure <.Procedure.privileges>` or `role <.Role.privileges>`. It's also
+  possible to get all privileges `granted to <.Schema.get_privileges_of>` specific user, role,
+  procedure, trigger or view.
+
+.. index::
+   pair: Database schema; metadata objects
+
+Metadata objects
+----------------
+
+Schema information is presented as Python objects of various classes with common parent class `.SchemaItem` (except `.Schema` itself), that defines several common attributes and methods:
+
+**Attributes:**
+
+- `~.SchemaItem.name`: Name of database object or None if object doesn't have a name.
+- `~.SchemaItem.description`: Description (documentation text) for object or None if object doesn't have a description.
+- `~.SchemaItem.actions`: List of supported SQL operations on schema object instance.
+
+**Methods:**
+
+- `~.Visitable.accept()`: :ref:`Visitor Pattern support <visitor-pattern-support>`.
+- `~.SchemaItem.is_sys_object()`: Returns True if this database object is system object.
+- `~.SchemaItem.get_quoted_name()`: Returns quoted (if necessary) name of database object.
+- `~.SchemaItem.get_dependents()`: Returns list of all database objects that :ref:`depend <object-dependencies>` on this one.
+- `~.SchemaItem.get_dependencies()`: Returns list of database objects that this object :ref:`depend <object-dependencies>` on.
+- `~.SchemaItem.get_sql_for()`: Returns :ref:`SQL command string <sql-operations>` for specified action on database object.
+
+There are next schema objects: `.Collation`, `.CharacterSet`, `.DatabaseException`, `.Sequence` (Generator), `.Domain`, `.Index`, `.Table`, `.TableColumn`, `.Constraint`, `.View`, `.ViewColumn`, `.Trigger`, `.Procedure`, `.ProcedureParameter`, `.Function`, `.FunctionArgument`, `.Role`, `.Dependency`, `.DatabaseFile`, `.Shadow`, `.Package`, `.Filter`, `.BackupHistory` and `.Privilege`.
+
+.. index::
+   pair: visitor pattern; usage
+   pair: Database schema; visitor pattern
+
+.. _visitor-pattern-support:
+
+Visitor Pattern support
+-----------------------
+
+`Visitor Pattern`_ is particularly useful when you need to process various objects that need special handling in common algorithm (for example display information about them or generate SQL commands to create them in new database). Each metadata objects (including `.Schema`) descend from `.Visitable` class and thus support `~.Visitable.accept()` method that calls visitor's `.Visitor.visit()` method. This method dispatch calls to specific class-handling method or `.Visitor.default_action()` if there is no such special class-handling method defined in your visitor class. Special class-handling methods must have a name that follows *visit_<class_name>* pattern, for example method that should handle `.Table` (or its descendants) objects must be named as *visit_Table*.
+
+.. index::
+   pair: visitor pattern; example
+
+Next code uses visitor pattern to print all DROP SQL statements necessary to drop database object, taking its dependencies into account, i.e. it could be necessary to first drop other - dependent objects before it could be dropped.
+
+.. code-block:: python
+
+   from firebird.driver import connect
+   from firebird.lib.schema import Visitor
+
+   # Object dropper
+   class ObjectDropper(Visitor):
+       def __init__(self):
+           self.seen = []
+       def drop(self, obj):
+           self.seen = []
+           obj.accept(self) # You can call self.visit(obj) directly here as well
+       def default_action(self, obj):
+           if not obj.is_sys_object() and 'drop' in obj.actions:
+               for dependency in obj.get_dependents():
+                   d = dependency.dependent
+                   if d and d not in self.seen:
+                       d.accept(self)
+               if obj not in self.seen:
+                   print(obj.get_sql_for('drop'))
+                   self.seen.append(obj)
+       def visit_TableColumn(self, column):
+           column.table.accept(self)
+       def visit_ViewColumn(self, column):
+           column.view.accept(self)
+       def visit_ProcedureParameter(self, param):
+           param.procedure.accept(self)
+       def visit_FunctionArgument(self, arg):
+           arg.function.accept(self)
+
+   # Sample use:
+
+   with connect('employee',user='sysdba', password='masterkey') as con:
+       table = con.schema.tables.get('JOB')
+       dropper = ObjectDropper()
+       dropper.drop(table)
+
+Will produce next result::
+
+   DROP PROCEDURE ALL_LANGS
+   DROP PROCEDURE SHOW_LANGS
+   DROP TABLE JOB
+
+.. _object-dependencies:
+
+.. index::
+   pair: dependencies; working with
+   pair: Database schema; dependencies
+
+Object dependencies
+-------------------
+
+Close relations between metadata object like `ownership` (Table vs. TableColumn, Index or Trigger) or `cooperation` (like FK Index vs. partner UQ/PK Index) are defined directly using properties of particular schema objects. Besides close relations Firebird also uses `dependencies`, that describe functional dependency between otherwise independent metadata objects. For example stored procedure can call other stored procedures, define its parameters using domains or work with tables or views. Removing or changing these objects may/will cause the procedure to stop working correctly, so Firebird tracks these dependencies. Schema module surfaces these dependencies as `.Dependency` schema objects, and all schema objects have `~.SchemaItem.get_dependents()` and `~.SchemaItem.get_dependencies()` methods to get list of `~.Dependency` instances that describe these dependencies.
+
+`.Dependency` object provides names and types of dependent/depended on database objects, and access to their respective schema Python objects as well.
+
+.. _enhanced-object-list:
+
+.. index::
+   pair: list; enhanced
+
+Enhanced list of objects
+------------------------
+
+Whenever possible, schema module uses enhanced `firebird.base.collections.DataList` list descendant for collections of metadata objects. This enhanced list provides several convenient methods for advanced list processing:
+
+- filtering - :meth:`~firebird.base.collections.BaseObjectCollection.filter()` and :meth:`~firebird.base.collections.BaseObjectCollection.filterfalse()`
+- sorting - :meth:`~firebird.base.collections.DataList.sort()`
+- finding - :meth:`~firebird.base.collections.BaseObjectCollection.find()`
+- extracting/splitting - :meth:`~firebird.base.collections.DataList.extract()` and :meth:`~firebird.base.collections.DataList.split()`
+- testing - :meth:`~firebird.base.collections.BaseObjectCollection.contains()`, :meth:`~firebird.base.collections.BaseObjectCollection.all()` and :meth:`~firebird.base.collections.BaseObjectCollection.any()`
+- reporting - :meth:`~firebird.base.collections.BaseObjectCollection.occurrence()` and :meth:`~firebird.base.collections.BaseObjectCollection.report()`
+- fast key access - `~firebird.base.collections.DataList.key_expr`, `~firebird.base.collections.DataList.frozen`, :meth:`~firebird.base.collections.DataList.freeze()` and :meth:`~firebird.base.collections.DataList.get()`
+
+.. important:: Schema module uses `~firebird.base.collections.DataList.frozen` DataLists for fast access to individual list items using their `~.SchemaItem.name` as a key.
+
+**Examples:**
+
+.. code-block:: python
+
+   with connect('employee',user='sysdba',password='masterkey') as con:
+
+       print("All tables that have column named 'JOB_CODE'")
+       for table in con.schema.tables.filter(lambda tbl: tbl.columns.any("item.name=='JOB_CODE'")):
+           print(table.name)
+
+       print("Order of tables")
+       print([i.name for i in con.schema.tables])
+
+       print("Tables sorted by name")
+       con.schema.tables.sort(attrs=['name'])
+       print([i.name for i in con.schema.tables])
+
+       print("Tables sorted by number of columns")
+       con.schema.tables.sort(expr='len(item.columns)')
+       print([i.name for i in con.schema.tables])
+
+       print("Report: Tables with number of columns")
+       for table_name, num_columns in con.schema.tables.report('item.name', 'len(item.columns)'):
+           print(f'{table_name:32}:{num_columns}')
+
+       computed, no_computed = con.schema.tables.split(lambda tbl: tbl.columns.any('item.is_computed()'))
+       print("Tables with computed columns")
+       for table in computed:
+           print(table.name)
+       print("Tables with without computed columns")
+       for table in no_computed:
+           print(table.name)
+
+Will produce next result::
+
+   All tables that have column named 'JOB_CODE'
+   JOB
+   EMPLOYEE
+   Order of tables
+   ['COUNTRY', 'JOB', 'DEPARTMENT', 'EMPLOYEE', 'CUSTOMER', 'PROJECT', 'EMPLOYEE_PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']
+   Tables sorted by name
+   ['COUNTRY', 'CUSTOMER', 'DEPARTMENT', 'EMPLOYEE', 'EMPLOYEE_PROJECT', 'JOB', 'PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'SALES']
+   Tables sorted by number of columns
+   ['COUNTRY', 'EMPLOYEE_PROJECT', 'PROJECT', 'PROJ_DEPT_BUDGET', 'SALARY_HISTORY', 'DEPARTMENT', 'JOB', 'EMPLOYEE', 'CUSTOMER', 'SALES']
+   Report: Tables with number of columns
+   COUNTRY                         :2
+   EMPLOYEE_PROJECT                :2
+   PROJECT                         :5
+   PROJ_DEPT_BUDGET                :5
+   SALARY_HISTORY                  :6
+   DEPARTMENT                      :7
+   JOB                             :8
+   EMPLOYEE                        :11
+   CUSTOMER                        :12
+   SALES                           :13
+   Tables with computed columns
+   SALARY_HISTORY
+   EMPLOYEE
+   SALES
+   Tables with without computed columns
+   COUNTRY
+   EMPLOYEE_PROJECT
+   PROJECT
+   PROJ_DEPT_BUDGET
+   DEPARTMENT
+   JOB
+   CUSTOMER
+
+.. _sql-operations:
+
+SQL operations
+--------------
+
+The schema module doesn't allow you to change database metadata directly using schema objects. Instead it supports generation of DDL SQL commands from schema objects using `.schema.SchemaItem.get_sql_for()` method present on all schema objects except Schema itself. DDL commands that could be generated depend on object type and context (for example it's not possible to generate all DDL commands for system database objects), and list of DDL commands that could be generated for particular schema object could be obtained from its `.SchemaItem.actions` attribute.
+
+Possible `actions` could be: `create`, `recreate`, `create_or_alter`, `alter`, `drop`, `activate`, `deactivate`, `recompute` and `declare`. Some actions require/allow additional parameters.
+
+.. list-table:: SQL actions
+   :widths: 20 15 15 5 45
+   :header-rows: 1
+
+   * - Schema class
+     - Action
+     - Parameter
+     - Required
+     - Description
+   * - `.Collation`
+     - create
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.CharacterSet`
+     - alter
+     - collation
+     - Yes
+     - `.Collation` instance or collation name
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.DatabaseException`
+     - create
+     -
+     -
+     -
+   * -
+     - recreate
+     -
+     -
+     -
+   * -
+     - alter
+     - message
+     - Yes
+     - string.
+   * -
+     - create_or_alter
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Sequence`
+     - create
+     -
+     -
+     -
+   * -
+     - alter
+     - value
+     - Yes
+     - integer
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Domain`
+     - create
+     -
+     -
+     -
+   * -
+     - alter
+     -
+     -
+     - One from next parameters required
+   * -
+     -
+     - name
+     - No
+     - string
+   * -
+     -
+     - default
+     - No
+     - string definition or None to drop default
+   * -
+     -
+     - check
+     - No
+     - string definition or None to drop check
+   * -
+     -
+     - datatype
+     - No
+     - string SQL datatype definition
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Constraint`
+     - create
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * - `.Index`
+     - create
+     -
+     -
+     -
+   * -
+     - activate
+     -
+     -
+     -
+   * -
+     - deactivate
+     -
+     -
+     -
+   * -
+     - recompute
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Table`
+     - create
+     -
+     -
+     -
+   * -
+     -
+     - no_pk
+     - No
+     - Do not generate PK constraint
+   * -
+     -
+     - no_unique
+     - No
+     - Do not generate unique constraints
+   * -
+     - recreate
+     -
+     -
+     -
+   * -
+     -
+     - no_pk
+     - No
+     - Do not generate PK constraint
+   * -
+     -
+     - no_unique
+     - No
+     - Do not generate unique constraints
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * -
+     - insert
+     -
+     -
+     -
+   * -
+     -
+     - update
+     - No
+     - When set to True it generates UPDATE OR INSERT. Default False.
+   * -
+     -
+     - returning
+     - No
+     - List of column names for RETURNING clause.
+   * -
+     -
+     - matching
+     - No
+     - List of column names for MATCHING clause.
+   * - `.TableColumn`
+     - alter
+     -
+     -
+     - One from next parameters required
+   * -
+     -
+     - name
+     - No
+     - string
+   * -
+     -
+     - datatype
+     - No
+     - string SQL type definition
+   * -
+     -
+     - position
+     - No
+     - integer
+   * -
+     -
+     - expression
+     - No
+     - string with COMPUTED BY expression
+   * -
+     -
+     - restart
+     - No
+     - None or initial value
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.View`
+     - create
+     -
+     -
+     -
+   * -
+     - recreate
+     -
+     -
+     -
+   * -
+     - alter
+     - columns
+     - No
+     - string or list of strings
+   * -
+     -
+     - query
+     - Yes
+     - string
+   * -
+     -
+     - check
+     - No
+     - True for WITH CHECK OPTION clause
+   * -
+     - create_or_alter
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Trigger`
+     - create
+     - inactive
+     - No
+     - Create inactive trigger
+   * -
+     - recreate
+     -
+     -
+     -
+   * -
+     - create_or_alter
+     -
+     -
+     -
+   * -
+     - alter
+     -
+     -
+     - Requires parameters for either header or body definition.
+   * -
+     -
+     - fire_on
+     - No
+     - string
+   * -
+     -
+     - active
+     - No
+     - bool
+   * -
+     -
+     - sequence
+     - No
+     - integer
+   * -
+     -
+     - declare
+     - No
+     - string or list of strings
+   * -
+     -
+     - code
+     - No
+     - string or list of strings
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Procedure`
+     - create
+     - no_code
+     - No
+     - True to suppress procedure body from output
+   * -
+     - recreate
+     - no_code
+     - No
+     - True to suppress procedure body from output
+   * -
+     - create_or_alter
+     - no_code
+     - No
+     - True to suppress procedure body from output
+   * -
+     - alter
+     - input
+     - No
+     - Input parameters
+   * -
+     -
+     - output
+     - No
+     - Output parameters
+   * -
+     -
+     - declare
+     - No
+     - Variable declarations
+   * -
+     -
+     - code
+     - Yes
+     - Procedure code / body
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Role`
+     - create
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.Function`
+     - declare
+     -
+     -
+     -
+   * -
+     - drop
+     -
+     -
+     -
+   * -
+     - create
+     - no_code
+     - No
+     - Generate PSQL function code or not
+   * -
+     - create_or_alter
+     - no_code
+     - No
+     - Generate PSQL function code or not
+   * -
+     - recreate
+     - no_code
+     - No
+     - Generate PSQL function code or not
+   * -
+     - alter
+     - arguments
+     - No
+     - Function arguments
+   * -
+     -
+     - returns
+     - Yes
+     - Function return value
+   * -
+     -
+     - declare
+     - No
+     - Variable declarations
+   * -
+     -
+     - code
+     - Yes
+     - PSQL function body / code
+   * -
+     - comment
+     -
+     -
+     -
+   * - `.DatabaseFile`
+     - create
+     -
+     -
+     -
+   * - `.Shadow`
+     - create
+     -
+     -
+     -
+   * -
+     - drop
+     - preserve
+     - No
+     - Preserve file or not
+   * - `.Privilege`
+     - grant
+     - grantors
+     - No
+     - List of grantor names. Generates GRANTED BY clause if grantor is not in list.
+   * -
+     - revoke
+     - grantors
+     - No
+     - List of grantor names. Generates GRANTED BY clause if grantor is not in list.
+   * -
+     -
+     - grant_option
+     - No
+     - True to get REVOKE of GRANT/ADMIN OPTION only. Raises Error if privilege
+       doesn't have such option.
+   * - `.Package`
+     - create
+     - body
+     - No
+     - (bool) Generate package body
+   * -
+     - recreate
+     - body
+     - No
+     - (bool) Generate package body
+   * -
+     - create_or_alter
+     - body
+     - No
+     - (bool) Generate package body
+   * -
+     - alter
+     - header
+     - No
+     - (string_or_list) Package header
+   * -
+     - drop
+     - body
+     - No
+     - (bool) Drop only package body
+
+**Examples:**
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> con = fdb.connect('employee', user='sysdba', password='masterkey')
+   >>> t = con.schema.tables.get('EMPLOYEE')
+   >>> print(t.get_sql_for('create'))
+   CREATE TABLE EMPLOYEE
+   (
+     EMP_NO EMPNO NOT NULL,
+     FIRST_NAME "FIRSTNAME" NOT NULL,
+     LAST_NAME "LASTNAME" NOT NULL,
+     PHONE_EXT VARCHAR(4),
+     HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,
+     DEPT_NO DEPTNO NOT NULL,
+     JOB_CODE JOBCODE NOT NULL,
+     JOB_GRADE JOBGRADE NOT NULL,
+     JOB_COUNTRY COUNTRYNAME NOT NULL,
+     SALARY SALARY NOT NULL,
+     FULL_NAME COMPUTED BY (last_name || ', ' || first_name),
+     PRIMARY KEY (EMP_NO)
+   )
+   >>> for i in t.indices:
+   ...    if 'create' in i.actions:
+   ...        print(i.get_sql_for('create'))
+   ...
+   CREATE ASCENDING INDEX NAMEX ON EMPLOYEE (LAST_NAME,FIRST_NAME)
+   >>> for c in [x for x in t.constraints if x.is_check() or x.is_fkey()]:
+   ...    print(c.get_sql_for('create'))
+   ...
+   ALTER TABLE EMPLOYEE ADD FOREIGN KEY (DEPT_NO)
+     REFERENCES DEPARTMENT (DEPT_NO)
+   ALTER TABLE EMPLOYEE ADD FOREIGN KEY (JOB_CODE,JOB_GRADE,JOB_COUNTRY)
+     REFERENCES JOB (JOB_CODE,JOB_GRADE,JOB_COUNTRY)
+   ALTER TABLE EMPLOYEE ADD CHECK ( salary >= (SELECT min_salary FROM job WHERE
+                           job.job_code = employee.job_code AND
+                           job.job_grade = employee.job_grade AND
+                           job.job_country = employee.job_country) AND
+               salary <= (SELECT max_salary FROM job WHERE
+                           job.job_code = employee.job_code AND
+                           job.job_grade = employee.job_grade AND
+                           job.job_country = employee.job_country))
+   >>> p = con.schema.procedures.get('GET_EMP_PROJ')
+   >>> print(p.get_sql_for('recreate', no_code=True))
+   RECREATE PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)
+   RETURNS (PROJ_ID CHAR(5))
+   AS
+   BEGIN
+     SUSPEND;
+   END
+   >>> print(p.get_sql_for('create_or_alter'))
+   CREATE OR ALTER PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)
+   RETURNS (PROJ_ID CHAR(5))
+   AS
+   BEGIN
+	FOR SELECT proj_id
+		FROM employee_project
+		WHERE emp_no = :emp_no
+		INTO :proj_id
+	DO
+		SUSPEND;
+   END
+   >>> print(p.get_sql_for('alter',input=['In1 INTEGER','In2 VARCHAR(5)'],
+   ... output='Out1 INETEGER,\nOut2 VARCHAR(10)',declare=['declare variable i integer = 1;'],
+   ... code=['/* body */','Out1 = i',"Out2 = 'Value'"]))
+   ALTER PROCEDURE GET_EMP_PROJ (
+     In1 INTEGER,
+     In2 VARCHAR(5)
+   )
+   RETURNS (Out1 INETEGER,
+   Out2 VARCHAR(10))
+   AS
+     declare variable i integer = 1;
+   BEGIN
+     /* body */
+     Out1 = i
+     Out2 = 'Value'
+   END
+
+.. index::
+   pair: privileges; working with
+
+Working with user privileges
+============================
+
+User or database object privileges are part of database metadata accessible through `.Schema` class. Each discrete privilege is represented by `.Privilege` instance. You can access either `all <.Schema.privileges>` privileges, or privileges granted for specific
+`table <.Table.privileges>`, `table column <.TableColumn.privileges>`, `view <.View.privileges>`, `view column <.ViewColumn.privileges>`, `procedure <.Procedure.privileges>` or `role <.Role.privileges>`. It's also possible to get all privileges `granted to <.Schema.get_privileges_of>` specific user, role, procedure, trigger or view.
+
+`.Privilege` class supports `~.SchemaItem.get_sql_for()` method to generate GRANT and REVOKE SQL statements for given privilege. If you want to generate grant/revoke statements for
+set of privileges (for example all privileges granted on specific object or grated to specific user), it's more convenient to use function `.get_grants()` that returns list of minimal set of SQL commands required for task.
+
+**Examples:**
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> from firebird.lib.schema import get_grants
+   >>> con = connect('employee', user='sysdba', password='masterkey')
+   >>> t = con.schema.tables.get('EMPLOYEE')
+   >>> for p in t.privileges:
+   ...    print(p.get_sql_for('grant'))
+   ...
+   GRANT SELECT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+   GRANT INSERT ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+   GRANT UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+   GRANT DELETE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+   GRANT REFERENCES ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+   GRANT SELECT ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   GRANT INSERT ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   GRANT UPDATE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   GRANT DELETE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   GRANT REFERENCES ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   >>> for p in get_grants(t.privileges):
+   ...    print(p)
+   ...
+   GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO PUBLIC WITH GRANT OPTION
+   GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE ON EMPLOYEE TO SYSDBA WITH GRANT OPTION
+
+Normally generated GRANT/REVOKE statements don't contain grantor's name. If you want to get GRANT/REVOKE statements including this clause, use `grantors` parameter for `get_sql_for` and `get_grants`. This parameter is a list of grantor names, and GRANTED BY clause is generated **only** for privileges not granted by user from this list. It's useful to suppress GRANTED BY clause for SYSDBA or database owner.
+
+.. currentModule:: firebird.lib.monitor
+
+.. index::
+   pair: monitoring tables; working with
+
+.. _working-with-monitoring-tables:
+
+Working with monitoring tables
+==============================
+
+The Firebird engine offers a set of “virtual” tables (so-called "monitoring tables") that provides the user with a snapshot of the current activity within the given database. FDB provides access to this information through set of classes (isolated in separate module `firebird.lib.monitor`) that transform information stored in monitoring tables into set of Python objects that surface the information in meaningful way, and additionally provide set of methods for available operations or checks.
+
+Like database schema, monitoring tables could be accessed in two different ways, each suitable for different use case:
+
+- By direct creation of `~.Monitor` instances that are binded to particular `~firebird.driver.core.Connection` instance. This method is best if you want to work with monitoring data only occasionally, or you want to keep connections as lightweight as possible.
+- Accessing `Connection.monitor <firebird.driver.core.Connection.monitor>` property. This method is more convenient than previous one, and represents a compromise between convenience and resource consumption because `.Monitor` instance is not created until first reference and is managed by connection itself.
+
+**Examples:**
+
+1. Using Monitor instance:
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> from firebird.lib.monitor import Monitor
+   >>> con = connect('employee', user='sysdba', password='masterkey')
+   >>> monitor = Monitor(con)
+   >>> monitor.db.name
+   '/var/lib/firebird/sample/employee.fdb'
+
+2. Using Connection.monitor:
+
+.. code-block:: python
+
+   >>> from firebird.driver import connect
+   >>> con = connect('employee', user='sysdba', password='masterkey')
+   >>> con.monitor.db.name
+   '/var/lib/firebird/sample/employee.fdb'
+
+Available information
+---------------------
+
+The `.Monitor` provides information about:
+
+- `Database <.Monitor.db>`.
+- Connections <.Monitor.attachments>` to database and `current <.Monitor.this_attachment>` connection.
+- `Transactions <.Monitor.transactions>`.
+- Executed `SQL statements <.Monitor.statements>`.
+- PSQL `callstack <.Monitor.callstack>`.
+- `Page and row I/O statistics <.Monitor.iostats>`, including memory usage.
+- `Table I/O statistics <.Monitor.tablestats>`.
+- `Context variables <.Monitor.variables>`.
+
+.. tip:: The monitor module uses enhanced `firebird.base.collections.DataList` list descendant for collections of monitoring information objects. For details, see section :ref:`Enhanced list of objects <enhanced-object-list>`.
+
+Activity snapshot
+-----------------
+
+The key term of the monitoring feature is an `activity snapshot`. It represents the current state of the database, comprising a variety of information about the database itself, active attachments and users, transactions, prepared and running statements, and more.
+
+A snapshot is created the first time any of the monitoring information is being accessed from in the given `Monitor` instance, or whenever `.Monitor.take_snapshot()` is called. All fetched information is preserved until instance is `closed <.Monitor.close>`, `clared <.Monitor.clear>` or new snapshot is `taken <.Monitor.take_snapshot>`, in order that accessed information is always consistent.
+
+There are two ways to refresh the snapshot:
+
+1. Call `~.Monitor.clear()` method. New snapshot will be taken on next access to monitoring information.
+2. Call `~.Monitor.take_snapshot()` method to take the new snapshot immediately.
+
+.. important::
+
+   In both cases, any instances of information objects your application may hold would be obsolete. Using them may result in error, or (more likely) provide outdated information.
+
+.. note::
+
+   Individual monitoring information (i.e. information about `connections <.Monitor.attachments>`, `transactions <.Monitor.transactions>` etc.) is loaded from activity snapshot on first access and cached for further reference until it's `clared <.Monitor.clear>` or new snapshot is `taken <.Monitor.take_snapshot>`.
+
+   Because once loaded information is cached, it's good to `clear <.Monitor.clear>` it when it's no longer needed to conserve memory.
+
+I/O statistics
+--------------
+
+Page & row I/O statistics (as `.IOStatsInfo` instances) and table I/O statistics (as `.TableStatsInfo` instances) could be accessed in two different ways:
+
+1. Properties `.Monitor.iostats` and `.Monitor.tablestats` provide access to **all** information collected in
+   current activity snapshot.
+2. Where applicable, the individual information item classes have their own `iostats` and `tablestats` properties that provide access only to I/O statistics related to this particular object.
+
+
+.. currentModule:: firebird.lib.gstat
+
+.. index::
+   pair: GSTAT output; processing
+
+.. _processing-gstat-output:
+
+Processing output from gstat utility
+====================================
+
+The GSTAT utility analyzes low-level database structures and produces textual reports, that could be used to evaluate efficiency of the database or diagnose various storage-related problems. However, these reports are not well-suited for machine processing. The `.gstat` module provides `.StatDatabase` class that parses gstat reports into set of Python objects suitable for further processing.
+
+Parsing gstat output
+--------------------
+
+There are two methods how to parse the gstat output:
+
+1. Using `~.StatDatabase.parse()` method that takes an iterable that return lines from database analysis produced by Firebird gstat. The source could be for example open file, list of strings, or generator expression yielding these lines.
+
+   Example::
+
+       from firebird.lib.gstat import StatDatabase
+       db = StatDatabase()
+       with open(filename) as f:
+           db.parse(f)
+
+2. Using `~.StatDatabase.push()` to pass gstat report line by line, in a loop. When all lines are stored, it's necessary to call `~.StatDatabase.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing.
+
+   Example::
+
+       from firebird.lib.gstat import StatDatabase
+       from firebird.base.type import STOP
+       db = StatDatabase()
+       with open(filename) as f:
+           for line in f:
+               db.push(line)
+       db.push(STOP)
+
+
+When gstat report is fully parsed, you can start processing the information stored in `.StatDatabase` instance.
+
+.. currentModule:: firebird.lib.log
+
+.. index::
+   pair: Firebird log; processing
+
+.. _processing-firebrid-log:
+
+Processing Firebird server log
+==============================
+
+The Firebird server log contains vital information about errors, warnings or other important events in Firebird engine. However, this log is not well-suited for machine processing, as individual entries may have different number of lines and also the event message format is not uniform. The `.log` module provides `.LogParser` class that parses Firebird server log into series of `.LogMessage` `dataclass <dataclasses.dataclass>` objects.
+
+Parsing the log
+---------------
+
+There are three methods how to parse the Firebird server log:
+
+1. Using `~.LogParser.parse()` method that takes an iterable that return lines from Firebird server log. The source could be for example open file, list of strings, or generator expression yielding these lines. This method yields `.LogMessage` instances. These instances contain information about `~.LogMessage.origin`, `~.LogMessage.timestamp`, severity `~.LogMessage.level`, unique event `~.LogMessage.code`,  server `~.LogMessage.facility`,  `~.LogMessage.message` and additional `~.LogMessage.params`.
+
+   Example::
+
+       from firebird.lib.log import LogParser
+       parser = LogParser()
+       with open(filename) as f:
+           for obj in parser.parse(f):
+               print(str(obj))
+
+2. Using `~.LogParser.parse_entry()` method that takes list of lines consisting **single** log entry, and returns it as single `.LogMessage`.
+
+   Example::
+
+       from firebird.lib.log import LogParser
+       parser = LogParser()
+       print(str(parser.parse_entry(entry_lines)))
+
+3. Using `~.LogParser.push()` to pass server log line by line, in a loop. When last line is stored, it's necessary to call `~.LogParser.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing. This method returns either `.LogMessage`, or None if lines accumulated so far does not contain whole log entry.
+
+   Example::
+
+       from firebird.lib.log import LogParser
+       from firebird.base.type import STOP
+       parser = LogParser()
+       with open(filename) as f:
+           for line in f:
+               if event := parser.push(line):
+                   print(str(event))
+       if event := parser.push(STOP):
+           print(str(event))
+
+.. currentModule:: firebird.lib.trace
+
+.. index::
+   pair: Firebird trace; processing
+
+.. _processing-firebrid-trace:
+
+Processing output from Firebird server trace sessions
+=====================================================
+
+The Firebird trace & audit sessions are important tool to diagnose wide rande of problems (for example to identify slow queries, unused indices, problems with transactions etc.). However, this the output from trace session is quite verbose textual output not well-suited for machine processing, as individual entries have different number of lines and also the event format is not uniform. The `.trace` module provides `.TraceParser` class that parses output from Firebird trace session into series of `dataclass <dataclasses.dataclass>` objects containing information about individual events.
+
+Parsing the output from trace session
+-------------------------------------
+
+There are three methods how to parse the Firebird trace session log:
+
+1. Using `~.TraceParser.parse()` method that takes an iterable that return lines produced by Firebird trace session. The source could be for example open file, list of strings, or generator expression yielding these lines from service. This method yields instances of dataclasses that descend from `.TraceInfo` or `.TraceEvent`.
+
+   Example::
+
+       from firebird.lib.trace import TraceParser
+       parser = TraceParser()
+       with open(filename) as f:
+           for obj in parser.parse(f):
+               print(str(obj))
+
+2. Using `~.TraceParser.parse_event()` method that takes list of lines consisting **single** trace event, and returns single `.TraceEvent` instance. However, this method may also produce `.TraceInfo` instances that relate to tre returned entry, which must be retrieved with `~.TraceParser.retrieve_info()` call.
+
+   Example::
+
+       from firebird.lib.trace import TraceParser
+       parser = TraceParser()
+       print(str(parser.parse_event(event_lines)))
+       for info in parser.retrieve_info():
+           print(str(info))
+
+3. Using `~.TraceParser.push()` to pass trace session line by line, in a loop. When last line is stored, it's necessary to call `~.TraceParser.push()` with `~firebird.base.types.STOP` sentinel to indicate the end of processing. This method returns either a list of `.TraceInfo` / `.TraceEvent` instances, or None if lines accumulated so far does not contain whole trace event.
+
+   Example::
+
+       from firebird.lib.trace import TraceParser
+       from firebird.base.type import STOP
+       parser = LogParser()
+       with open(filename) as f:
+           for line in f:
+               if events := parser.push(line):
+                   for event in events:
+                       print(str(event))
+       if events := parser.push(STOP):
+           for event in events:
+               print(str(event))
+
+
+.. _firebird-driver: https://pypi.org/project/firebird-driver/
+.. _Firebird: http://www.firebirdsql.org
+.. _Visitor Pattern: http://en.wikipedia.org/wiki/Visitor_pattern

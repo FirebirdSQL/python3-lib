@@ -1,0 +1,257 @@
+.. module:: firebird.lib.schema
+    :synopsis: Module for work with Firebird database schema
+
+===================
+firebird.lib.schema
+===================
+
+Globals
+=======
+
+SCRIPT_DEFAULT_ORDER
+--------------------
+.. autodata:: SCRIPT_DEFAULT_ORDER
+
+Enums
+=====
+
+FieldType
+---------
+.. autoclass:: FieldType
+
+FieldSubType
+------------
+.. autoclass:: FieldSubType
+
+ObjectType
+----------
+.. autoclass:: ObjectType
+
+IndexType
+---------
+.. autoclass:: IndexType
+
+Mechanism
+---------
+.. autoclass:: Mechanism
+
+TransactionState
+----------------
+.. autoclass:: TransactionState
+
+SystemFlag
+----------
+.. autoclass:: SystemFlag
+
+RelationType
+------------
+.. autoclass:: RelationType
+
+ProcedureType
+-------------
+.. autoclass:: ProcedureType
+
+ParameterMechanism
+------------------
+.. autoclass:: ParameterMechanism
+
+TypeFrom
+--------
+.. autoclass:: TypeFrom
+
+ParameterType
+-------------
+.. autoclass:: ParameterType
+
+IdentityType
+------------
+.. autoclass:: IdentityType
+
+GrantOption
+-----------
+.. autoclass:: GrantOption
+
+PageType
+--------
+.. autoclass:: PageType
+
+MapTo
+-----
+.. autoclass:: MapTo
+
+TriggerType
+-----------
+.. autoclass:: TriggerType
+
+DDLTrigger
+----------
+.. autoclass:: DDLTrigger
+
+DBTrigger
+---------
+.. autoclass:: DBTrigger
+
+TriggerTime
+-----------
+.. autoclass:: TriggerTime
+
+ConstraintType
+--------------
+.. autoclass:: ConstraintType
+
+Section
+-------
+.. autoclass:: Section
+
+Category
+--------
+.. autoclass:: Category
+
+Privacy
+-------
+.. autoclass:: Privacy
+
+Legacy
+------
+.. autoclass:: Legacy
+
+PrivilegeCode
+-------------
+.. autoclass:: PrivilegeCode
+
+Flags
+=====
+
+ShadowFlag
+----------
+.. autoclass:: ShadowFlag
+
+DMLTrigger
+----------
+.. autoclass:: DMLTrigger
+
+CollationFlag
+-------------
+.. autoclass:: CollationFlag
+
+Functions
+=========
+
+get_grants
+----------
+.. autofunction:: get_grants
+
+Classes
+=======
+
+Visitable
+---------
+.. autoclass:: Visitable
+
+Visitor
+-------
+.. autoclass:: Visitor
+
+Schema
+------
+.. autoclass:: Schema
+
+SchemaItem
+----------
+.. autoclass:: SchemaItem
+
+Collation
+---------
+.. autoclass:: Collation
+
+CharacterSet
+------------
+.. autoclass:: CharacterSet
+
+DatabaseException
+-----------------
+.. autoclass:: DatabaseException
+
+Sequence
+--------
+.. autoclass:: Sequence
+
+TableColumn
+-----------
+.. autoclass:: TableColumn
+
+Index
+-----
+.. autoclass:: Index
+
+ViewColumn
+----------
+.. autoclass:: ViewColumn
+
+Domain
+------
+.. autoclass:: Domain
+
+Dependency
+----------
+.. autoclass:: Dependency
+
+Constraint
+----------
+.. autoclass:: Constraint
+
+Table
+-----
+.. autoclass:: Table
+
+View
+----
+.. autoclass:: View
+
+Trigger
+-------
+.. autoclass:: Trigger
+
+ProcedureParameter
+------------------
+.. autoclass:: ProcedureParameter
+
+Procedure
+---------
+.. autoclass:: Procedure
+
+Role
+----
+.. autoclass:: Role
+
+FunctionArgument
+----------------
+.. autoclass:: FunctionArgument
+
+Function
+--------
+.. autoclass:: Function
+
+DatabaseFile
+------------
+.. autoclass:: DatabaseFile
+
+Shadow
+------
+.. autoclass:: Shadow
+
+Privilege
+---------
+.. autoclass:: Privilege
+
+Package
+-------
+.. autoclass:: Package
+
+BackupHistory
+-------------
+.. autoclass:: BackupHistory
+
+Filter
+------
+.. autoclass:: Filter

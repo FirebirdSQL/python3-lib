@@ -40,6 +40,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Iterable, Optional, Union
 from datetime import datetime
 from dataclasses import dataclass
+from contextlib import suppress
 from firebird.base.types import Error, STOP, Sentinel
 from .logmsgs import identify_msg, Severity, Facility
 
@@ -87,11 +88,9 @@ class LogParser:
             if len(items) >= 6:
                 # potential new entry
                 new_entry = False
-                try:
+                with suppress(ValueError):
                     datetime.strptime(' '.join(items[len(items)-5:]), '%a %b %d %H:%M:%S %Y')
                     new_entry = True
-                except ValueError:
-                    pass
                 if new_entry:
                     if self.__buffer:
                         result = self.parse_entry(self.__buffer)
@@ -124,9 +123,7 @@ class LogParser:
             log_msg = found[0]
             return LogMessage(origin, timestamp, log_msg.severity, log_msg.msg_id,
                               log_msg.facility, log_msg.get_pattern(found[2]), found[1])
-        else:
-            return LogMessage(origin, timestamp, Severity.UNKNOWN, 0, Facility.UNKNOWN,
-                              msg, {})
+        return LogMessage(origin, timestamp, Severity.UNKNOWN, 0, Facility.UNKNOWN, msg, {})
     def parse(self, lines: Iterable):
         """Parse output from Firebird log.
 

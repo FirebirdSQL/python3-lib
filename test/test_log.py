@@ -45,6 +45,8 @@ from firebird.driver import *
 from firebird.lib.log import *
 
 FB30 = '3.0'
+FB40 = '4.0'
+FB50 = '5.0'
 
 if driver_config.get_server('local') is None:
     # Register Firebird server
@@ -121,6 +123,12 @@ class TestBase(unittest.TestCase):
         if self.version.startswith('3.0'):
             self.FBTEST_DB = 'fbtest30.fdb'
             self.version = FB30
+        elif self.version.startswith('4.0'):
+            self.FBTEST_DB = 'fbtest40.fdb'
+            self.version = FB40
+        elif self.version.startswith('5.0'):
+            self.FBTEST_DB = 'fbtest50.fdb'
+            self.version = FB50
         else:
             raise Exception("Unsupported Firebird version (%s)" % self.version)
         #

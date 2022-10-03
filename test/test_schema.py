@@ -40,6 +40,8 @@ from firebird.lib import schema as sm
 from io import StringIO
 
 FB30 = '3.0'
+FB40 = '4.0'
+FB50 = '5.0'
 
 if driver_config.get_server('local') is None:
     # Register Firebird server
@@ -105,6 +107,12 @@ class TestBase(unittest.TestCase):
         if self.version.startswith('3.0'):
             self.FBTEST_DB = 'fbtest30.fdb'
             self.version = FB30
+        elif self.version.startswith('4.0'):
+            self.FBTEST_DB = 'fbtest40.fdb'
+            self.version = FB40
+        elif self.version.startswith('5.0'):
+            self.FBTEST_DB = 'fbtest50.fdb'
+            self.version = FB50
         else:
             raise Exception("Unsupported Firebird version (%s)" % self.version)
         #
@@ -211,11 +219,20 @@ class TestSchema(TestBase):
                               56: 'WIN_950', 57: 'WIN_936', 58: 'WIN_1255', 59: 'WIN_1256',
                               60: 'WIN_1257', 63: 'KOI8R', 64: 'KOI8U', 65: 'WIN_1258',
                               66: 'TIS620', 67: 'GBK', 68: 'CP943C', 69: 'GB18030'})
-        self.assertDictEqual(s.field_types,
-                             {35: 'TIMESTAMP', 37: 'VARYING', 7: 'SHORT', 8: 'LONG',
-                              9: 'QUAD', 10: 'FLOAT', 12: 'DATE', 45: 'BLOB_ID', 14: 'TEXT',
-                              13: 'TIME', 16: 'INT64', 40: 'CSTRING', 27: 'DOUBLE',
-                              261: 'BLOB', 23:'BOOLEAN'})
+        if self.version == FB30:
+            self.assertDictEqual(s.field_types,
+                                 {35: 'TIMESTAMP', 37: 'VARYING', 7: 'SHORT', 8: 'LONG',
+                                  9: 'QUAD', 10: 'FLOAT', 12: 'DATE', 45: 'BLOB_ID', 14: 'TEXT',
+                                  13: 'TIME', 16: 'INT64', 40: 'CSTRING', 27: 'DOUBLE',
+                                  261: 'BLOB', 23:'BOOLEAN'})
+        else:
+            self.assertDictEqual(s.field_types,
+                                 {35: 'TIMESTAMP', 37: 'VARYING', 7: 'SHORT', 8: 'LONG',
+                                  9: 'QUAD', 10: 'FLOAT', 12: 'DATE', 45: 'BLOB_ID', 14: 'TEXT',
+                                  13: 'TIME', 16: 'INT64', 40: 'CSTRING', 27: 'DOUBLE',
+                                  261: 'BLOB', 23:'BOOLEAN', 24: 'DECFLOAT(16)',
+                                  25: 'DECFLOAT(34)', 26: 'INT128', 28: 'TIME WITH TIME ZONE',
+                                  29: 'TIMESTAMP WITH TIME ZONE'})
         self.assertDictEqual(s.field_subtypes,
                              {0: 'BINARY', 1: 'TEXT', 2: 'BLR', 3: 'ACL', 4: 'RANGES',
                               5: 'SUMMARY', 6: 'FORMAT', 7: 'TRANSACTION_DESCRIPTION',
@@ -309,14 +326,32 @@ class TestSchema(TestBase):
         self.assertEqual(len(s.sys_generators), 13)
         self.assertEqual(len(s.all_generators), 15)
         self.assertEqual(len(s.domains), 15)
-        self.assertEqual(len(s.sys_domains), 277)
-        self.assertEqual(len(s.all_domains), 292)
+        if self.version == FB30:
+            self.assertEqual(len(s.sys_domains), 277)
+            self.assertEqual(len(s.all_domains), 292)
+            self.assertEqual(len(s.sys_indices), 82)
+            self.assertEqual(len(s.all_indices), 94)
+            self.assertEqual(len(s.sys_tables), 50)
+            self.assertEqual(len(s.all_tables), 66)
+            self.assertEqual(len(s.sys_procedures), 0)
+            self.assertEqual(len(s.all_procedures), 11)
+            self.assertEqual(len(s.constraints), 110)
+            self.assertEqual(len(s.sys_functions), 0)
+            self.assertEqual(len(s.all_functions), 6)
+        else:
+            self.assertEqual(len(s.sys_domains), 297)
+            self.assertEqual(len(s.all_domains), 312)
+            self.assertEqual(len(s.sys_indices), 85)
+            self.assertEqual(len(s.all_indices), 97)
+            self.assertEqual(len(s.sys_tables), 54)
+            self.assertEqual(len(s.all_tables), 70)
+            self.assertEqual(len(s.sys_procedures), 1)
+            self.assertEqual(len(s.all_procedures), 12)
+            self.assertEqual(len(s.constraints), 113)
+            self.assertEqual(len(s.sys_functions), 1)
+            self.assertEqual(len(s.all_functions), 7)
         self.assertEqual(len(s.indices), 12)
-        self.assertEqual(len(s.sys_indices), 82)
-        self.assertEqual(len(s.all_indices), 94)
         self.assertEqual(len(s.tables), 16)
-        self.assertEqual(len(s.sys_tables), 50)
-        self.assertEqual(len(s.all_tables), 66)
         self.assertEqual(len(s.views), 1)
         self.assertEqual(len(s.sys_views), 0)
         self.assertEqual(len(s.all_views), 1)
@@ -324,14 +359,9 @@ class TestSchema(TestBase):
         self.assertEqual(len(s.sys_triggers), 57)
         self.assertEqual(len(s.all_triggers), 65)
         self.assertEqual(len(s.procedures), 11)
-        self.assertEqual(len(s.sys_procedures), 0)
-        self.assertEqual(len(s.all_procedures), 11)
-        self.assertEqual(len(s.constraints), 110)
         self.assertEqual(len(s.roles), 2)
         self.assertEqual(len(s.dependencies), 168)
         self.assertEqual(len(s.functions), 6)
-        self.assertEqual(len(s.sys_functions), 0)
-        self.assertEqual(len(s.all_functions), 6)
         self.assertEqual(len(s.files), 0)
         #
         self.assertIsInstance(s.collations[0], sm.Collation)
@@ -414,7 +444,10 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_quoted_name(), 'ES_ES')
         self.assertListEqual(c.get_dependents(), [])
         self.assertListEqual(c.get_dependencies(), [])
-        self.assertEqual(c.security_class, 'SQL$263')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$263')
+        else:
+            self.assertEqual(c.security_class, 'SQL$283')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 10)
@@ -474,7 +507,10 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_quoted_name(), 'UTF8')
         self.assertListEqual(c.get_dependents(), [])
         self.assertListEqual(c.get_dependencies(), [])
-        self.assertEqual(c.security_class, 'SQL$166')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$166')
+        else:
+            self.assertEqual(c.security_class, 'SQL$186')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 4)
@@ -521,7 +557,10 @@ class TestSchema(TestBase):
         self.assertEqual(d.depended_on_type, 7)
         self.assertIsInstance(d.depended_on, sm.DatabaseException)
         self.assertListEqual(c.get_dependencies(), [])
-        self.assertEqual(c.security_class, 'SQL$476')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$476')
+        else:
+            self.assertEqual(c.security_class, 'SQL$604')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 1)
@@ -583,7 +622,10 @@ class TestSchema(TestBase):
         self.assertListEqual(c.get_dependencies(), [])
         #
         self.assertEqual(c.id, 12)
-        self.assertEqual(c.security_class, 'SQL$429')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$429')
+        else:
+            self.assertEqual(c.security_class, 'SQL$600')
         self.assertEqual(c.owner_name, 'SYSDBA')
         self.assertEqual(c.inital_value, 0)
         self.assertEqual(c.increment, 1)
@@ -817,7 +859,10 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_quoted_name(), 'RDB$6')
         self.assertListEqual(c.get_dependents(), [])
         self.assertListEqual(c.get_dependencies(), [])
-        self.assertEqual(c.security_class, 'SQL$439')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$439')
+        else:
+            self.assertEqual(c.security_class, 'SQL$460')
         self.assertEqual(c.owner_name, 'SYSDBA')
         # User domain
         c = s.all_domains.get('PRODTYPE')
@@ -878,11 +923,20 @@ class TestSchema(TestBase):
         # Domain with quoted name
         c = s.all_domains.get('FIRSTNAME')
         self.assertEqual(c.name, 'FIRSTNAME')
-        self.assertEqual(c.get_quoted_name(), '"FIRSTNAME"')
-        self.assertEqual(c.get_sql_for('create'),
-                         'CREATE DOMAIN "FIRSTNAME" AS VARCHAR(15)')
-        self.assertEqual(c.get_sql_for('comment'),
-                         'COMMENT ON DOMAIN "FIRSTNAME" IS NULL')
+        if self.version == FB30:
+            self.assertEqual(c.get_quoted_name(), '"FIRSTNAME"')
+        else:
+            self.assertEqual(c.get_quoted_name(), 'FIRSTNAME')
+        if self.version == FB30:
+            self.assertEqual(c.get_sql_for('create'),
+                             'CREATE DOMAIN "FIRSTNAME" AS VARCHAR(15)')
+            self.assertEqual(c.get_sql_for('comment'),
+                             'COMMENT ON DOMAIN "FIRSTNAME" IS NULL')
+        else:
+            self.assertEqual(c.get_sql_for('create'),
+                             'CREATE DOMAIN FIRSTNAME AS VARCHAR(15)')
+            self.assertEqual(c.get_sql_for('comment'),
+                             'COMMENT ON DOMAIN FIRSTNAME IS NULL')
     def test_11_Dependency(self):
         s = Schema()
         s.bind(self.con)
@@ -1071,24 +1125,58 @@ class TestSchema(TestBase):
         self.assertFalse(c.is_sys_object())
         self.assertEqual(c.get_quoted_name(), 'EMPLOYEE')
         d = c.get_dependents()
-        self.assertListEqual([(x.dependent_name, x.dependent_type) for x in d],
-                             [('SAVE_SALARY_CHANGE', 2), ('SAVE_SALARY_CHANGE', 2), ('CHECK_3', 2),
-                              ('CHECK_3', 2), ('CHECK_3', 2), ('CHECK_3', 2), ('CHECK_4', 2),
-                              ('CHECK_4', 2), ('CHECK_4', 2), ('CHECK_4', 2), ('PHONE_LIST', 1),
-                              ('PHONE_LIST', 1), ('PHONE_LIST', 1), ('PHONE_LIST', 1), ('PHONE_LIST', 1),
-                              ('PHONE_LIST', 1), ('DELETE_EMPLOYEE', 5), ('DELETE_EMPLOYEE', 5),
-                              ('ORG_CHART', 5), ('ORG_CHART', 5), ('ORG_CHART', 5), ('ORG_CHART', 5),
-                              ('ORG_CHART', 5), ('RDB$9', 3), ('RDB$9', 3), ('SET_EMP_NO', 2)])
+        if self.version == FB30:
+            self.assertListEqual([(x.dependent_name, x.dependent_type) for x in d],
+                                 [('SAVE_SALARY_CHANGE', 2), ('SAVE_SALARY_CHANGE', 2), ('CHECK_3', 2),
+                                  ('CHECK_3', 2), ('CHECK_3', 2), ('CHECK_3', 2), ('CHECK_4', 2),
+                                  ('CHECK_4', 2), ('CHECK_4', 2), ('CHECK_4', 2), ('PHONE_LIST', 1),
+                                  ('PHONE_LIST', 1), ('PHONE_LIST', 1), ('PHONE_LIST', 1), ('PHONE_LIST', 1),
+                                  ('PHONE_LIST', 1), ('DELETE_EMPLOYEE', 5), ('DELETE_EMPLOYEE', 5),
+                                  ('ORG_CHART', 5), ('ORG_CHART', 5), ('ORG_CHART', 5), ('ORG_CHART', 5),
+                                  ('ORG_CHART', 5), ('RDB$9', 3), ('RDB$9', 3), ('SET_EMP_NO', 2)])
+        else:
+            self.assertListEqual([(x.dependent_name, x.dependent_type) for x in d],
+                                 [('CHECK_3', ObjectType.TRIGGER),
+                                  ('CHECK_3', ObjectType.TRIGGER),
+                                  ('CHECK_3', ObjectType.TRIGGER),
+                                  ('CHECK_3', ObjectType.TRIGGER),
+                                  ('CHECK_4', ObjectType.TRIGGER),
+                                  ('CHECK_4', ObjectType.TRIGGER),
+                                  ('CHECK_4', ObjectType.TRIGGER),
+                                  ('CHECK_4', ObjectType.TRIGGER),
+                                  ('SET_EMP_NO', ObjectType.TRIGGER),
+                                  ('SAVE_SALARY_CHANGE', ObjectType.TRIGGER),
+                                  ('SAVE_SALARY_CHANGE', ObjectType.TRIGGER),
+                                  ('RDB$9', ObjectType.DOMAIN),
+                                  ('RDB$9', ObjectType.DOMAIN),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('PHONE_LIST', ObjectType.VIEW),
+                                  ('ORG_CHART', ObjectType.PROCEDURE),
+                                  ('ORG_CHART', ObjectType.PROCEDURE),
+                                  ('ORG_CHART', ObjectType.PROCEDURE),
+                                  ('ORG_CHART', ObjectType.PROCEDURE),
+                                  ('ORG_CHART', ObjectType.PROCEDURE),
+                                  ('DELETE_EMPLOYEE', ObjectType.PROCEDURE),
+                                  ('DELETE_EMPLOYEE', ObjectType.PROCEDURE)])
         self.assertListEqual(c.get_dependencies(), [])
         #
         self.assertEqual(c.id, 131)
         self.assertEqual(c.dbkey_length, 8)
-        self.assertEqual(c.format, 1)
+        if self.version == FB30:
+            self.assertEqual(c.format, 1)
+            self.assertEqual(c.security_class, 'SQL$440')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT54')
+        else:
+            self.assertEqual(c.format, 2)
+            self.assertEqual(c.security_class, 'SQL$586')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT58')
         self.assertEqual(c.table_type, RelationType.PERSISTENT)
-        self.assertEqual(c.security_class, 'SQL$440')
         self.assertIsNone(c.external_file)
         self.assertEqual(c.owner_name, 'SYSDBA')
-        self.assertEqual(c.default_class, 'SQL$DEFAULT54')
         self.assertEqual(c.flags, 1)
         self.assertEqual(c.primary_key.name, 'INTEG_27')
         self.assertListEqual([x.name for x in c.foreign_keys],
@@ -1114,7 +1202,8 @@ class TestSchema(TestBase):
         self.assertTrue(c.has_pkey())
         self.assertTrue(c.has_fkey())
         #
-        self.assertEqual(c.get_sql_for('create'), """CREATE TABLE EMPLOYEE (
+        if self.version == FB30:
+            self.assertEqual(c.get_sql_for('create'), """CREATE TABLE EMPLOYEE (
   EMP_NO EMPNO NOT NULL,
   FIRST_NAME "FIRSTNAME" NOT NULL,
   LAST_NAME "LASTNAME" NOT NULL,
@@ -1128,7 +1217,7 @@ class TestSchema(TestBase):
   FULL_NAME COMPUTED BY (last_name || ', ' || first_name),
   PRIMARY KEY (EMP_NO)
 )""")
-        self.assertEqual(c.get_sql_for('create', no_pk=True), """CREATE TABLE EMPLOYEE (
+            self.assertEqual(c.get_sql_for('create', no_pk=True), """CREATE TABLE EMPLOYEE (
   EMP_NO EMPNO NOT NULL,
   FIRST_NAME "FIRSTNAME" NOT NULL,
   LAST_NAME "LASTNAME" NOT NULL,
@@ -1141,10 +1230,52 @@ class TestSchema(TestBase):
   SALARY SALARY NOT NULL,
   FULL_NAME COMPUTED BY (last_name || ', ' || first_name)
 )""")
-        self.assertEqual(c.get_sql_for('recreate'), """RECREATE TABLE EMPLOYEE (
+            self.assertEqual(c.get_sql_for('recreate'), """RECREATE TABLE EMPLOYEE (
   EMP_NO EMPNO NOT NULL,
   FIRST_NAME "FIRSTNAME" NOT NULL,
   LAST_NAME "LASTNAME" NOT NULL,
+  PHONE_EXT VARCHAR(4),
+  HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,
+  DEPT_NO DEPTNO NOT NULL,
+  JOB_CODE JOBCODE NOT NULL,
+  JOB_GRADE JOBGRADE NOT NULL,
+  JOB_COUNTRY COUNTRYNAME NOT NULL,
+  SALARY SALARY NOT NULL,
+  FULL_NAME COMPUTED BY (last_name || ', ' || first_name),
+  PRIMARY KEY (EMP_NO)
+)""")
+        else:
+            self.assertEqual(c.get_sql_for('create'), """CREATE TABLE EMPLOYEE (
+  EMP_NO EMPNO NOT NULL,
+  FIRST_NAME FIRSTNAME NOT NULL,
+  LAST_NAME LASTNAME NOT NULL,
+  PHONE_EXT VARCHAR(4),
+  HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,
+  DEPT_NO DEPTNO NOT NULL,
+  JOB_CODE JOBCODE NOT NULL,
+  JOB_GRADE JOBGRADE NOT NULL,
+  JOB_COUNTRY COUNTRYNAME NOT NULL,
+  SALARY SALARY NOT NULL,
+  FULL_NAME COMPUTED BY (last_name || ', ' || first_name),
+  PRIMARY KEY (EMP_NO)
+)""")
+            self.assertEqual(c.get_sql_for('create', no_pk=True), """CREATE TABLE EMPLOYEE (
+  EMP_NO EMPNO NOT NULL,
+  FIRST_NAME FIRSTNAME NOT NULL,
+  LAST_NAME LASTNAME NOT NULL,
+  PHONE_EXT VARCHAR(4),
+  HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,
+  DEPT_NO DEPTNO NOT NULL,
+  JOB_CODE JOBCODE NOT NULL,
+  JOB_GRADE JOBGRADE NOT NULL,
+  JOB_COUNTRY COUNTRYNAME NOT NULL,
+  SALARY SALARY NOT NULL,
+  FULL_NAME COMPUTED BY (last_name || ', ' || first_name)
+)""")
+            self.assertEqual(c.get_sql_for('recreate'), """RECREATE TABLE EMPLOYEE (
+  EMP_NO EMPNO NOT NULL,
+  FIRST_NAME FIRSTNAME NOT NULL,
+  LAST_NAME LASTNAME NOT NULL,
   PHONE_EXT VARCHAR(4),
   HIRE_DATE TIMESTAMP DEFAULT 'NOW' NOT NULL,
   DEPT_NO DEPTNO NOT NULL,
@@ -1182,23 +1313,34 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_quoted_name(), 'PHONE_LIST')
         self.assertListEqual(c.get_dependents(), [])
         d = c.get_dependencies()
-        self.assertListEqual([(x.depended_on_name, x.field_name, x.depended_on_type) for x in d],
-                             [('DEPARTMENT', 'DEPT_NO', 0), ('EMPLOYEE', 'DEPT_NO', 0),
-                              ('DEPARTMENT', None, 0), ('EMPLOYEE', None, 0), ('EMPLOYEE', 'EMP_NO', 0),
-                              ('EMPLOYEE', 'FIRST_NAME', 0), ('EMPLOYEE', 'LAST_NAME', 0),
-                              ('EMPLOYEE', 'PHONE_EXT', 0), ('DEPARTMENT', 'LOCATION', 0),
-                              ('DEPARTMENT', 'PHONE_NO', 0)])
+        if self.version == FB30:
+            self.assertListEqual([(x.depended_on_name, x.field_name, x.depended_on_type) for x in d],
+                                 [('DEPARTMENT', 'DEPT_NO', 0), ('EMPLOYEE', 'DEPT_NO', 0),
+                                  ('DEPARTMENT', None, 0), ('EMPLOYEE', None, 0), ('EMPLOYEE', 'EMP_NO', 0),
+                                  ('EMPLOYEE', 'FIRST_NAME', 0), ('EMPLOYEE', 'LAST_NAME', 0),
+                                  ('EMPLOYEE', 'PHONE_EXT', 0), ('DEPARTMENT', 'LOCATION', 0),
+                                  ('DEPARTMENT', 'PHONE_NO', 0)])
+            self.assertEqual(c.id, 132)
+            self.assertEqual(c.security_class, 'SQL$444')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT55')
+        else:
+            self.assertListEqual([(x.depended_on_name, x.field_name, x.depended_on_type) for x in d],
+                                 [('DEPARTMENT', 'DEPT_NO', 0), ('EMPLOYEE', 'DEPT_NO', 0),
+                                  ('DEPARTMENT', None, 0), ('EMPLOYEE', None, 0),
+                                  ('EMPLOYEE', 'EMP_NO', 0), ('EMPLOYEE', 'LAST_NAME', 0),
+                                  ('EMPLOYEE', 'PHONE_EXT', 0), ('DEPARTMENT', 'PHONE_NO', 0),
+                                  ('EMPLOYEE', 'FIRST_NAME', 0), ('DEPARTMENT', 'LOCATION', 0)])
+            self.assertEqual(c.id, 144)
+            self.assertEqual(c.security_class, 'SQL$587')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT71')
         #
-        self.assertEqual(c.id, 132)
         self.assertEqual(c.sql, """SELECT
     emp_no, first_name, last_name, phone_ext, location, phone_no
     FROM employee, department
     WHERE employee.dept_no = department.dept_no""")
         self.assertEqual(c.dbkey_length, 16)
         self.assertEqual(c.format, 1)
-        self.assertEqual(c.security_class, 'SQL$444')
         self.assertEqual(c.owner_name, 'SYSDBA')
-        self.assertEqual(c.default_class, 'SQL$DEFAULT55')
         self.assertEqual(c.flags, 1)
         self.assertListEqual([x.name for x in c.columns], ['EMP_NO', 'FIRST_NAME',
                                                            'LAST_NAME', 'PHONE_EXT',
@@ -1470,7 +1612,12 @@ END""")
                              [('EMPLOYEE_PROJECT', 'PROJ_ID', 0), ('EMPLOYEE_PROJECT', 'EMP_NO', 0),
                               ('EMPLOYEE_PROJECT', None, 0)])
         #
-        self.assertEqual(c.id, 1)
+        if self.version == FB30:
+            self.assertEqual(c.id, 1)
+            self.assertEqual(c.security_class, 'SQL$473')
+        else:
+            self.assertEqual(c.id, 2)
+            self.assertEqual(c.security_class, 'SQL$612')
         self.assertEqual(c.source, """BEGIN
 	FOR SELECT proj_id
 		FROM employee_project
@@ -1479,7 +1626,6 @@ END""")
 	DO
 		SUSPEND;
 END""")
-        self.assertEqual(c.security_class, 'SQL$473')
         self.assertEqual(c.owner_name, 'SYSDBA')
         self.assertListEqual([x.name for x in c.input_params], ['EMP_NO'])
         self.assertListEqual([x.name for x in c.output_params], ['PROJ_ID'])
@@ -1519,6 +1665,7 @@ END""")
 RETURNS (PROJ_ID CHAR(5))
 AS
 BEGIN
+  SUSPEND;
 END""")
         self.assertEqual(c.get_sql_for('recreate'),
                          """RECREATE PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)
@@ -1546,6 +1693,7 @@ END""")
 RETURNS (PROJ_ID CHAR(5))
 AS
 BEGIN
+  SUSPEND;
 END""")
 
         self.assertEqual(c.get_sql_for('create_or_alter'),
@@ -1574,6 +1722,7 @@ END""")
 RETURNS (PROJ_ID CHAR(5))
 AS
 BEGIN
+  SUSPEND;
 END""")
         self.assertEqual(c.get_sql_for('drop'), "DROP PROCEDURE GET_EMP_PROJ")
         self.assertEqual(c.get_sql_for('alter', code="  /* PASS */"),
@@ -2186,9 +2335,13 @@ MODULE_NAME 'fbudf'""")
         self.assertIsNone(c.engine_mame)
         self.assertIsNone(c.private_flag)
         self.assertEqual(c.source, 'BEGIN\n  RETURN X+1;\nEND')
-        self.assertEqual(c.id, 3)
+        if self.version == FB30:
+            self.assertEqual(c.id, 3)
+            self.assertEqual(c.security_class, 'SQL$588')
+        else:
+            self.assertEqual(c.id, 4)
+            self.assertEqual(c.security_class, 'SQL$609')
         self.assertTrue(c.valid_blr)
-        self.assertEqual(c.security_class, 'SQL$588')
         self.assertEqual(c.owner_name, 'SYSDBA')
         self.assertEqual(c.legacy_flag, 0)
         self.assertEqual(c.deterministic_flag, 0)
@@ -2252,15 +2405,16 @@ RETURNS INTEGER
 AS
 BEGIN
 END""")
-        self.assertEqual(c.get_sql_for('alter', arguments="IN1 integer", returns='INTEGER', code=''),
+        self.assertEqual(c.get_sql_for('alter', arguments="IN1 integer", returns='INTEGER',
+                                       code=''),
                              """ALTER FUNCTION F2 (IN1 integer)
 RETURNS INTEGER
 AS
 BEGIN
 END""")
         self.assertEqual(c.get_sql_for('alter', returns='INTEGER',
-                                           arguments=["IN1 integer", "IN2 VARCHAR(10)"],
-                                           code=''),
+                                       arguments=["IN1 integer", "IN2 VARCHAR(10)"],
+                                       code=''),
                              """ALTER FUNCTION F2 (
   IN1 integer,
   IN2 VARCHAR(10)
@@ -2271,8 +2425,19 @@ BEGIN
 END""")
         #
         c = s.all_functions.get('FX')
-        self.assertEqual(c.get_sql_for('create'),"""CREATE FUNCTION FX (
+        if self.version == FB30:
+            self.assertEqual(c.get_sql_for('create'),"""CREATE FUNCTION FX (
   F TYPE OF "FIRSTNAME",
+  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST
+)
+RETURNS VARCHAR(35)
+AS
+BEGIN
+  RETURN L || \', \' || F;
+END""")
+        else:
+            self.assertEqual(c.get_sql_for('create'),"""CREATE FUNCTION FX (
+  F TYPE OF FIRSTNAME,
   L TYPE OF COLUMN CUSTOMER.CONTACT_LAST
 )
 RETURNS VARCHAR(35)
@@ -2438,7 +2603,10 @@ END""")
         # get_privileges_of()
         u = UserInfo(user_name='PUBLIC')
         p = s.get_privileges_of(u)
-        self.assertEqual(len(p), 115)
+        if self.version == FB30:
+            self.assertEqual(len(p), 115)
+        else:
+            self.assertEqual(len(p), 119)
         with self.assertRaises(ValueError) as cm:
             p = s.get_privileges_of('PUBLIC')
         self.assertTupleEqual(cm.exception.args,
@@ -3114,7 +3282,10 @@ END""")
                              ['create', 'recreate', 'create_or_alter', 'alter', 'drop', 'comment'])
         self.assertEqual(c.get_quoted_name(), 'TEST')
         self.assertEqual(c.owner_name, 'SYSDBA')
-        self.assertEqual(c.security_class, 'SQL$575')
+        if self.version == FB30:
+            self.assertEqual(c.security_class, 'SQL$575')
+        else:
+            self.assertEqual(c.security_class, 'SQL$622')
         self.assertEqual(c.header, """BEGIN
   PROCEDURE P1(I INT) RETURNS (O INT); -- public procedure
   FUNCTION F(X INT) RETURNS INT;
@@ -3289,28 +3460,50 @@ DROP TABLE JOB
                                       "CREATE EXCEPTION CUSTOMER_ON_HOLD 'This customer is on hold.'",
                                       "CREATE EXCEPTION CUSTOMER_CHECK 'Overdue balance -- can not ship.'"])
         script = s.get_metadata_ddl(sections=[sm.Section.DOMAINS])
-        self.assertListEqual(script, ['CREATE DOMAIN "FIRSTNAME" AS VARCHAR(15)',
-                                      'CREATE DOMAIN "LASTNAME" AS VARCHAR(20)',
-                                      'CREATE DOMAIN PHONENUMBER AS VARCHAR(20)',
-                                      'CREATE DOMAIN COUNTRYNAME AS VARCHAR(15)',
-                                      'CREATE DOMAIN ADDRESSLINE AS VARCHAR(30)',
-                                      'CREATE DOMAIN EMPNO AS SMALLINT',
-                                      "CREATE DOMAIN DEPTNO AS CHAR(3) CHECK (VALUE = '000' OR (VALUE > '0' AND VALUE <= '999') OR VALUE IS NULL)",
-                                      'CREATE DOMAIN PROJNO AS CHAR(5) CHECK (VALUE = UPPER (VALUE))',
-                                      'CREATE DOMAIN CUSTNO AS INTEGER CHECK (VALUE > 1000)',
-                                      "CREATE DOMAIN JOBCODE AS VARCHAR(5) CHECK (VALUE > '99999')",
-                                      'CREATE DOMAIN JOBGRADE AS SMALLINT CHECK (VALUE BETWEEN 0 AND 6)',
-                                      'CREATE DOMAIN SALARY AS NUMERIC(10, 2) DEFAULT 0 CHECK (VALUE > 0)',
-                                      'CREATE DOMAIN BUDGET AS DECIMAL(12, 2) DEFAULT 50000 CHECK (VALUE > 10000 AND VALUE <= 2000000)',
-                                      "CREATE DOMAIN PRODTYPE AS VARCHAR(12) DEFAULT 'software' NOT NULL CHECK (VALUE IN ('software', 'hardware', 'other', 'N/A'))",
-                                      "CREATE DOMAIN PONUMBER AS CHAR(8) CHECK (VALUE STARTING WITH 'V')"])
+        if self.version == FB30:
+            self.assertListEqual(script, ['CREATE DOMAIN "FIRSTNAME" AS VARCHAR(15)',
+                                          'CREATE DOMAIN "LASTNAME" AS VARCHAR(20)',
+                                          'CREATE DOMAIN PHONENUMBER AS VARCHAR(20)',
+                                          'CREATE DOMAIN COUNTRYNAME AS VARCHAR(15)',
+                                          'CREATE DOMAIN ADDRESSLINE AS VARCHAR(30)',
+                                          'CREATE DOMAIN EMPNO AS SMALLINT',
+                                          "CREATE DOMAIN DEPTNO AS CHAR(3) CHECK (VALUE = '000' OR (VALUE > '0' AND VALUE <= '999') OR VALUE IS NULL)",
+                                          'CREATE DOMAIN PROJNO AS CHAR(5) CHECK (VALUE = UPPER (VALUE))',
+                                          'CREATE DOMAIN CUSTNO AS INTEGER CHECK (VALUE > 1000)',
+                                          "CREATE DOMAIN JOBCODE AS VARCHAR(5) CHECK (VALUE > '99999')",
+                                          'CREATE DOMAIN JOBGRADE AS SMALLINT CHECK (VALUE BETWEEN 0 AND 6)',
+                                          'CREATE DOMAIN SALARY AS NUMERIC(10, 2) DEFAULT 0 CHECK (VALUE > 0)',
+                                          'CREATE DOMAIN BUDGET AS DECIMAL(12, 2) DEFAULT 50000 CHECK (VALUE > 10000 AND VALUE <= 2000000)',
+                                          "CREATE DOMAIN PRODTYPE AS VARCHAR(12) DEFAULT 'software' NOT NULL CHECK (VALUE IN ('software', 'hardware', 'other', 'N/A'))",
+                                          "CREATE DOMAIN PONUMBER AS CHAR(8) CHECK (VALUE STARTING WITH 'V')"])
+        else:
+            self.assertListEqual(script, ['CREATE DOMAIN FIRSTNAME AS VARCHAR(15)',
+                                          'CREATE DOMAIN LASTNAME AS VARCHAR(20)',
+                                          'CREATE DOMAIN PHONENUMBER AS VARCHAR(20)',
+                                          'CREATE DOMAIN COUNTRYNAME AS VARCHAR(15)',
+                                          'CREATE DOMAIN ADDRESSLINE AS VARCHAR(30)',
+                                          'CREATE DOMAIN EMPNO AS SMALLINT',
+                                          "CREATE DOMAIN DEPTNO AS CHAR(3) CHECK (VALUE = '000' OR (VALUE > '0' AND VALUE <= '999') OR VALUE IS NULL)",
+                                          'CREATE DOMAIN PROJNO AS CHAR(5) CHECK (VALUE = UPPER (VALUE))',
+                                          'CREATE DOMAIN CUSTNO AS INTEGER CHECK (VALUE > 1000)',
+                                          "CREATE DOMAIN JOBCODE AS VARCHAR(5) CHECK (VALUE > '99999')",
+                                          'CREATE DOMAIN JOBGRADE AS SMALLINT CHECK (VALUE BETWEEN 0 AND 6)',
+                                          'CREATE DOMAIN SALARY AS NUMERIC(10, 2) DEFAULT 0 CHECK (VALUE > 0)',
+                                          'CREATE DOMAIN BUDGET AS DECIMAL(12, 2) DEFAULT 50000 CHECK (VALUE > 10000 AND VALUE <= 2000000)',
+                                          "CREATE DOMAIN PRODTYPE AS VARCHAR(12) DEFAULT 'software' NOT NULL CHECK (VALUE IN ('software', 'hardware', 'other', 'N/A'))",
+                                          "CREATE DOMAIN PONUMBER AS CHAR(8) CHECK (VALUE STARTING WITH 'V')"])
         script = s.get_metadata_ddl(sections=[sm.Section.PACKAGE_DEFS])
         self.assertListEqual(script, ['CREATE PACKAGE TEST\nAS\nBEGIN\n  PROCEDURE P1(I INT) RETURNS (O INT); -- public procedure\n  FUNCTION F(X INT) RETURNS INT;\nEND',
                                       'CREATE PACKAGE TEST2\nAS\nBEGIN\n  FUNCTION F3(X INT) RETURNS INT;\nEND'])
         script = s.get_metadata_ddl(sections=[sm.Section.FUNCTION_DEFS])
-        self.assertListEqual(script, ['CREATE FUNCTION F2 (X INTEGER)\nRETURNS INTEGER\nAS\nBEGIN\nEND',
-                                      'CREATE FUNCTION FX (\n  F TYPE OF "FIRSTNAME",\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\nEND',
-                                      'CREATE FUNCTION FN\nRETURNS INTEGER\nAS\nBEGIN\nEND'])
+        if self.version == FB30:
+            self.assertListEqual(script, ['CREATE FUNCTION F2 (X INTEGER)\nRETURNS INTEGER\nAS\nBEGIN\nEND',
+                                          'CREATE FUNCTION FX (\n  F TYPE OF "FIRSTNAME",\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\nEND',
+                                          'CREATE FUNCTION FN\nRETURNS INTEGER\nAS\nBEGIN\nEND'])
+        else:
+            self.assertListEqual(script, ['CREATE FUNCTION F2 (X INTEGER)\nRETURNS INTEGER\nAS\nBEGIN\nEND',
+                                          'CREATE FUNCTION FX (\n  F TYPE OF FIRSTNAME,\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\nEND',
+                                          'CREATE FUNCTION FN\nRETURNS INTEGER\nAS\nBEGIN\nEND'])
         script = s.get_metadata_ddl(sections=[sm.Section.PROCEDURE_DEFS])
         self.assertListEqual(script, ['CREATE PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)\nRETURNS (PROJ_ID CHAR(5))\nAS\nBEGIN\n  SUSPEND;\nEND',
                                       'CREATE PROCEDURE ADD_EMP_PROJ (\n  EMP_NO SMALLINT,\n  PROJ_ID CHAR(5)\n)\nAS\nBEGIN\n  SUSPEND;\nEND',
@@ -3326,8 +3519,12 @@ DROP TABLE JOB
         self.assertListEqual(script, ['CREATE TABLE COUNTRY (\n  COUNTRY COUNTRYNAME NOT NULL,\n  CURRENCY VARCHAR(10) NOT NULL\n)',
                                       'CREATE TABLE JOB (\n  JOB_CODE JOBCODE NOT NULL,\n  JOB_GRADE JOBGRADE NOT NULL,\n  JOB_COUNTRY COUNTRYNAME NOT NULL,\n  JOB_TITLE VARCHAR(25) NOT NULL,\n  MIN_SALARY SALARY NOT NULL,\n  MAX_SALARY SALARY NOT NULL,\n  JOB_REQUIREMENT BLOB SUB_TYPE TEXT SEGMENT SIZE 400,\n  LANGUAGE_REQ VARCHAR(15)[5]\n)',
                                       "CREATE TABLE DEPARTMENT (\n  DEPT_NO DEPTNO NOT NULL,\n  DEPARTMENT VARCHAR(25) NOT NULL,\n  HEAD_DEPT DEPTNO,\n  MNGR_NO EMPNO,\n  BUDGET BUDGET,\n  LOCATION VARCHAR(15),\n  PHONE_NO PHONENUMBER DEFAULT '555-1234'\n)",
-                                      'CREATE TABLE EMPLOYEE (\n  EMP_NO EMPNO NOT NULL,\n  FIRST_NAME "FIRSTNAME" NOT NULL,\n  LAST_NAME "LASTNAME" NOT NULL,\n  PHONE_EXT VARCHAR(4),\n  HIRE_DATE TIMESTAMP DEFAULT \'NOW\' NOT NULL,\n  DEPT_NO DEPTNO NOT NULL,\n  JOB_CODE JOBCODE NOT NULL,\n  JOB_GRADE JOBGRADE NOT NULL,\n  JOB_COUNTRY COUNTRYNAME NOT NULL,\n  SALARY SALARY NOT NULL,\n  FULL_NAME COMPUTED BY (last_name || \', \' || first_name)\n)',
-                                      'CREATE TABLE CUSTOMER (\n  CUST_NO CUSTNO NOT NULL,\n  CUSTOMER VARCHAR(25) NOT NULL,\n  CONTACT_FIRST "FIRSTNAME",\n  CONTACT_LAST "LASTNAME",\n  PHONE_NO PHONENUMBER,\n  ADDRESS_LINE1 ADDRESSLINE,\n  ADDRESS_LINE2 ADDRESSLINE,\n  CITY VARCHAR(25),\n  STATE_PROVINCE VARCHAR(15),\n  COUNTRY COUNTRYNAME,\n  POSTAL_CODE VARCHAR(12),\n  ON_HOLD CHAR(1) DEFAULT NULL\n)',
+                                      'CREATE TABLE EMPLOYEE (\n  EMP_NO EMPNO NOT NULL,\n  FIRST_NAME "FIRSTNAME" NOT NULL,\n  LAST_NAME "LASTNAME" NOT NULL,\n  PHONE_EXT VARCHAR(4),\n  HIRE_DATE TIMESTAMP DEFAULT \'NOW\' NOT NULL,\n  DEPT_NO DEPTNO NOT NULL,\n  JOB_CODE JOBCODE NOT NULL,\n  JOB_GRADE JOBGRADE NOT NULL,\n  JOB_COUNTRY COUNTRYNAME NOT NULL,\n  SALARY SALARY NOT NULL,\n  FULL_NAME COMPUTED BY (last_name || \', \' || first_name)\n)' \
+                                      if self.version == FB30 else \
+                                      'CREATE TABLE EMPLOYEE (\n  EMP_NO EMPNO NOT NULL,\n  FIRST_NAME FIRSTNAME NOT NULL,\n  LAST_NAME LASTNAME NOT NULL,\n  PHONE_EXT VARCHAR(4),\n  HIRE_DATE TIMESTAMP DEFAULT \'NOW\' NOT NULL,\n  DEPT_NO DEPTNO NOT NULL,\n  JOB_CODE JOBCODE NOT NULL,\n  JOB_GRADE JOBGRADE NOT NULL,\n  JOB_COUNTRY COUNTRYNAME NOT NULL,\n  SALARY SALARY NOT NULL,\n  FULL_NAME COMPUTED BY (last_name || \', \' || first_name)\n)',
+                                      'CREATE TABLE CUSTOMER (\n  CUST_NO CUSTNO NOT NULL,\n  CUSTOMER VARCHAR(25) NOT NULL,\n  CONTACT_FIRST "FIRSTNAME",\n  CONTACT_LAST "LASTNAME",\n  PHONE_NO PHONENUMBER,\n  ADDRESS_LINE1 ADDRESSLINE,\n  ADDRESS_LINE2 ADDRESSLINE,\n  CITY VARCHAR(25),\n  STATE_PROVINCE VARCHAR(15),\n  COUNTRY COUNTRYNAME,\n  POSTAL_CODE VARCHAR(12),\n  ON_HOLD CHAR(1) DEFAULT NULL\n)' \
+                                      if self.version == FB30 else \
+                                      'CREATE TABLE CUSTOMER (\n  CUST_NO CUSTNO NOT NULL,\n  CUSTOMER VARCHAR(25) NOT NULL,\n  CONTACT_FIRST FIRSTNAME,\n  CONTACT_LAST LASTNAME,\n  PHONE_NO PHONENUMBER,\n  ADDRESS_LINE1 ADDRESSLINE,\n  ADDRESS_LINE2 ADDRESSLINE,\n  CITY VARCHAR(25),\n  STATE_PROVINCE VARCHAR(15),\n  COUNTRY COUNTRYNAME,\n  POSTAL_CODE VARCHAR(12),\n  ON_HOLD CHAR(1) DEFAULT NULL\n)',
                                       'CREATE TABLE PROJECT (\n  PROJ_ID PROJNO NOT NULL,\n  PROJ_NAME VARCHAR(20) NOT NULL,\n  PROJ_DESC BLOB SUB_TYPE TEXT SEGMENT SIZE 800,\n  TEAM_LEADER EMPNO,\n  PRODUCT PRODTYPE\n)',
                                       'CREATE TABLE EMPLOYEE_PROJECT (\n  EMP_NO EMPNO NOT NULL,\n  PROJ_ID PROJNO NOT NULL\n)',
                                       'CREATE TABLE PROJ_DEPT_BUDGET (\n  FISCAL_YEAR INTEGER NOT NULL,\n  PROJ_ID PROJNO NOT NULL,\n  DEPT_NO DEPTNO NOT NULL,\n  QUART_HEAD_CNT INTEGER[4],\n  PROJECTED_BUDGET BUDGET\n)',
@@ -3403,7 +3600,9 @@ DROP TABLE JOB
         self.assertListEqual(script, ['CREATE PACKAGE BODY TEST\nAS\nBEGIN\n  FUNCTION F1(I INT) RETURNS INT; -- private function\n\n  PROCEDURE P1(I INT) RETURNS (O INT)\n  AS\n  BEGIN\n  END\n\n  FUNCTION F1(I INT) RETURNS INT\n  AS\n  BEGIN\n    RETURN F(I)+10;\n  END\n\n  FUNCTION F(X INT) RETURNS INT\n  AS\n  BEGIN\n    RETURN X+1;\n  END\nEND', 'CREATE PACKAGE BODY TEST2\nAS\nBEGIN\n  FUNCTION F3(X INT) RETURNS INT\n  AS\n  BEGIN\n    RETURN TEST.F(X)+100+FN();\n  END\nEND'])
         script = s.get_metadata_ddl(sections=[sm.Section.FUNCTION_BODIES])
         self.assertListEqual(script, ['ALTER FUNCTION F2 (X INTEGER)\nRETURNS INTEGER\nAS\nBEGIN\n  RETURN X+1;\nEND',
-                                      'ALTER FUNCTION FX (\n  F TYPE OF "FIRSTNAME",\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\n  RETURN L || \', \' || F;\nEND',
+                                      'ALTER FUNCTION FX (\n  F TYPE OF "FIRSTNAME",\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\n  RETURN L || \', \' || F;\nEND' \
+                                      if self.version == FB30 else \
+                                      'ALTER FUNCTION FX (\n  F TYPE OF FIRSTNAME,\n  L TYPE OF COLUMN CUSTOMER.CONTACT_LAST\n)\nRETURNS VARCHAR(35)\nAS\nBEGIN\n  RETURN L || \', \' || F;\nEND',
                                       'ALTER FUNCTION FN\nRETURNS INTEGER\nAS\nBEGIN\n  RETURN 0;\nEND'])
         script = s.get_metadata_ddl(sections=[sm.Section.PROCEDURE_BODIES])
         self.assertListEqual(script, ['ALTER PROCEDURE GET_EMP_PROJ (EMP_NO SMALLINT)\nRETURNS (PROJ_ID CHAR(5))\nAS\nBEGIN\n\tFOR SELECT proj_id\n\t\tFROM employee_project\n\t\tWHERE emp_no = :emp_no\n\t\tINTO :proj_id\n\tDO\n\t\tSUSPEND;\nEND', 'ALTER PROCEDURE ADD_EMP_PROJ (\n  EMP_NO SMALLINT,\n  PROJ_ID CHAR(5)\n)\nAS\nBEGIN\n\tBEGIN\n\tINSERT INTO employee_project (emp_no, proj_id) VALUES (:emp_no, :proj_id);\n\tWHEN SQLCODE -530 DO\n\t\tEXCEPTION unknown_emp_id;\n\tEND\n\tSUSPEND;\nEND',
@@ -3497,31 +3696,59 @@ DROP TABLE JOB
         script = s.get_metadata_ddl(sections=[sm.Section.SHADOWS])
         self.assertListEqual(script, [])
         script = s.get_metadata_ddl(sections=[sm.Section.INDEX_DEACTIVATIONS])
-        self.assertListEqual(script, ['ALTER INDEX MINSALX INACTIVE',
-                                      'ALTER INDEX MAXSALX INACTIVE',
-                                      'ALTER INDEX BUDGETX INACTIVE',
-                                      'ALTER INDEX NAMEX INACTIVE',
-                                      'ALTER INDEX PRODTYPEX INACTIVE',
-                                      'ALTER INDEX UPDATERX INACTIVE',
-                                      'ALTER INDEX CHANGEX INACTIVE',
-                                      'ALTER INDEX CUSTNAMEX INACTIVE',
-                                      'ALTER INDEX CUSTREGION INACTIVE',
-                                      'ALTER INDEX NEEDX INACTIVE',
-                                      'ALTER INDEX SALESTATX INACTIVE',
-                                      'ALTER INDEX QTYX INACTIVE'])
+        if self.version == FB30:
+            self.assertListEqual(script, ['ALTER INDEX MINSALX INACTIVE',
+                                          'ALTER INDEX MAXSALX INACTIVE',
+                                          'ALTER INDEX BUDGETX INACTIVE',
+                                          'ALTER INDEX NAMEX INACTIVE',
+                                          'ALTER INDEX PRODTYPEX INACTIVE',
+                                          'ALTER INDEX UPDATERX INACTIVE',
+                                          'ALTER INDEX CHANGEX INACTIVE',
+                                          'ALTER INDEX CUSTNAMEX INACTIVE',
+                                          'ALTER INDEX CUSTREGION INACTIVE',
+                                          'ALTER INDEX NEEDX INACTIVE',
+                                          'ALTER INDEX SALESTATX INACTIVE',
+                                          'ALTER INDEX QTYX INACTIVE'])
+        else:
+            self.assertListEqual(script, ['ALTER INDEX NEEDX INACTIVE',
+                                          'ALTER INDEX SALESTATX INACTIVE',
+                                          'ALTER INDEX QTYX INACTIVE',
+                                          'ALTER INDEX UPDATERX INACTIVE',
+                                          'ALTER INDEX CHANGEX INACTIVE',
+                                          'ALTER INDEX PRODTYPEX INACTIVE',
+                                          'ALTER INDEX CUSTNAMEX INACTIVE',
+                                          'ALTER INDEX CUSTREGION INACTIVE',
+                                          'ALTER INDEX NAMEX INACTIVE',
+                                          'ALTER INDEX BUDGETX INACTIVE',
+                                          'ALTER INDEX MINSALX INACTIVE',
+                                          'ALTER INDEX MAXSALX INACTIVE'])
         script = s.get_metadata_ddl(sections=[sm.Section.INDEX_ACTIVATIONS])
-        self.assertListEqual(script, ['ALTER INDEX MINSALX ACTIVE',
-                                      'ALTER INDEX MAXSALX ACTIVE',
-                                      'ALTER INDEX BUDGETX ACTIVE',
-                                      'ALTER INDEX NAMEX ACTIVE',
-                                      'ALTER INDEX PRODTYPEX ACTIVE',
-                                      'ALTER INDEX UPDATERX ACTIVE',
-                                      'ALTER INDEX CHANGEX ACTIVE',
-                                      'ALTER INDEX CUSTNAMEX ACTIVE',
-                                      'ALTER INDEX CUSTREGION ACTIVE',
-                                      'ALTER INDEX NEEDX ACTIVE',
-                                      'ALTER INDEX SALESTATX ACTIVE',
-                                      'ALTER INDEX QTYX ACTIVE'])
+        if self.version == FB30:
+            self.assertListEqual(script, ['ALTER INDEX MINSALX ACTIVE',
+                                          'ALTER INDEX MAXSALX ACTIVE',
+                                          'ALTER INDEX BUDGETX ACTIVE',
+                                          'ALTER INDEX NAMEX ACTIVE',
+                                          'ALTER INDEX PRODTYPEX ACTIVE',
+                                          'ALTER INDEX UPDATERX ACTIVE',
+                                          'ALTER INDEX CHANGEX ACTIVE',
+                                          'ALTER INDEX CUSTNAMEX ACTIVE',
+                                          'ALTER INDEX CUSTREGION ACTIVE',
+                                          'ALTER INDEX NEEDX ACTIVE',
+                                          'ALTER INDEX SALESTATX ACTIVE',
+                                          'ALTER INDEX QTYX ACTIVE'])
+        else:
+            self.assertListEqual(script, ['ALTER INDEX NEEDX ACTIVE',
+                                          'ALTER INDEX SALESTATX ACTIVE',
+                                          'ALTER INDEX QTYX ACTIVE',
+                                          'ALTER INDEX UPDATERX ACTIVE',
+                                          'ALTER INDEX CHANGEX ACTIVE',
+                                          'ALTER INDEX PRODTYPEX ACTIVE',
+                                          'ALTER INDEX CUSTNAMEX ACTIVE',
+                                          'ALTER INDEX CUSTREGION ACTIVE',
+                                          'ALTER INDEX NAMEX ACTIVE',
+                                          'ALTER INDEX BUDGETX ACTIVE',
+                                          'ALTER INDEX MINSALX ACTIVE',
+                                          'ALTER INDEX MAXSALX ACTIVE'])
         script = s.get_metadata_ddl(sections=[sm.Section.SET_GENERATORS])
         self.assertListEqual(script, ['ALTER SEQUENCE EMP_NO_GEN RESTART WITH 145',
                                       'ALTER SEQUENCE CUST_NO_GEN RESTART WITH 1015'])

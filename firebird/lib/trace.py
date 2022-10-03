@@ -649,6 +649,8 @@ class EventProcedureFinish(TraceEvent):
     procedure: str
     #: Param set ID (ParamSet)
     param_id: int
+    #: Number of affected rows
+    records: int
     #: Execution time in ms
     run_time: int
     #: Number of page reads
@@ -661,7 +663,7 @@ class EventProcedureFinish(TraceEvent):
     marks: int
     #: List with table access statistics
     access: List[AccessStats]
-# 
+#
 @dataclass(frozen=True)
 class EventFunctionStart(TraceEvent):
     #: Trace event ID
@@ -990,8 +992,7 @@ def safe_int(str_value: str, base: int=10):
     """
     if str_value:
         return int(str_value, base)
-    else:
-        return 0
+    return 0
 
 class TraceParser:
     """Parser for standard textual trace log. Produces dataclasses describing individual
@@ -1074,7 +1075,10 @@ class TraceParser:
     def _is_plan_separator(self, line: str) -> bool:
         return line == '^' * 79
     def _is_perf_start(self, line: str) -> bool:
-        return line.endswith(' records fetched')
+        result = line.endswith(' records fetched')
+        if result:
+            result = line[:-len(' records fetched')].isdigit()
+        return result
     def _is_blr_perf_start(self, line: str) -> bool:
         parts = line.split()
         return 'ms' in parts or 'fetch(es)' in parts or 'mark(s)' in parts or 'read(s)' in parts or 'write(s)' in parts
@@ -1098,7 +1102,7 @@ class TraceParser:
             yield lines
     def _identify_event(self, line: str) -> Event:
         items = line.split()
-        if (len(items) == 3) or (items[2] in ['ERROR', 'WARNING']):
+        if (len(items) == 3) or (items[2] in ('ERROR', 'WARNING')):
             return Event.__members__.get(items[2], Event.UNKNOWN)
         else:
             if items[2] == 'UNAUTHORIZED':
@@ -1130,17 +1134,23 @@ class TraceParser:
             role = 'NONE'
         values['user'] = intern(user)
         values['role'] = intern(role)
-        #
         if protocol_address == '<internal>':
             values['remote_process'] = None
             values['remote_pid'] = None
         elif len(self.__current_block) > 0 and not (self.__current_block[0].startswith('(TRA') or
                                                     ' ms,' in self.__current_block[0] or
                                                     'Transaction counters:' in self.__current_block[0]):
-            remote_process_id = self.__current_block.popleft()
-            remote_process, remote_pid = remote_process_id.rsplit(':', 1)
-            values['remote_process'] = intern(remote_process)
-            values['remote_pid'] = int(remote_pid)
+            # This could be actually part of error message or separator line, not remote process spec
+            values['remote_process'] = None
+            values['remote_pid'] = None
+            remote_process_id = self.__current_block[0]
+            if not remote_process_id.startswith('---'):
+                remote_process, remote_pid = remote_process_id.rsplit(':', 1)
+                if remote_pid.isdigit():
+                    # it looks like we have genuine remote process info
+                    values['remote_process'] = intern(remote_process)
+                    values['remote_pid'] = int(remote_pid)
+                    self.__current_block.popleft()
         else:
             values['remote_process'] = None
             values['remote_pid'] = None
@@ -1163,7 +1173,7 @@ class TraceParser:
         values['initial_id'] = initial_id
         if check and values['transaction_id'] not in self.seen_transactions:
             self.__infos.append(TransactionInfo(**values))
-        del values['initial_id']       
+        del values['initial_id']
         self.seen_transactions.add(values['transaction_id'])
     def _parse_transaction_performance(self) -> None:
         self.__event_values['run_time'] = None
@@ -1201,8 +1211,10 @@ class TraceParser:
         self.__event_values['sql'] = None
         line = self.__current_block.popleft()
         if line.startswith('Statement'):
-            _, s = line.split()
+            s = line.split()[1]
             self.__event_values['statement_id'] = int(s[:-1])
+            if self.__event_values['status'] == Status.FAILED:
+                return
             line = self.__current_block.popleft()
         else:
             self.__event_values['statement_id'] = 0
@@ -1263,12 +1275,12 @@ class TraceParser:
                 self.__current_block.appendleft(line)
             self.__event_values['plan'] = intern('\n'.join(plan))
     def _parse_value_spec(self, param_def: str) -> Tuple[str, Any]:
-        param_type, param_value = param_def.rsplit(',', 1)
+        param_type, param_value = param_def.split(',', 1)
         param_type = intern(param_type)
         param_value = param_value.strip(' "')
         if param_value == '<NULL>':
             param_value = None
-        elif param_type in ['smallint', 'integer', 'bigint']:
+        elif param_type in ('smallint', 'integer', 'bigint'):
             param_value = int(param_value)
         elif param_type == 'timestamp':
             param_value = datetime.datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%f')
@@ -1276,10 +1288,10 @@ class TraceParser:
             param_value = datetime.datetime.strptime(param_value, '%Y-%m-%d')
         elif param_type == 'time':
             param_value = datetime.datetime.strptime(param_value, '%H:%M:%S.%f')
-        elif param_type in ['float', 'double precision']:
+        elif param_type in ('float', 'double precision'):
             param_value = decimal.Decimal(param_value)
         return (param_type, param_value,)
-    def _parse_parameters_block(self) -> List[Tuple[str, Any]]: 
+    def _parse_parameters_block(self) -> List[Tuple[str, Any]]:
         parameters = []
         while self.__current_block and self.__current_block[0].startswith('param'):
             line = self.__current_block.popleft()
@@ -1292,7 +1304,7 @@ class TraceParser:
             self.__current_block.popleft()
         #
         param_id = None
-        if len(parameters) > 0:
+        if parameters:
             key = tuple(parameters)
             if key in self.param_map:
                 param_id = self.param_map[key]
@@ -1315,9 +1327,12 @@ class TraceParser:
         if 'records fetched' in self.__current_block[0]:
             line = self.__current_block.popleft()
             self.__event_values['records'] = int(line.split()[0])
+        else:
+            self.__event_values['records'] = None
         values = self.__current_block.popleft().split(',')
         while values:
-            value, val_type = values.pop().split()
+            next_value = values.pop()
+            value, val_type = next_value.split()
             if 'ms' in val_type:
                 self.__event_values['run_time'] = int(value)
             elif 'read' in val_type:
@@ -1373,8 +1388,8 @@ class TraceParser:
     def _parse_service(self) -> None:
         svc_id = ''
         line = self.__current_block.popleft()
-        if 'service_mgr' not in line:
-            raise Error("Service connection description expected.")
+        #if 'service_mgr' not in line:
+            #raise Error("Service connection description expected.")
         _, _, s = line.partition(' (')
         items = s.strip('()').split(',')
         if len(items) == 4:
@@ -1433,7 +1448,7 @@ class TraceParser:
     def __parse_trace_header(self) -> None:
         items = self.__current_block.popleft().split()
         self.__last_timestamp = datetime.datetime.strptime(items[0], '%Y-%m-%dT%H:%M:%S.%f')
-        if (len(items) == 3) or (items[2] in ['ERROR', 'WARNING']):
+        if (len(items) == 3) or (items[2] in ('ERROR', 'WARNING')):
             self.__event_values['status'] = Status.OK
         else:
             if items[2] == 'UNAUTHORIZED':
@@ -1607,6 +1622,8 @@ class TraceParser:
         self._parse_attachment_and_transaction()
         self._parse_trigger()
         self._parse_performance()
+        if 'records' in self.__event_values:
+            del self.__event_values['records']
         return EventTriggerFinish(**self.__event_values)
     def __parser_procedure_start(self) -> EventProcedureStart:
         self.__parse_trace_header()
@@ -1639,6 +1656,8 @@ class TraceParser:
         self.__current_block.popleft() # returns:
         self.__event_values['returns'] = self._parse_parameters_block()[0]
         self._parse_performance()
+        if 'records' in self.__event_values:
+            del self.__event_values['records']
         return EventFunctionFinish(**self.__event_values)
     def __parser_create_db(self) -> EventCreate:
         self.__parse_trace_header()
@@ -1687,7 +1706,7 @@ class TraceParser:
         self._parse_service()
         # service parameters
         line = self.__current_block.popleft().strip()
-        if line[0] == '"' and line[-1] == '"':
+        if line[0] == line[-1] == '"':
             action = line.strip('"')
             self.__event_values['action'] = intern(action)
             if len(self.__current_block) > 0:
@@ -1767,6 +1786,7 @@ class TraceParser:
         self._parse_sweep_attachment()
         self._parse_performance()
         del self.__event_values['status']
+        del self.__event_values['records']
         return EventSweepProgress(**self.__event_values)
     def __parser_sweep_finish(self) -> EventSweepFinish:
         self.__parse_trace_header()
@@ -1774,7 +1794,7 @@ class TraceParser:
         self._parse_sweep_tr_counters()
         self._parse_performance()
         del self.__event_values['status']
-        #del self.__event_values['access']
+        del self.__event_values['records']
         return EventSweepFinish(**self.__event_values)
     def __parser_sweep_failed(self) -> EventSweepFailed:
         self.__parse_trace_header()
@@ -1799,6 +1819,7 @@ class TraceParser:
         self._parse_blr_statement_id()
         self._parse_blrdyn_content()
         self._parse_performance()
+        del self.__event_values['records']
         return EventBLRExecute(**self.__event_values)
     def __parser_dyn_execute(self) -> EventDYNExecute:
         self.__parse_trace_header()
@@ -1839,8 +1860,7 @@ class TraceParser:
         self.__event_values.clear()
         if self._is_session_suspended(self.__current_block[0]):
             return self.__parser_trace_suspend()
-        else:
-            return self.__parse_map[self._identify_event(self.__current_block[0])]()
+        return self.__parse_map[self._identify_event(self.__current_block[0])]()
     def parse(self, lines: Iterable):
         """Parse output from Firebird trace session.
 

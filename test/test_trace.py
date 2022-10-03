@@ -45,6 +45,8 @@ from firebird.driver import *
 from firebird.lib.trace import *
 
 FB30 = '3.0'
+FB40 = '4.0'
+FB50 = '5.0'
 
 if driver_config.get_server('local') is None:
     # Register Firebird server
@@ -122,6 +124,12 @@ class TestBase(unittest.TestCase):
         if self.version.startswith('3.0'):
             self.FBTEST_DB = 'fbtest30.fdb'
             self.version = FB30
+        elif self.version.startswith('4.0'):
+            self.FBTEST_DB = 'fbtest40.fdb'
+            self.version = FB40
+        elif self.version.startswith('5.0'):
+            self.FBTEST_DB = 'fbtest50.fdb'
+            self.version = FB50
         else:
             raise Exception("Unsupported Firebird version (%s)" % self.version)
         #
@@ -1178,7 +1186,7 @@ TABLE_B                                           1
         output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
 EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
 ParamSet(par_id=1, params=[('varchar(10)', 'XXX'), ('double precision', Decimal('313204')), ('double precision', Decimal('1')), ('varchar(20)', '50031'), ('varchar(20)', 'GGG(1.25)'), ('varchar(10)', 'PP100X120'), ('varchar(20)', None), ('double precision', Decimal('3.33333333333333')), ('double precision', Decimal('45')), ('integer', 3), ('integer', None), ('double precision', Decimal('1')), ('integer', 0)])
-EventProcedureFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, procedure='PROC_A', param_id=1, run_time=0, reads=14, writes=None, fetches=14, marks=None, access=[AccessStats(table='TABLE_A', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='TABLE_B', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0)])
+EventProcedureFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 45, 526000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1570, procedure='PROC_A', param_id=1, records=None, run_time=0, reads=14, writes=None, fetches=14, marks=None, access=[AccessStats(table='TABLE_A', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0), AccessStats(table='TABLE_B', natural=0, index=1, update=0, insert=0, delete=0, backout=0, purge=0, expunge=0)])
 """
         self._check_events(trace_lines, output)
     def test_47_service_attach(self):

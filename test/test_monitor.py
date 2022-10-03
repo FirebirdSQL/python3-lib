@@ -45,6 +45,8 @@ from firebird.lib import schema as sm
 from io import StringIO
 
 FB30 = '3.0'
+FB40 = '4.0'
+FB50 = '5.0'
 
 if driver_config.get_server('local') is None:
     # Register Firebird server
@@ -76,6 +78,12 @@ class TestBase(unittest.TestCase):
         if self.version.startswith('3.0'):
             self.FBTEST_DB = 'fbtest30.fdb'
             self.version = FB30
+        elif self.version.startswith('4.0'):
+            self.FBTEST_DB = 'fbtest40.fdb'
+            self.version = FB40
+        elif self.version.startswith('5.0'):
+            self.FBTEST_DB = 'fbtest50.fdb'
+            self.version = FB50
         else:
             raise Exception("Unsupported Firebird version (%s)" % self.version)
         #
@@ -177,7 +185,10 @@ class TestMonitor(TestBase):
         with Monitor(self.con) as m:
             self.assertEqual(m.db.name.upper(), self.dbfile.upper())
             self.assertEqual(m.db.page_size, 8192)
-            self.assertEqual(m.db.ods, 12.0)
+            if self.version == FB30:
+                self.assertEqual(m.db.ods, 12.0)
+            else:
+                self.assertEqual(m.db.ods, 13.0)
             self.assertIsInstance(m.db.oit, int)
             self.assertIsInstance(m.db.oat, int)
             self.assertIsInstance(m.db.ost, int)
@@ -226,9 +237,12 @@ class TestMonitor(TestBase):
                 self.assertEqual(s.character_set.name, 'UTF8')
                 self.assertIsInstance(s.timestamp, datetime.datetime)
                 self.assertIsInstance(s.transactions, list)
-                self.assertIn(s.auth_method, ['Srp', 'Win_Sspi', 'Legacy_Auth'])
+                self.assertIn(s.auth_method, ['Srp', 'Srp256', 'Win_Sspi', 'Legacy_Auth'])
                 self.assertIsInstance(s.client_version, str)
-                self.assertEqual(s.remote_version, 'P15')
+                if self.version == FB30:
+                    self.assertEqual(s.remote_version, 'P15')
+                else:
+                    self.assertEqual(s.remote_version, 'P17')
                 self.assertIsInstance(s.remote_os_user, str)
                 self.assertIsInstance(s.remote_host, str)
                 self.assertFalse(s.system)

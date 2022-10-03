@@ -108,7 +108,7 @@ class Monitor:
         """
         self._con: Connection = connection
         self._ic: Cursor = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
-                                                     access=TraAccessMode.READ)).cursor()
+                                                             access_mode=TraAccessMode.READ)).cursor()
         self._ic._logging_id_ = 'monitor.internal_cursor'
         self.__internal: bool = False
         self._con_id: int = connection.info.id
@@ -265,7 +265,7 @@ class InfoItem:
     def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
         #: Weak reference to parent `.Monitor` instance.
         self.monitor: Monitor = monitor if isinstance(monitor, weakref.ProxyType) else weakref.proxy(monitor)
-        self._attributes: Dict[str, Any] = dict(attributes)
+        self._attributes: Dict[str, Any] = attributes
     def _strip_attribute(self, attr: str) -> None:
         if self._attributes.get(attr):
             self._attributes[attr] = self._attributes[attr].strip()

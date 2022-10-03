@@ -966,7 +966,7 @@ for msg in messages:
         _r_msgs.append(msg)
     else:
         parts = msg.msg_format[0].split()
-        _h_msgs.setdefault(parts[0], list()).append(msg)
+        _h_msgs.setdefault(parts[0], []).append(msg)
 
 def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
     """Identify Firebird log message.

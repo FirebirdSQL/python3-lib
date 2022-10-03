@@ -885,7 +885,7 @@ class Schema(Visitable):
             raise Error("Call to 'bind' not allowed for embedded Schema.")
         self._con = connection
         self._ic = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
-                                                     access=TraAccessMode.READ)).cursor()
+                                                     access_mode=TraAccessMode.READ)).cursor()
         self._ic._logging_id_ = 'schema.internal_cursor'
         self.__clear()
         self.ods = self._con.info.ods
@@ -1116,7 +1116,7 @@ class Schema(Visitable):
             return self.all_functions.get(name)
         elif itype is ObjectType.COLLATION:
             return self.collations.get(name)
-        elif itype in [ObjectType.PACKAGE, ObjectType.PACKAGE_BODY]: # Package
+        elif itype in (ObjectType.PACKAGE, ObjectType.PACKAGE_BODY): # Package
             return self.packages.get(name)
     def get_metadata_ddl(self, *, sections=SCRIPT_DEFAULT_ORDER) -> List[str]:
         """Return list of DDL SQL commands for creation of specified categories of database objects.
@@ -1174,7 +1174,8 @@ class Schema(Visitable):
                     script.append(domain.get_sql_for('create'))
             elif section == Section.PACKAGE_DEFS:
                 for package in self.packages:
-                    script.append(package.get_sql_for('create'))
+                    if not package.is_sys_object():
+                        script.append(package.get_sql_for('create'))
             elif section == Section.FUNCTION_DEFS:
                 for func in (x for x in self.functions if
                              not x.is_external() and
@@ -1211,7 +1212,8 @@ class Schema(Visitable):
                     script.append(view.get_sql_for('create'))
             elif section == Section.PACKAGE_BODIES:
                 for package in self.packages:
-                    script.append(package.get_sql_for('create', body=True))
+                    if not package.is_sys_object():
+                        script.append(package.get_sql_for('create', body=True))
             elif section == Section.PROCEDURE_BODIES:
                 for proc in (x for x in self.procedures if not x.is_packaged()):
                     script.append('ALTER' + proc.get_sql_for('create')[6:])
@@ -1232,12 +1234,12 @@ class Schema(Visitable):
                              and not x.subject.is_sys_object()):
                     script.append(priv.get_sql_for('grant'))
             elif section == Section.COMMENTS:
-                for objects in [self.character_sets, self.collations,
+                for objects in (self.character_sets, self.collations,
                                 self.exceptions, self.domains,
                                 self.generators, self.tables,
                                 self.indices, self.views,
                                 self.triggers, self.procedures,
-                                self.functions, self.roles]:
+                                self.functions, self.roles):
                     for obj in objects:
                         if obj.description is not None:
                             script.append(obj.get_sql_for('comment'))
@@ -1653,7 +1655,7 @@ class SchemaItem(Visitable):
         #: Weak reference to parent `.Schema` instance.
         self.schema: Schema = schema if isinstance(schema, weakref.ProxyType) else weakref.proxy(schema)
         self._type_code: List[ObjectType] = []
-        self._attributes: Dict[str, Any] = dict(attributes)
+        self._attributes: Dict[str, Any] = attributes
         self._actions: List[str] = []
     def _strip_attribute(self, attr: str) -> None:
         if self._attributes.get(attr):
@@ -1668,7 +1670,7 @@ class SchemaItem(Visitable):
             return False
         if self.schema.opt_always_quote:
             return True
-        if len(ident) >= 1 and ident[0] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+        if ident and ident[0] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
             return True
         for char in ident:
             if char not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$_':
@@ -2596,7 +2598,7 @@ class Domain(SchemaItem):
         precision_known = False
         if self.field_type in (FieldType.SHORT, FieldType.LONG, FieldType.INT64):
             if self.precision is not None:
-                if self.sub_type in [FieldSubType.NUMERIC, FieldSubType.DECIMAL]:
+                if self.sub_type in (FieldSubType.NUMERIC, FieldSubType.DECIMAL):
                     l.append(f'{INTEGRAL_SUBTYPES[self.sub_type]}({self.precision}, {-self.scale})')
                     precision_known = True
         if not precision_known:
@@ -2710,7 +2712,7 @@ class Dependency(SchemaItem):
             return None
         elif self.dependent_type == 17: # Collation
             return self.schema.collations.get(self.dependent_name)
-        elif self.dependent_type in [18, 19]: # Package + package body
+        elif self.dependent_type in (18, 19): # Package + package body
             return self.schema.packages.get(self.dependent_name)
         return None
     @property
@@ -2904,8 +2906,7 @@ class Constraint(SchemaItem):
         """
         if self.is_check():
             return self._attributes['RDB$TRIGGER_NAME']
-        else:
-            return []
+        return []
     @property
     def triggers(self) -> DataList[Trigger]:
         """List of triggers that enforce the CHECK constraint.
@@ -3056,12 +3057,12 @@ class Table(SchemaItem):
     def is_gtt(self) -> bool:
         """Returns True if table is GLOBAL TEMPORARY table.
         """
-        return self.table_type in [RelationType.GLOBAL_TEMPORARY_DELETE,
-                                   RelationType.GLOBAL_TEMPORARY_PRESERVE]
+        return self.table_type in (RelationType.GLOBAL_TEMPORARY_DELETE,
+                                   RelationType.GLOBAL_TEMPORARY_PRESERVE)
     def is_persistent(self) -> bool:
         """Returns True if table is persistent one.
         """
-        return self.table_type in [RelationType.PERSISTENT, RelationType.EXTERNAL]
+        return self.table_type in (RelationType.PERSISTENT, RelationType.EXTERNAL)
     def is_external(self) -> bool:
         """Returns True if table is external table.
         """
@@ -3938,8 +3939,7 @@ class FunctionArgument(SchemaItem):
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$DESCRIPTION')
     def _get_name(self) -> str:
-        return self.argument_name if self.argument_name \
-               else f'{self.function.name}_{self.position}'
+        return self.argument_name or f'{self.function.name}_{self.position}'
     def get_sql_definition(self) -> str:
         """Returns SQL definition for parameter.
         """
@@ -3962,7 +3962,7 @@ class FunctionArgument(SchemaItem):
     def is_by_reference(self) -> bool:
         """Returns True if argument is passed by reference.
         """
-        return self.mechanism in [Mechanism.BY_REFERENCE, Mechanism.BY_REFERENCE_WITH_NULL]
+        return self.mechanism in (Mechanism.BY_REFERENCE, Mechanism.BY_REFERENCE_WITH_NULL)
     def is_by_descriptor(self, any=False) -> bool:
         """Returns True if argument is passed by descriptor.
 
@@ -3970,8 +3970,8 @@ class FunctionArgument(SchemaItem):
             any: If True, method returns True if any kind of descriptor is used (including
                  BLOB and ARRAY descriptors).
         """
-        return self.mechanism in [Mechanism.BY_VMS_DESCRIPTOR, Mechanism.BY_ISC_DESCRIPTOR,
-                                  Mechanism.BY_SCALAR_ARRAY_DESCRIPTOR] if any \
+        return self.mechanism in (Mechanism.BY_VMS_DESCRIPTOR, Mechanism.BY_ISC_DESCRIPTOR,
+                                  Mechanism.BY_SCALAR_ARRAY_DESCRIPTOR) if any \
                else self.mechanism == Mechanism.BY_VMS_DESCRIPTOR
     def is_with_null(self) -> bool:
         """Returns True if argument is passed by reference with NULL support.
@@ -4016,7 +4016,7 @@ class FunctionArgument(SchemaItem):
     def field_type(self) -> FieldType:
         """Number code of the data type defined for the argument.
         """
-        return None if (code := self._attributes['RDB$FIELD_TYPE']) is None else FieldType(code)
+        return None if (code := self._attributes['RDB$FIELD_TYPE']) in (None, 0) else FieldType(code)
     @property
     def length(self) -> int:
         """Length of the argument in bytes.
@@ -4070,7 +4070,7 @@ class FunctionArgument(SchemaItem):
             precision_known = False
             if self.field_type in (FieldType.SHORT, FieldType.LONG, FieldType.INT64):
                 if self.precision != None:
-                    if self.sub_type in [FieldSubType.NUMERIC, FieldSubType.DECIMAL]:
+                    if self.sub_type in (FieldSubType.NUMERIC, FieldSubType.DECIMAL):
                         l.append(f'{INTEGRAL_SUBTYPES[self.sub_type]}({self.precision}, {-self.scale})')
                         precision_known = True
             if not precision_known:
@@ -4224,7 +4224,7 @@ class Function(SchemaItem):
     def _get_alter_sql(self, **params) -> str:
         self._check_params(params, ['arguments', 'returns', 'declare', 'code'])
         arguments = params.get('arguments')
-        for par in ['returns', 'code']:
+        for par in ('returns', 'code'):
             if par not in params:
                 raise ValueError(f"Missing required parameter: '{par}'")
         returns = params.get('returns')
@@ -4280,7 +4280,7 @@ class Function(SchemaItem):
                 'RDB$ARGUMENT_MECHANISM', 'RDB$FIELD_NAME', 'RDB$RELATION_NAME',
                 'RDB$SYSTEM_FLAG', 'RDB$DESCRIPTION']
         self.__arguments = DataList((FunctionArgument(self.schema, self, row) for row in
-                                     (mock if mock else
+                                     (mock or
                                       self.schema._select("""select %s from rdb$function_arguments
 where rdb$function_name = ? order by rdb$argument_position""" % ','.join(cols), (self.name,)))),
                                     FunctionArgument, frozen=True)

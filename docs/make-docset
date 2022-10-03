@@ -1,0 +1,2 @@
+doc2dash -u https://firebird-lib.readthedocs.io/en/latest/ -f -i ./_static/fb-favicon.png -n firebird-lib ./_build/html/
+tar --exclude='.DS_Store' -cvzf ../dist/firebird-lib-docset.tgz firebird-lib.docset

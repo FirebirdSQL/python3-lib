@@ -7,17 +7,19 @@ firebird.lib.log
 
 Module for parsing Firebird server log.
 
+Enumerations
+============
+
+.. autoclass:: Severity
+.. autoclass:: Facility
+
 Dataclasses
 ===========
 
-LogMessage
-----------
 .. autoclass:: LogMessage
 
 Classes
 =======
 
-LogParser
----------
 .. autoclass:: LogParser
 

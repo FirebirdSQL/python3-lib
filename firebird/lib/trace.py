@@ -30,6 +30,7 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
+# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903, C0301, W0703
 
 """firebird.lib.trace - Module for parsing Firebird trace & audit protocol
 
@@ -99,12 +100,10 @@ class Event(IntEnum):
 class TraceInfo:
     """Base class for trace info blocks.
     """
-    pass
 
 class TraceEvent:
     """Base class for trace events.
     """
-    pass
 
 @dataclass(frozen=True)
 class AttachmentInfo(TraceInfo):
@@ -208,6 +207,7 @@ class AccessStats(TraceInfo):
 #
 @dataclass(frozen=True)
 class EventTraceInit(TraceEvent):
+    "Trace session initialized trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -217,6 +217,7 @@ class EventTraceInit(TraceEvent):
 
 @dataclass(frozen=True)
 class EventTraceSuspend(TraceEvent):
+    "Trace session suspended trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -226,6 +227,7 @@ class EventTraceSuspend(TraceEvent):
 
 @dataclass(frozen=True)
 class EventTraceFinish(TraceEvent):
+    "Trace session finished trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -236,6 +238,7 @@ class EventTraceFinish(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventCreate(TraceEvent):
+    "Create database trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -263,6 +266,7 @@ class EventCreate(TraceEvent):
 
 @dataclass(frozen=True)
 class EventDrop(TraceEvent):
+    "Drop database trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -290,6 +294,7 @@ class EventDrop(TraceEvent):
 
 @dataclass(frozen=True)
 class EventAttach(TraceEvent):
+    "Database attach trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -317,6 +322,7 @@ class EventAttach(TraceEvent):
 
 @dataclass(frozen=True)
 class EventDetach(TraceEvent):
+    "Database detach trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -345,6 +351,7 @@ class EventDetach(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventTransactionStart(TraceEvent):
+    "Transaction start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -360,6 +367,7 @@ class EventTransactionStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventCommit(TraceEvent):
+    "Commit trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -385,6 +393,7 @@ class EventCommit(TraceEvent):
 
 @dataclass(frozen=True)
 class EventRollback(TraceEvent):
+    "Rollback trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -410,6 +419,7 @@ class EventRollback(TraceEvent):
 
 @dataclass(frozen=True)
 class EventCommitRetaining(TraceEvent):
+    "Commit retaining trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -437,6 +447,7 @@ class EventCommitRetaining(TraceEvent):
 
 @dataclass(frozen=True)
 class EventRollbackRetaining(TraceEvent):
+    "Rollback retaining trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -465,6 +476,7 @@ class EventRollbackRetaining(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventPrepareStatement(TraceEvent):
+    "Prepare statement trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -484,6 +496,7 @@ class EventPrepareStatement(TraceEvent):
 
 @dataclass(frozen=True)
 class EventStatementStart(TraceEvent):
+    "Statement start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -503,6 +516,7 @@ class EventStatementStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventStatementFinish(TraceEvent):
+    "Statement finish trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -536,6 +550,7 @@ class EventStatementFinish(TraceEvent):
 
 @dataclass(frozen=True)
 class EventFreeStatement(TraceEvent):
+    "Free statement trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -551,6 +566,7 @@ class EventFreeStatement(TraceEvent):
 
 @dataclass(frozen=True)
 class EventCloseCursor(TraceEvent):
+    "Close cursor trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -567,6 +583,7 @@ class EventCloseCursor(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventTriggerStart(TraceEvent):
+    "Trigger start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -586,6 +603,7 @@ class EventTriggerStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventTriggerFinish(TraceEvent):
+    "Trigger finish trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -618,6 +636,7 @@ class EventTriggerFinish(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventProcedureStart(TraceEvent):
+    "Procedure start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -635,6 +654,7 @@ class EventProcedureStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventProcedureFinish(TraceEvent):
+    "Procedure finish trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -666,6 +686,7 @@ class EventProcedureFinish(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventFunctionStart(TraceEvent):
+    "Function start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -683,6 +704,7 @@ class EventFunctionStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventFunctionFinish(TraceEvent):
+    "Function finish trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -714,6 +736,7 @@ class EventFunctionFinish(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventServiceAttach(TraceEvent):
+    "Service attach trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -725,6 +748,7 @@ class EventServiceAttach(TraceEvent):
 
 @dataclass(frozen=True)
 class EventServiceDetach(TraceEvent):
+    "Service detach trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -736,6 +760,7 @@ class EventServiceDetach(TraceEvent):
 
 @dataclass(frozen=True)
 class EventServiceStart(TraceEvent):
+    "Service start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -751,6 +776,7 @@ class EventServiceStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventServiceQuery(TraceEvent):
+    "Service query trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -769,6 +795,7 @@ class EventServiceQuery(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventSetContext(TraceEvent):
+    "Set context variable trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -787,6 +814,7 @@ class EventSetContext(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventError(TraceEvent):
+    "Error trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -800,6 +828,7 @@ class EventError(TraceEvent):
 
 @dataclass(frozen=True)
 class EventWarning(TraceEvent):
+    "Warning trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -813,6 +842,7 @@ class EventWarning(TraceEvent):
 
 @dataclass(frozen=True)
 class EventServiceError(TraceEvent):
+    "Service error trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -826,6 +856,7 @@ class EventServiceError(TraceEvent):
 
 @dataclass(frozen=True)
 class EventServiceWarning(TraceEvent):
+    "Service warning trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -840,6 +871,7 @@ class EventServiceWarning(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventSweepStart(TraceEvent):
+    "Sweep start trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -857,6 +889,7 @@ class EventSweepStart(TraceEvent):
 
 @dataclass(frozen=True)
 class EventSweepProgress(TraceEvent):
+    "Sweep progress trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -878,6 +911,7 @@ class EventSweepProgress(TraceEvent):
 
 @dataclass(frozen=True)
 class EventSweepFinish(TraceEvent):
+    "Sweep finished trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -907,6 +941,7 @@ class EventSweepFinish(TraceEvent):
 
 @dataclass(frozen=True)
 class EventSweepFailed(TraceEvent):
+    "Sweep failed trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -917,6 +952,7 @@ class EventSweepFailed(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventBLRCompile(TraceEvent):
+    "BLR compile trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -934,6 +970,7 @@ class EventBLRCompile(TraceEvent):
 
 @dataclass(frozen=True)
 class EventBLRExecute(TraceEvent):
+    "BLR execution trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -963,6 +1000,7 @@ class EventBLRExecute(TraceEvent):
 
 @dataclass(frozen=True)
 class EventDYNExecute(TraceEvent):
+    "DYN execution trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -980,6 +1018,7 @@ class EventDYNExecute(TraceEvent):
 #
 @dataclass(frozen=True)
 class EventUnknown(TraceEvent):
+    "Uknown trace event"
     #: Trace event ID
     event_id: int
     #: Timestamp when the event occurred
@@ -1068,7 +1107,7 @@ class TraceParser:
         try:
             datetime.datetime.strptime(items[0], '%Y-%m-%dT%H:%M:%S.%f')
             return True
-        except:
+        except Exception:
             return False
     def _is_session_suspended(self, line: str) -> bool:
         return line.rfind('is suspended as its log is full ---') >= 0
@@ -1104,21 +1143,19 @@ class TraceParser:
         items = line.split()
         if (len(items) == 3) or (items[2] in ('ERROR', 'WARNING')):
             return Event.__members__.get(items[2], Event.UNKNOWN)
-        else:
-            if items[2] == 'UNAUTHORIZED':
-                return Event.__members__.get(items[3], Event.UNKNOWN)
-            elif items[2] == 'FAILED':
-                return Event.__members__.get(items[3], Event.UNKNOWN)
-            elif items[2] == 'Unknown':
-                return Event.UNKNOWN
-            else:
-                raise Error(f'Unrecognized event header: "{line}"')
+        if items[2] == 'UNAUTHORIZED':
+            return Event.__members__.get(items[3], Event.UNKNOWN)
+        if items[2] == 'FAILED':
+            return Event.__members__.get(items[3], Event.UNKNOWN)
+        if items[2] == 'Unknown':
+            return Event.UNKNOWN
+        raise Error(f'Unrecognized event header: "{line}"')
     def _parse_attachment_info(self, values: Dict[str, Any], check: bool=True) -> None:
         database, _, attachment = self.__current_block.popleft().partition(' (')
         values['database'] = intern(database)
         attachment_id, user_role, charset, protocol_address = attachment.strip('()').split(',')
-        _, s = attachment_id.split('_')
-        values['attachment_id'] = int(s)
+        _, attachment_id = attachment_id.split('_')
+        values['attachment_id'] = int(attachment_id)
         values['charset'] = intern(charset.strip())
         protocol_address = protocol_address.strip()
         if protocol_address == '<internal>':
@@ -1167,8 +1204,8 @@ class TraceParser:
         else:
             transaction_id, initial_id, transaction_options = items
             initial_id = int(initial_id[6:])
-        _, s = transaction_id.split('_')
-        values['transaction_id'] = int(s)
+        _, transaction_id = transaction_id.split('_')
+        values['transaction_id'] = int(transaction_id)
         values['options'] = [intern(x.strip()) for x in transaction_options.split('|')]
         values['initial_id'] = initial_id
         if check and values['transaction_id'] not in self.seen_transactions:
@@ -1211,8 +1248,8 @@ class TraceParser:
         self.__event_values['sql'] = None
         line = self.__current_block.popleft()
         if line.startswith('Statement'):
-            s = line.split()[1]
-            self.__event_values['statement_id'] = int(s[:-1])
+            stmt_id = line.split()[1]
+            self.__event_values['statement_id'] = int(stmt_id[:-1])
             if self.__event_values['status'] == Status.FAILED:
                 return
             line = self.__current_block.popleft()
@@ -1223,8 +1260,8 @@ class TraceParser:
     def _parse_blr_statement_id(self) -> None:
         line = self.__current_block[0].strip()
         if line.startswith('Statement ') and line[-1] == ':':
-            _, s = self.__current_block.popleft().split()
-            self.__event_values['statement_id'] = int(s[:-1])
+            _, stmt_id = self.__current_block.popleft().split()
+            self.__event_values['statement_id'] = int(stmt_id[:-1])
         else:
             self.__event_values['statement_id'] = None
     def _parse_blrdyn_content(self) -> None:
@@ -1295,7 +1332,7 @@ class TraceParser:
         parameters = []
         while self.__current_block and self.__current_block[0].startswith('param'):
             line = self.__current_block.popleft()
-            param_id, param_def = line.split(' = ')
+            _, param_def = line.split(' = ')
             parameters.append(self._parse_value_spec(param_def))
         return parameters
     def _parse_parameters(self, for_procedure: bool=False) -> None:
@@ -1390,8 +1427,8 @@ class TraceParser:
         line = self.__current_block.popleft()
         #if 'service_mgr' not in line:
             #raise Error("Service connection description expected.")
-        _, _, s = line.partition(' (')
-        items = s.strip('()').split(',')
+        _, _, spec = line.partition(' (')
+        items = spec.strip('()').split(',')
         if len(items) == 4:
             svc_id, user, protocol_address, remote_process_id = items
         else:
@@ -1446,7 +1483,8 @@ class TraceParser:
                 self.__current_block.appendleft(line)
                 break
     def __parse_trace_header(self) -> None:
-        items = self.__current_block.popleft().split()
+        line = self.__current_block.popleft()
+        items = line.split()
         self.__last_timestamp = datetime.datetime.strptime(items[0], '%Y-%m-%dT%H:%M:%S.%f')
         if (len(items) == 3) or (items[2] in ('ERROR', 'WARNING')):
             self.__event_values['status'] = Status.OK
@@ -1628,30 +1666,30 @@ class TraceParser:
     def __parser_procedure_start(self) -> EventProcedureStart:
         self.__parse_trace_header()
         self._parse_attachment_and_transaction()
-        pad, s = self.__current_block.popleft().split()
-        self.__event_values['procedure'] = intern(s[:-1])
+        _, name = self.__current_block.popleft().split()
+        self.__event_values['procedure'] = intern(name[:-1])
         self._parse_parameters(for_procedure=True)
         return EventProcedureStart(**self.__event_values)
     def __parser_procedure_finish(self) -> EventProcedureFinish:
         self.__parse_trace_header()
         self._parse_attachment_and_transaction()
-        pad, s = self.__current_block.popleft().split()
-        self.__event_values['procedure'] = intern(s[:-1])
+        _, name = self.__current_block.popleft().split()
+        self.__event_values['procedure'] = intern(name[:-1])
         self._parse_parameters(for_procedure=True)
         self._parse_performance()
         return EventProcedureFinish(**self.__event_values)
     def __parser_func_start(self) -> EventProcedureStart:
         self.__parse_trace_header()
         self._parse_attachment_and_transaction()
-        pad, s = self.__current_block.popleft().split()
-        self.__event_values['function'] = intern(s[:-1])
+        _, name = self.__current_block.popleft().split()
+        self.__event_values['function'] = intern(name[:-1])
         self._parse_parameters(for_procedure=True)
         return EventFunctionStart(**self.__event_values)
     def __parser_func_finish(self) -> EventProcedureFinish:
         self.__parse_trace_header()
         self._parse_attachment_and_transaction()
-        pad, s = self.__current_block.popleft().split()
-        self.__event_values['function'] = intern(s[:-1])
+        _, name = self.__current_block.popleft().split()
+        self.__event_values['function'] = intern(name[:-1])
         self._parse_parameters(for_procedure=True)
         self.__current_block.popleft() # returns:
         self.__event_values['returns'] = self._parse_parameters_block()[0]
@@ -1826,7 +1864,7 @@ class TraceParser:
         self._parse_attachment_and_transaction()
         # DYN
         self._parse_blrdyn_content()
-        value, ms = self.__current_block.popleft().split()
+        value, _ = self.__current_block.popleft().split()
         self.__event_values['run_time'] = int(value)
         return EventDYNExecute(**self.__event_values)
     def __parser_unknown(self) -> EventUnknown:
@@ -1914,5 +1952,5 @@ class TraceParser:
                         result.append(event)
                         self.__pushed = [line]
                         return result
-                    else:
-                        self.__pushed.append(line)
+                    self.__pushed.append(line)
+        return None

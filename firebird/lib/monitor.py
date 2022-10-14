@@ -30,6 +30,7 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
+# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903, C0103, C0301
 
 """firebird.lib.monitor - Module for work with Firebird monitoring tables
 
@@ -39,17 +40,14 @@
 from __future__ import annotations
 from typing import Dict, List, Any, Union
 import datetime
+import weakref
+from enum import Enum, IntEnum
 from firebird.base.collections import DataList
 from firebird.driver import tpb, Connection, Cursor, Statement, Isolation, Error, TraAccessMode
 from firebird.lib.schema import ObjectType, CharacterSet, Procedure, Trigger, Function
-from enum import Enum, IntEnum
-import weakref
 
 FLAG_NOT_SET = 0
 FLAG_SET = 1
-
-INFINITE_WAIT = -1
-NO_WAIT = 0
 
 # Enums
 class ShutdownMode(IntEnum):
@@ -110,9 +108,17 @@ class Monitor:
         self._ic: Cursor = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
                                                              access_mode=TraAccessMode.READ)).cursor()
         self._ic._logging_id_ = 'monitor.internal_cursor'
-        self.__internal: bool = False
+        self.__internal: bool = False # pylint: disable=W0238
         self._con_id: int = connection.info.id
-        self.clear()
+        #
+        self.__database = None
+        self.__attachments = None
+        self.__transactions = None
+        self.__statements = None
+        self.__callstack = None
+        self.__iostats = None
+        self.__variables = None
+        self.__tablestats = None
     def __del__(self):
         if not self.closed:
             self.close()
@@ -129,7 +135,7 @@ class Monitor:
         desc = self._ic.description
         return ({desc[i][0]: row[i] for i in range(len(row))} for row in self._ic)
     def _set_internal(self, value: bool) -> None:
-        self.__internal = value
+        self.__internal = value # pylint: disable=W0238
     def clear(self):
         """Clear all data fetched from monitoring tables.
 
@@ -438,9 +444,8 @@ class AttachmentInfo(InfoItem):
         """
         if self is self.monitor.this_attachment:
             raise Error("Can't terminate current session.")
-        else:
-            self.monitor._ic.execute('delete from mon$attachments where mon$attachment_id = ?',
-                                     (self.id,))
+        self.monitor._ic.execute('delete from mon$attachments where mon$attachment_id = ?',
+                                 (self.id,))
     @property
     def id(self) -> int:
         """Attachment ID.
@@ -772,12 +777,11 @@ class CallStackInfo(InfoItem):
         obj_type = self.object_type
         if obj_type == ObjectType.PROCEDURE:
             return self.monitor._con.schema.procedures.get(self.object_name)
-        elif obj_type == ObjectType.TRIGGER:
+        if obj_type == ObjectType.TRIGGER:
             return self.monitor._con.schema.triggers.get(self.object_name)
-        elif obj_type == ObjectType.UDF:
+        if obj_type == ObjectType.UDF:
             return self.monitor._con.schema.functions.get(self.object_name)
-        else:
-            raise Error(f"Unrecognized object type '{obj_type}'")
+        raise Error(f"Unrecognized object type '{obj_type}'")
     @property
     def object_type(self) -> ObjectType:
         """PSQL object type.
@@ -827,16 +831,15 @@ class IOStatsInfo(InfoItem):
         obj_type = self.group
         if obj_type is Group.DATABASE:
             return self.monitor.db
-        elif obj_type is Group.ATTACHMENT:
+        if obj_type is Group.ATTACHMENT:
             return self.monitor.attachments.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.TRANSACTION:
+        if obj_type is Group.TRANSACTION:
             return self.monitor.transactions.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.STATEMENT:
+        if obj_type is Group.STATEMENT:
             return self.monitor.statements.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.CALL:
+        if obj_type is Group.CALL:
             return self.monitor.callstack.find(lambda x: x.stat_id == self.stat_id)
-        else:
-            raise Error(f"Unrecognized stat group '{obj_type}'")
+        raise Error(f"Unrecognized stat group '{obj_type}'")
     @property
     def group(self) -> Group:
         """Object group code.
@@ -970,16 +973,15 @@ class TableStatsInfo(InfoItem):
         obj_type = self.group
         if obj_type is Group.DATABASE:
             return self.monitor.db
-        elif obj_type is Group.ATTACHMENT:
+        if obj_type is Group.ATTACHMENT:
             return self.monitor.attachments.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.TRANSACTION:
+        if obj_type is Group.TRANSACTION:
             return self.monitor.transactions.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.STATEMENT:
+        if obj_type is Group.STATEMENT:
             return self.monitor.statements.find(lambda x: x.stat_id == self.stat_id)
-        elif obj_type is Group.CALL:
+        if obj_type is Group.CALL:
             return self.monitor.callstack.find(lambda x: x.stat_id == self.stat_id)
-        else:
-            raise Error(f"Unrecognized stat group '{obj_type}'")
+        raise Error(f"Unrecognized stat group '{obj_type}'")
     @property
     def row_stat_id(self) -> int:
         """Internal ID.

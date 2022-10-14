@@ -30,6 +30,7 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
+# pylint: disable=C0302, C0301, W0212, R0902, R0912,R0913, R0914, R0915, R0904, C0103
 
 """firebird.lib.schema - Module work with Firebird database schema
 
@@ -428,7 +429,7 @@ class CollationFlag(IntFlag):
     CASE_INSENSITIVE = 2
     ACCENT_INSENSITIVE = 4
 
-#: List of default sections (in order) for Schema.get_metadata_ddl()
+#: List of default sections (in order) for `.Schema.get_metadata_ddl()`
 SCRIPT_DEFAULT_ORDER = [Section.COLLATIONS, Section.CHARACTER_SETS,
                         Section.UDFS, Section.GENERATORS,
                         Section.EXCEPTIONS, Section.DOMAINS,
@@ -473,7 +474,7 @@ def get_grants(privileges: List[Privilege], grantors: List[str]=None) -> List[st
     grants = []
     p = list(privileges)
     p.sort(key=skey)
-    for k, g in groupby(p, gkey):
+    for _, g in groupby(p, gkey):
         g = list(g)
         item = g[0]
         if item.has_grant():
@@ -496,7 +497,7 @@ def get_grants(privileges: List[Privilege], grantors: List[str]=None) -> List[st
         else:
             granted_by = ''
         priv_list = []
-        for k, items in groupby(g, gkey2):
+        for _, items in groupby(g, gkey2):
             items = list(items)
             item = items[0]
             if item.privilege in tp:
@@ -602,9 +603,6 @@ class Visitor:
         Note:
             Default implementation does nothing!
         """
-        pass
-
-
 
 class Schema(Visitable):
     """This class represents database schema.
@@ -672,7 +670,31 @@ class Schema(Visitable):
         self._reserved_: List[str] = []
         self.ods: float = None
         # database metadata
-        self.__clear()
+        self.__tables: Tuple[DataList, DataList] = None
+        self.__views: Tuple[DataList, DataList] = None
+        self.__domains: Tuple[DataList, DataList] = None
+        self.__indices: Tuple[DataList, DataList] = None
+        self.__constraint_indices = None
+        self.__dependencies: DataList = None
+        self.__generators: Tuple[DataList, DataList] = None
+        self.__triggers: Tuple[DataList, DataList] = None
+        self.__procedures: Tuple[DataList, DataList] = None
+        self.__constraints: DataList = None
+        self.__collations: DataList = None
+        self.__character_sets: DataList = None
+        self.__exceptions: DataList = None
+        self.__roles: DataList = None
+        self.__functions: Tuple[DataList, DataList] = None
+        self.__files: DataList = None
+        self.__shadows: DataList = None
+        self.__privileges: DataList = None
+        self.__users: DataList = None
+        self.__packages: DataList = None
+        self.__backup_history: DataList = None
+        self.__filters: DataList = None
+        self.__attrs = None
+        self._default_charset_name = None
+        self.__owner = None
     def __del__(self):
         if not self.closed:
             self._close()
@@ -1088,36 +1110,38 @@ class Schema(Visitable):
     def get_item(self, name: str, itype: ObjectType, subname: str=None) -> SchemaItem:
         """Return database object by type and name.
         """
+        result = None
         if itype is ObjectType.TABLE:
-            return self.all_tables.get(name)
+            result = self.all_tables.get(name)
         elif itype is ObjectType.VIEW:
-            return self.all_views.get(name)
+            result = self.all_views.get(name)
         elif itype is ObjectType.TRIGGER:
-            return self.all_triggers.get(name)
+            result = self.all_triggers.get(name)
         elif itype is ObjectType.PROCEDURE:
-            return self.all_procedures.get(name)
+            result = self.all_procedures.get(name)
         elif itype is ObjectType.USER:
-            result = self._get_users().get(name)
-            if not result:
-                result = UserInfo(user_name=name)
-                self.__users.append(result)
-            return result
+            res = self._get_users().get(name)
+            if not res:
+                res = UserInfo(user_name=name)
+                self.__users.append(res)
+            result = res
         elif itype is ObjectType.COLUMN:
-            return self.all_tables.get(name).columns.get(subname)
+            result = self.all_tables.get(name).columns.get(subname)
         elif itype is ObjectType.INDEX:
-            return self.all_indices.get(name)
+            result = self.all_indices.get(name)
         elif itype is ObjectType.CHARACTER_SET:
-            return self.character_sets.get(name)
+            result = self.character_sets.get(name)
         elif itype is ObjectType.ROLE:
-            return self.roles.get(name)
+            result = self.roles.get(name)
         elif itype is ObjectType.GENERATOR:
-            return self.all_generators.get(name)
+            result = self.all_generators.get(name)
         elif itype is ObjectType.UDF:
-            return self.all_functions.get(name)
+            result = self.all_functions.get(name)
         elif itype is ObjectType.COLLATION:
-            return self.collations.get(name)
+            result = self.collations.get(name)
         elif itype in (ObjectType.PACKAGE, ObjectType.PACKAGE_BODY): # Package
-            return self.packages.get(name)
+            result = self.packages.get(name)
+        return result
     def get_metadata_ddl(self, *, sections=SCRIPT_DEFAULT_ORDER) -> List[str]:
         """Return list of DDL SQL commands for creation of specified categories of database objects.
 
@@ -1274,7 +1298,7 @@ class Schema(Visitable):
                 for trigger in self.triggers:
                     script.append(trigger.get_sql_for('alter', active=True))
             else:
-                raise ValueError("Unknown section code %s" % section)
+                raise ValueError(f"Unknown section code {section}")
         return script
     def is_keyword(self, ident: str) -> bool:
         """Return True if `ident` is a Firebird keyword.
@@ -1320,9 +1344,8 @@ class Schema(Visitable):
         if isinstance(user, str):
             if user_type is None:
                 raise ValueError("Argument user_type required")
-            else:
-                uname = user
-                utype = [user_type]
+            uname = user
+            utype = [user_type]
         elif isinstance(user, (Table, View, Procedure, Trigger, Role)):
             uname = user.name
             utype = user._type_code
@@ -1517,7 +1540,7 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
             checks = self.__constraints.extract(lambda item: item.is_check())
             dchecks = {}
             for check in checks:
-                dchecks.setdefault(check.name, list()).append(check)
+                dchecks.setdefault(check.name, []).append(check)
             for checklist in dchecks.values():
                 names = [c._attributes['RDB$TRIGGER_NAME'] for c in checklist]
                 check = checklist[0]
@@ -1680,7 +1703,7 @@ class SchemaItem(Visitable):
         return f'"{ident}"' if self._needs_quoting(ident) else ident
     def _get_name(self) -> Optional[str]:
         return None
-    def _get_create_sql(**params) -> str:
+    def _get_create_sql(self, **params) -> str:
         raise NotImplementedError
     def _get_recreate_sql(self, **params) -> str:
         return 'RE'+self._get_create_sql(**params)
@@ -1689,7 +1712,7 @@ class SchemaItem(Visitable):
     def is_sys_object(self) -> bool:
         """Returns True if this database object is system object.
         """
-        return True if self._attributes.get('RDB$SYSTEM_FLAG', 0) > 0 else False
+        return self._attributes.get('RDB$SYSTEM_FLAG', 0) > 0
     def get_quoted_name(self) -> str:
         """Returns quoted (if necessary) name.
         """
@@ -1718,8 +1741,7 @@ class SchemaItem(Visitable):
         """
         if (_action := action.lower()) in self._actions:
             return getattr(self, f'_get_{_action}_sql')(**params)
-        else:
-            raise ValueError(f"Unsupported action '{action}'")
+        raise ValueError(f"Unsupported action '{action}'")
     @property
     def name(self) -> str:
         """Database object name or None if object doesn't have a name.
@@ -1755,9 +1777,11 @@ class Collation(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'drop'])
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP collation."
         self._check_params(params, [])
         return f'DROP COLLATION {self.get_quoted_name()}'
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE collation."
         self._check_params(params, [])
         if self.is_based_on_external():
             from_ = f"FROM EXTERNAL ('{self._attributes['RDB$BASE_COLLATION_NAME']}')"
@@ -1772,6 +1796,7 @@ class Collation(SchemaItem):
                f"   {'ACCENT INSENSITIVE' if CollationFlag.ACCENT_INSENSITIVE in self.attributes else 'ACCENT SENSITIVE'}" \
                f"{spec}"
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT collation."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON COLLATION {self.get_quoted_name()} IS {comment}'
@@ -1839,24 +1864,25 @@ class CharacterSet(SchemaItem):
         self._actions.extend(['alter', 'comment'])
         self.__collations: DataList= None
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER charset."
         self._check_params(params, ['collation'])
         collation = params.get('collation')
         if collation:
             return f'ALTER CHARACTER SET {self.get_quoted_name()} SET DEFAULT COLLATION ' \
                    f'{collation.get_quoted_name() if isinstance(collation, Collation) else collation}'
-        else:
-            raise ValueError("Missing required parameter: 'collation'.")
+        raise ValueError("Missing required parameter: 'collation'.")
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT charset."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON CHARACTER SET {self.get_quoted_name()} IS {comment}'
     def _get_name(self) -> str:
         return self._attributes['RDB$CHARACTER_SET_NAME']
-    def get_collation_by_id(self, id: int) -> Optional[Collation]:
-        """Return :class:`Collation` object with specified id that belongs to
+    def get_collation_by_id(self, id_: int) -> Optional[Collation]:
+        """Return :class:`Collation` object with specified `id_` that belongs to
         this character set.
         """
-        return self.collations.find(lambda item: item.id == id)
+        return self.collations.find(lambda item: item.id == id_)
     @property
     def id(self) -> int:
         """Character set ID.
@@ -1911,19 +1937,22 @@ class DatabaseException(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE exception."
         self._check_params(params, [])
         return f"CREATE EXCEPTION {self.get_quoted_name()} '{escape_single_quotes(self.message)}'"
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER exception."
         self._check_params(params, ['message'])
         message = params.get('message')
         if message:
             return f"ALTER EXCEPTION {self.get_quoted_name()} '{escape_single_quotes(message)}'"
-        else:
-            raise ValueError("Missing required parameter: 'message'.")
+        raise ValueError("Missing required parameter: 'message'.")
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP exception."
         self._check_params(params, [])
         return f'DROP EXCEPTION {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT exception."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON EXCEPTION {self.get_quoted_name()} IS {comment}'
@@ -1968,6 +1997,7 @@ class Sequence(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'alter', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE sequence."
         self._check_params(params, ['value', 'increment'])
         value = params.get('value')
         inc = params.get('increment')
@@ -1976,6 +2006,7 @@ class Sequence(SchemaItem):
               f'{f"INCREMENT BY {inc}" if inc else ""}'
         return cmd.strip()
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER sequence."
         self._check_params(params, ['value', 'increment'])
         value = params.get('value')
         inc = params.get('increment')
@@ -1984,9 +2015,11 @@ class Sequence(SchemaItem):
               f'{f"INCREMENT BY {inc}" if inc else ""}'
         return cmd.strip()
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP sequence."
         self._check_params(params, [])
         return f'DROP {self.schema.opt_generator_keyword} {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT sequence."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON {self.schema.opt_generator_keyword} {self.get_quoted_name()} IS {comment}'
@@ -2050,6 +2083,7 @@ class TableColumn(SchemaItem):
             self._actions.extend(['alter', 'drop'])
         self.__privileges: DataList = None
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER table column."
         self._check_params(params, ['expression', 'datatype', 'name', 'position', 'restart'])
         new_expr = params.get('expression')
         new_type = params.get('datatype')
@@ -2057,32 +2091,33 @@ class TableColumn(SchemaItem):
         new_position = params.get('position')
         if new_expr and not self.is_computed():
             raise ValueError("Change from persistent column to computed is not allowed.")
-        elif self.is_computed() and (new_type and not new_expr):
+        if self.is_computed() and (new_type and not new_expr):
             raise ValueError("Change from computed column to persistent is not allowed.")
         sql = f'ALTER TABLE {self.table.get_quoted_name()} ALTER COLUMN {self.get_quoted_name()}'
         if new_name:
             return f'{sql} TO {self._get_quoted_ident(new_name)}'
-        elif new_position:
+        if new_position:
             return f'{sql} POSITION {new_position}'
-        elif new_type or new_expr:
+        if new_type or new_expr:
             result = sql
             if new_type:
                 result += f' TYPE {new_type}'
             if new_expr:
                 result += f' COMPUTED BY {new_expr}'
             return result
-        elif 'restart' in params:
+        if 'restart' in params:
             restart = params.get('restart')
             sql += ' RESTART'
             if restart is not None:
                 sql += f' WITH {restart}'
             return sql
-        else:
-            raise ValueError("Parameter required.")
+        raise ValueError("Parameter required.")
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP table column."
         self._check_params(params, [])
         return f'ALTER TABLE {self.table.get_quoted_name()} DROP {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT table column."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON COLUMN {self.table.get_quoted_name()}.{self.get_quoted_name()} IS {comment}'
@@ -2209,23 +2244,29 @@ class Index(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'deactivate', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE index."
         self._check_params(params, [])
         return f"CREATE {'UNIQUE ' if self.is_unique() else ''}{self.index_type.value} " \
                f"INDEX {self.get_quoted_name()} ON {self.table.get_quoted_name()} " \
                f"{f'COMPUTED BY {self.expression}' if self.is_expression() else '(%s)' % ','.join(self.segment_names)}"
     def _get_activate_sql(self, **params) -> str:
+        "Returns SQL command to ACTIVATE index."
         self._check_params(params, [])
         return f'ALTER INDEX {self.get_quoted_name()} ACTIVE'
     def _get_deactivate_sql(self, **params) -> str:
+        "Returns SQL command to DEACTIVATE index."
         self._check_params(params, [])
         return f'ALTER INDEX {self.get_quoted_name()} INACTIVE'
     def _get_recompute_sql(self, **params) -> str:
+        "Returns SQL command to recompute index statistics."
         self._check_params(params, [])
         return f'SET STATISTICS INDEX {self.get_quoted_name()}'
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP index."
         self._check_params(params, [])
         return f'DROP INDEX {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT index."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON INDEX {self.get_quoted_name()} IS {comment}'
@@ -2337,6 +2378,7 @@ class ViewColumn(SchemaItem):
         self._strip_attribute('BASE_RELATION')
         self._actions.append('comment')
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to CREATE view column."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON COLUMN {self.view.get_quoted_name()}.{self.get_quoted_name()} IS {comment}'
@@ -2435,6 +2477,7 @@ class Domain(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'alter', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE domain."
         self._check_params(params, [])
         sql = f'CREATE DOMAIN {self.get_quoted_name()} AS {self.datatype}'
         if self.has_default():
@@ -2448,6 +2491,7 @@ class Domain(SchemaItem):
                 sql += f' COLLATE {self.collation.get_quoted_name()}'
         return sql
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER domain."
         self._check_params(params, ['name', 'default', 'check', 'datatype'])
         new_name = params.get('name')
         new_default = params.get('default', '')
@@ -2458,20 +2502,21 @@ class Domain(SchemaItem):
             raise ValueError("Only one parameter allowed.")
         if new_name:
             return f'{sql} TO {self._get_quoted_ident(new_name)}'
-        elif new_default != '':
+        if new_default != '':
             return (f'{sql} SET DEFAULT {new_default}' if new_default
                     else f'{sql} DROP DEFAULT')
-        elif new_constraint != '':
+        if new_constraint != '':
             return (f'{sql} ADD CHECK ({new_constraint})' if new_constraint
                     else f'{sql} DROP CONSTRAINT')
-        elif new_type:
+        if new_type:
             return f'{sql} TYPE {new_type}'
-        else:
-            raise ValueError("Parameter required.")
+        raise ValueError("Parameter required.")
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP domain."
         self._check_params(params, [])
         return f'DROP DOMAIN {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT dimain."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON DOMAIN {self.get_quoted_name()} IS {comment}'
@@ -2612,7 +2657,7 @@ class Domain(SchemaItem):
                 l.append(COLUMN_TYPES[self.field_type])
         if self.field_type in (FieldType.TEXT, FieldType.VARYING                        ):
             l.append(f'({self.length if self.character_length is None else self.character_length})')
-        if self._attributes['RDB$DIMENSIONS'] != None:
+        if self._attributes['RDB$DIMENSIONS'] is not None:
             l.append('[%s]' % ', '.join(f'{u}' if l == 1 else f'{l}:{u}'
                                         for l, u in self.dimensions))
         if self.field_type == FieldType.BLOB:
@@ -2671,50 +2716,51 @@ class Dependency(SchemaItem):
     def dependent(self) -> SchemaItem:
         """Dependent database object.
         """
+        result = None
         if self.dependent_type == 0: # TABLE
-            return self.schema.all_tables.get(self.dependent_name)
+            result = self.schema.all_tables.get(self.dependent_name)
         elif self.dependent_type == 1: # VIEW
-            return self.schema.all_views.get(self.dependent_name)
+            result = self.schema.all_views.get(self.dependent_name)
         elif self.dependent_type == 2: # TRIGGER
-            return self.schema.all_triggers.get(self.dependent_name)
+            result = self.schema.all_triggers.get(self.dependent_name)
         elif self.dependent_type == 3: # COMPUTED FIELD (i.e. DOMAIN)
-            return self.schema.all_domains.get(self.dependent_name)
+            result = self.schema.all_domains.get(self.dependent_name)
         elif self.dependent_type == 4:
             ## ToDo: Implement handler for VALIDATION if necessary
-            return None
+            result = None
         elif self.dependent_type == 5: #PROCEDURE
-            return self.schema.all_procedures.get(self.dependent_name)
+            result = self.schema.all_procedures.get(self.dependent_name)
         elif self.dependent_type == 6: # EXPRESSION INDEX
-            return self.schema.all_indices.get(self.dependent_name)
+            result = self.schema.all_indices.get(self.dependent_name)
         elif self.dependent_type == 7: # EXCEPTION
-            return self.schema.exceptions.get(self.dependent_name)
+            result = self.schema.exceptions.get(self.dependent_name)
         elif self.dependent_type == 8:
             ## ToDo: Implement handler for USER if necessary
-            return None
+            result = None
         elif self.dependent_type == 9: # FIELD (i.e. DOMAIN)
-            return self.schema.all_domains.get(self.dependent_name)
+            result = self.schema.all_domains.get(self.dependent_name)
         elif self.dependent_type == 10: # INDEX
-            return self.schema.all_indices.get(self.dependent_name)
+            result = self.schema.all_indices.get(self.dependent_name)
         elif self.dependent_type == 11:
             ## ToDo: Implement handler for DEPENDENT COUNT if necessary
-            return None
+            result = None
         elif self.dependent_type == 12:
             ## ToDo: Implement handler for USER GROUP if necessary
-            return None
+            result = None
         elif self.dependent_type == 13: # ROLE
-            return self.schema.roles.get(self.dependent_name)
+            result = self.schema.roles.get(self.dependent_name)
         elif self.dependent_type == 14: # GENERATOR
-            return self.schema.all_generators.get(self.dependent_name)
+            result = self.schema.all_generators.get(self.dependent_name)
         elif self.dependent_type == 15: # UDF
-            return self.schema.all_functions.get(self.dependent_name)
+            result = self.schema.all_functions.get(self.dependent_name)
         elif self.dependent_type == 16:
             ## ToDo: Implement handler for BLOB_FILTER
-            return None
+            result = None
         elif self.dependent_type == 17: # Collation
-            return self.schema.collations.get(self.dependent_name)
+            result = self.schema.collations.get(self.dependent_name)
         elif self.dependent_type in (18, 19): # Package + package body
-            return self.schema.packages.get(self.dependent_name)
-        return None
+            result = self.schema.packages.get(self.dependent_name)
+        return result
     @property
     def dependent_name(self) -> str:
         """Dependent database object name.
@@ -2734,54 +2780,55 @@ class Dependency(SchemaItem):
     def depended_on(self) -> SchemaItem:
         """Database object on which dependent depends.
         """
+        result = None
         if self.depended_on_type == 0: # TABLE
             t = self.schema.all_tables.get(self.depended_on_name)
             if self.field_name:
-                return t.columns.get(self.field_name)
+                result = t.columns.get(self.field_name)
             else:
-                return t
+                result = t
         elif self.depended_on_type == 1: # VIEW
             t = self.schema.all_views.get(self.depended_on_name)
             if self.field_name:
-                return t.columns.get(self.field_name)
+                result = t.columns.get(self.field_name)
             else:
-                return t
+                result = t
         elif self.depended_on_type == 2: # TRIGGER
-            return self.schema.all_triggers.get(self.depended_on_name)
+            result = self.schema.all_triggers.get(self.depended_on_name)
         elif self.depended_on_type == 3: # COMPUTED FIELD (i.e. DOMAIN)
-            return self.schema.all_domains.get(self.depended_on_name)
+            result = self.schema.all_domains.get(self.depended_on_name)
         elif self.depended_on_type == 4:
             ## ToDo: Implement handler for VALIDATION if necessary
-            return None
+            result = None
         elif self.depended_on_type == 5: #PROCEDURE
-            return self.schema.all_procedures.get(self.depended_on_name)
+            result = self.schema.all_procedures.get(self.depended_on_name)
         elif self.depended_on_type == 6: # EXPRESSION INDEX
-            return self.schema.all_indices.get(self.depended_on_name)
+            result = self.schema.all_indices.get(self.depended_on_name)
         elif self.depended_on_type == 7: # EXCEPTION
-            return self.schema.exceptions.get(self.depended_on_name)
+            result = self.schema.exceptions.get(self.depended_on_name)
         elif self.depended_on_type == 8:
             ## ToDo: Implement handler for USER if necessary
-            return None
+            result = None
         elif self.depended_on_type == 9: # FIELD (i.e. DOMAIN)
-            return self.schema.all_domains.get(self.depended_on_name)
+            result = self.schema.all_domains.get(self.depended_on_name)
         elif self.depended_on_type == 10: # INDEX
-            return self.schema.all_indices.get(self.depended_on_name)
+            result = self.schema.all_indices.get(self.depended_on_name)
         elif self.depended_on_type == 11:
             ## ToDo: Implement handler for DEPENDENT COUNT if necessary
-            return None
+            result = None
         elif self.depended_on_type == 12:
             ## ToDo: Implement handler for USER GROUP if necessary
-            return None
+            result = None
         elif self.depended_on_type == 13: # ROLE
-            return self.schema.roles.get(self.depended_on_name)
+            result = self.schema.roles.get(self.depended_on_name)
         elif self.depended_on_type == 14: # GENERATOR
-            return self.schema.all_generators.get(self.depended_on_name)
+            result = self.schema.all_generators.get(self.depended_on_name)
         elif self.depended_on_type == 15: # UDF
-            return self.schema.all_functions.get(self.depended_on_name)
+            result = self.schema.all_functions.get(self.depended_on_name)
         elif self.depended_on_type == 16:
             ## ToDo: Implement handler for BLOB_FILTER
-            return None
-        return None
+            result = None
+        return result
     @property
     def depended_on_name(self) -> str:
         """Name of db object on which dependent depends.
@@ -2821,6 +2868,7 @@ class Constraint(SchemaItem):
         if not (self.is_sys_object() or self.is_not_null()):
             self._actions.extend(['create', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE constraint."
         self._check_params(params, [])
         const_def = f'ALTER TABLE {self.table.get_quoted_name()} ADD '
         if not self.name.startswith('INTEG_'):
@@ -2848,6 +2896,7 @@ class Constraint(SchemaItem):
             raise Error(f"Unrecognized constraint type '{self.constraint_type}'")
         return const_def
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP constraint."
         self._check_params(params, [])
         return f'ALTER TABLE {self.table.get_quoted_name()} DROP CONSTRAINT {self.get_quoted_name()}'
     def _get_name(self) -> str:
@@ -2962,6 +3011,7 @@ class Table(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'drop'])
     def _get_insert_sql(self, **params) -> str:
+        "Returns SQL command to INSERT data to table."
         try:
             self._check_params(params, ['update', 'returning', 'matching'])
             update = params.get('update', False)
@@ -2979,6 +3029,7 @@ class Table(SchemaItem):
         except Exception as e:
             raise e
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE table."
         try:
             self._check_params(params, ['no_pk', 'no_unique'])
             no_pk = params.get('no_pk', False)
@@ -3046,9 +3097,11 @@ class Table(SchemaItem):
         except Exception as e:
             raise e
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP table."
         self._check_params(params, [])
         return f'DROP TABLE {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT table."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON TABLE {self.get_quoted_name()} IS {comment}'
@@ -3199,11 +3252,13 @@ class View(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE view."
         self._check_params(params, [])
         return f"CREATE VIEW {self.get_quoted_name()}" \
                f" ({','.join([col.get_quoted_name() for col in self.columns])})\n" \
                f"   AS\n     {self.sql}"
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER view."
         self._check_params(params, ['columns', 'query', 'check'])
         columns = params.get('columns')
         if isinstance(columns, (list, tuple)):
@@ -3215,12 +3270,13 @@ class View(SchemaItem):
             if check:
                 query = f'{query}\n     WITH CHECK OPTION'
             return f"ALTER VIEW {self.get_quoted_name()} {columns}\n   AS\n     {query}"
-        else:
-            raise ValueError("Missing required parameter: 'query'.")
+        raise ValueError("Missing required parameter: 'query'.")
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP view."
         self._check_params(params, [])
         return f'DROP VIEW {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT view."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON VIEW {self.get_quoted_name()} IS {comment}'
@@ -3320,6 +3376,7 @@ class Trigger(SchemaItem):
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
         self.__m = list(DMLTrigger.__members__.values())
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE trigger."
         self._check_params(params, ['inactive'])
         inactive = params.get('inactive', False)
         result = f'CREATE TRIGGER {self.get_quoted_name()}'
@@ -3330,6 +3387,7 @@ class Trigger(SchemaItem):
                   f"{self.source}"
         return result
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER trigger."
         self._check_params(params, ['fire_on', 'active', 'sequence', 'declare', 'code'])
         action = params.get('fire_on')
         active = params.get('active')
@@ -3371,9 +3429,11 @@ class Trigger(SchemaItem):
             raise ValueError("Header or body definition required.")
         return f'ALTER TRIGGER {self.get_quoted_name()}{header}{body}'
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP trigger."
         self._check_params(params, [])
         return f'DROP TRIGGER {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT trigger."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON TRIGGER {self.get_quoted_name()} IS {comment}'
@@ -3457,7 +3517,7 @@ class Trigger(SchemaItem):
         """
         if self.trigger_type == TriggerType.DDL:
             return DDLTrigger((self._attributes['RDB$TRIGGER_TYPE'] & ~TriggerType.DDL) >> 1)
-        elif self.trigger_type == TriggerType.DB:
+        if self.trigger_type == TriggerType.DB:
             return DBTrigger(self._attributes['RDB$TRIGGER_TYPE'] & ~TriggerType.DB)
         # DML
         result = DMLTrigger(0)
@@ -3519,6 +3579,7 @@ class ProcedureParameter(SchemaItem):
         self._strip_attribute('RDB$PACKAGE_NAME')
         self._actions.append('comment')
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT procedure parameter."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON PARAMETER {self.procedure.get_quoted_name()}.{self.get_quoted_name()} IS {comment}'
@@ -3583,14 +3644,14 @@ class ProcedureParameter(SchemaItem):
         """
         if self.type_from is TypeFrom.DATATYPE:
             return self.domain.datatype
-        elif self.type_from is TypeFrom.DOMAIN:
+        if self.type_from is TypeFrom.DOMAIN:
             return self.domain.get_quoted_name()
-        elif self.type_from is TypeFrom.TYPE_OF_DOMAIN:
+        if self.type_from is TypeFrom.TYPE_OF_DOMAIN:
             return f'TYPE OF {self.domain.get_quoted_name()}'
-        else: # TypeFrom.TYPE_OF_COLUMN
-            table = self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
-            return f"TYPE OF COLUMN {table.get_quoted_name()}." \
-                   f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
+        # TypeFrom.TYPE_OF_COLUMN
+        table = self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
+        return f"TYPE OF COLUMN {table.get_quoted_name()}." \
+               f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
     @property
     def type_from(self) -> TypeFrom:
         """Source for parameter data type.
@@ -3598,15 +3659,13 @@ class ProcedureParameter(SchemaItem):
         m = self.mechanism
         if m is None:
             return TypeFrom.DATATYPE
-        elif m == Mechanism.BY_VALUE:
+        if m == Mechanism.BY_VALUE:
             return TypeFrom.DATATYPE if self.domain.is_sys_object() else TypeFrom.DOMAIN
-        elif m == Mechanism.BY_REFERENCE:
+        if m == Mechanism.BY_REFERENCE:
             if self._attributes.get('RDB$RELATION_NAME') is None:
                 return TypeFrom.TYPE_OF_DOMAIN
-            else:
-                return TypeFrom.TYPE_OF_COLUMN
-        else:
-            raise Error(f"Unknown parameter mechanism code: {m}")
+            return TypeFrom.TYPE_OF_COLUMN
+        raise Error(f"Unknown parameter mechanism code: {m}")
     @property
     def default(self) -> str:
         """Default value.
@@ -3650,7 +3709,7 @@ class Procedure(SchemaItem):
         - System procedure: `comment`
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
-        super(Procedure, self).__init__(schema, attributes)
+        super().__init__(schema, attributes)
         self._type_code.append(ObjectType.PROCEDURE)
         self.__input_params = self.__output_params = None
         self._strip_attribute('RDB$PROCEDURE_NAME')
@@ -3669,6 +3728,7 @@ class Procedure(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'recreate', 'alter', 'create_or_alter', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE procedure."
         self._check_params(params, ['no_code'])
         no_code = params.get('no_code')
         result = f'CREATE PROCEDURE {self.get_quoted_name()}'
@@ -3696,6 +3756,7 @@ class Procedure(SchemaItem):
                                else 'BEGIN\n  SUSPEND;\nEND')
                               if no_code else self.source)
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER procedure."
         self._check_params(params, ['input', 'output', 'declare', 'code'])
         inpars = params.get('input')
         outpars = params.get('output')
@@ -3760,9 +3821,11 @@ class Procedure(SchemaItem):
         #
         return f'ALTER PROCEDURE {self.get_quoted_name()}{header}{body}'
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP procedure."
         self._check_params(params, [])
         return f'DROP PROCEDURE {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT procedure."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON PROCEDURE {self.get_quoted_name()} IS {comment}'
@@ -3882,7 +3945,7 @@ class Role(SchemaItem):
         - System role: `comment`
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
-        super(Role, self).__init__(schema, attributes)
+        super().__init__(schema, attributes)
         self._type_code.append(ObjectType.ROLE)
         self._strip_attribute('RDB$ROLE_NAME')
         self._strip_attribute('RDB$OWNER_NAME')
@@ -3891,12 +3954,15 @@ class Role(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['create', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE role."
         self._check_params(params, [])
         return f'CREATE ROLE {self.get_quoted_name()}'
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP role."
         self._check_params(params, [])
         return f'DROP ROLE {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT role."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON ROLE {self.get_quoted_name()} IS {comment}'
@@ -3927,7 +3993,7 @@ class FunctionArgument(SchemaItem):
         `none`
     """
     def __init__(self, schema: Schema, function: Function, attributes: Dict[str, Any]):
-        super(FunctionArgument, self).__init__(schema, attributes)
+        super().__init__(schema, attributes)
         self._type_code.append(ObjectType.UDF)
         self.__function = function
         self._strip_attribute('RDB$FUNCTION_NAME')
@@ -3947,14 +4013,13 @@ class FunctionArgument(SchemaItem):
             return f"{self.datatype}" \
                    f"{' BY DESCRIPTOR' if self.is_by_descriptor() else ''}" \
                    f"{' BY VALUE' if self.is_by_value() and self.is_returning() else ''}"
-        else:
-            result = f"{self.get_quoted_name()+' ' if not self.is_returning() else ''}" \
-                     f"{self.datatype}{'' if self.is_nullable() else ' NOT NULL'}"
-            if (c := self.collation) is not None:
-                result += f' COLLATE {c.get_quoted_name()}'
-            if not self.is_returning() and self.has_default():
-                result += f' = {self.default}'
-            return result
+        result = f"{self.get_quoted_name()+' ' if not self.is_returning() else ''}" \
+                 f"{self.datatype}{'' if self.is_nullable() else ' NOT NULL'}"
+        if (c := self.collation) is not None:
+            result += f' COLLATE {c.get_quoted_name()}'
+        if not self.is_returning() and self.has_default():
+            result += f' = {self.default}'
+        return result
     def is_by_value(self) -> bool:
         """Returns True if argument is passed by value.
         """
@@ -3963,15 +4028,15 @@ class FunctionArgument(SchemaItem):
         """Returns True if argument is passed by reference.
         """
         return self.mechanism in (Mechanism.BY_REFERENCE, Mechanism.BY_REFERENCE_WITH_NULL)
-    def is_by_descriptor(self, any=False) -> bool:
+    def is_by_descriptor(self, any_=False) -> bool:
         """Returns True if argument is passed by descriptor.
 
         Arguments:
-            any: If True, method returns True if any kind of descriptor is used (including
+            any_: If True, method returns True if `any_` kind of descriptor is used (including
                  BLOB and ARRAY descriptors).
         """
         return self.mechanism in (Mechanism.BY_VMS_DESCRIPTOR, Mechanism.BY_ISC_DESCRIPTOR,
-                                  Mechanism.BY_SCALAR_ARRAY_DESCRIPTOR) if any \
+                                  Mechanism.BY_SCALAR_ARRAY_DESCRIPTOR) if any_ \
                else self.mechanism == Mechanism.BY_VMS_DESCRIPTOR
     def is_with_null(self) -> bool:
         """Returns True if argument is passed by reference with NULL support.
@@ -4056,20 +4121,20 @@ class FunctionArgument(SchemaItem):
             # FB3 PSQL function, datatype defined via internal domain
             if self.type_from is TypeFrom.DATATYPE:
                 return self.domain.datatype
-            elif self.type_from is TypeFrom.DOMAIN:
+            if self.type_from is TypeFrom.DOMAIN:
                 return self.domain.get_quoted_name()
-            elif self.type_from is TypeFrom.TYPE_OF_DOMAIN:
+            if self.type_from is TypeFrom.TYPE_OF_DOMAIN:
                 return f'TYPE OF {self.domain.get_quoted_name()}'
-            else: # TypeFrom.TYPE_OF_COLUMN
-                table = self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
-                return f"TYPE OF COLUMN {table.get_quoted_name()}." \
-                       f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
+            # TypeFrom.TYPE_OF_COLUMN
+            table = self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
+            return f"TYPE OF COLUMN {table.get_quoted_name()}." \
+                   f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
         else:
             # Classic external UDF
             l = []
             precision_known = False
             if self.field_type in (FieldType.SHORT, FieldType.LONG, FieldType.INT64):
-                if self.precision != None:
+                if self.precision is not None:
                     if self.sub_type in (FieldSubType.NUMERIC, FieldSubType.DECIMAL):
                         l.append(f'{INTEGRAL_SUBTYPES[self.sub_type]}({self.precision}, {-self.scale})')
                         precision_known = True
@@ -4103,15 +4168,13 @@ class FunctionArgument(SchemaItem):
         m = self.argument_mechanism
         if m is None:
             return TypeFrom.DATATYPE
-        elif m == Mechanism.BY_VALUE:
+        if m == Mechanism.BY_VALUE:
             return TypeFrom.DATATYPE if self.domain.is_sys_object() else TypeFrom.DOMAIN
-        elif m == Mechanism.BY_REFERENCE:
+        if m == Mechanism.BY_REFERENCE:
             if self._attributes.get('RDB$RELATION_NAME') is None:
                 return TypeFrom.TYPE_OF_DOMAIN
-            else:
-                return TypeFrom.TYPE_OF_COLUMN
-        else:
-            raise Error(f"Unknown parameter mechanism code: {m}")
+            return TypeFrom.TYPE_OF_COLUMN
+        raise Error(f"Unknown parameter mechanism code: {m}")
     @property
     def argument_name(self) -> str:
         """Argument name.
@@ -4186,6 +4249,7 @@ class Function(SchemaItem):
                                           'drop'])
 
     def _get_declare_sql(self, **params) -> str:
+        "Returns SQL command to DECLARE function."
         self._check_params(params, [])
         fdef = f'DECLARE EXTERNAL FUNCTION {self.get_quoted_name()}\n'
         for p in self.arguments:
@@ -4197,14 +4261,17 @@ class Function(SchemaItem):
             fdef += f"{' FREE_IT' if self.returns.is_freeit() else ''}\n"
         return f"{fdef}ENTRY_POINT '{self.entrypoint}'\nMODULE_NAME '{self.module_name}'"
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP function."
         self._check_params(params, [])
         return f"DROP{' EXTERNAL' if self.is_external() else ''} FUNCTION {self.get_quoted_name()}"
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT function."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
-        return f"COMMENT ON{' EXTERNAL' if self.isexternal() else ''} " \
+        return f"COMMENT ON{' EXTERNAL' if self.is_external() else ''} " \
                f"FUNCTION {self.get_quoted_name()} IS {comment}"
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE function."
         self._check_params(params, ['no_code'])
         no_code = params.get('no_code')
         result = f'CREATE FUNCTION {self.get_quoted_name()}'
@@ -4222,6 +4289,7 @@ class Function(SchemaItem):
         result += f'RETURNS {self.returns.get_sql_definition()}\n'
         return result+'AS\n'+('BEGIN\nEND' if no_code else self.source)
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER object."
         self._check_params(params, ['arguments', 'returns', 'declare', 'code'])
         arguments = params.get('arguments')
         for par in ('returns', 'code'):
@@ -4281,8 +4349,8 @@ class Function(SchemaItem):
                 'RDB$SYSTEM_FLAG', 'RDB$DESCRIPTION']
         self.__arguments = DataList((FunctionArgument(self.schema, self, row) for row in
                                      (mock or
-                                      self.schema._select("""select %s from rdb$function_arguments
-where rdb$function_name = ? order by rdb$argument_position""" % ','.join(cols), (self.name,)))),
+                                      self.schema._select(f"""select {','.join(cols)} from rdb$function_arguments
+where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
                                     FunctionArgument, frozen=True)
         rarg = self._attributes['RDB$RETURN_ARGUMENT']
         if rarg is not None:
@@ -4435,6 +4503,7 @@ class Shadow(SchemaItem):
         self.__files = None
         self._actions.extend(['create', 'drop'])
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE shadow."
         self._check_params(params, [])
         result = f"CREATE SHADOW {self.id} " \
                  f"{'MANUAL' if self.is_manual() else 'AUTO'}" \
@@ -4453,6 +4522,7 @@ class Shadow(SchemaItem):
                     result += '\n'
         return result
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP shadow."
         self._check_params(params, ['preserve'])
         preserve = params.get('preserve')
         return f"DROP SHADOW {self.id}{' PRESERVE FILE' if preserve else ''}"
@@ -4511,6 +4581,7 @@ class Privilege(SchemaItem):
         self._strip_attribute('RDB$RELATION_NAME')
         self._strip_attribute('RDB$FIELD_NAME')
     def _get_grant_sql(self, **params) -> str:
+        "Returns SQL command to GRANT privilege."
         self._check_params(params, ['grantors'])
         grantors = params.get('grantors', ['SYSDBA'])
         privileges = [PrivilegeCode.SELECT, PrivilegeCode.INSERT, PrivilegeCode.UPDATE,
@@ -4542,6 +4613,7 @@ class Privilege(SchemaItem):
         return f'GRANT {privilege}{self.subject_name}' \
                f' TO {utype}{self.user_name}{admin_option}{granted_by}'
     def _get_revoke_sql(self, **params) -> str:
+        "Returns SQL command to REVOKE privilege."
         self._check_params(params, ['grant_option', 'grantors'])
         grantors = params.get('grantors', ['SYSDBA'])
         option_only = params.get('grant_option', False)
@@ -4553,7 +4625,7 @@ class Privilege(SchemaItem):
         if self.privilege in privileges:
             privilege = self.privilege.name
             if self.field_name is not None:
-                privilege += f'([self.field_name])'
+                privilege += f'([{self.field_name}])'
             privilege += ' ON '
         elif self.privilege is PrivilegeCode.EXECUTE:
             privilege = 'EXECUTE ON PROCEDURE '
@@ -4690,12 +4762,14 @@ class Package(SchemaItem):
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._strip_attribute('RDB$OWNER_NAME')
     def _get_create_sql(self, **params) -> str:
+        "Returns SQL command to CREATE package."
         self._check_params(params, ['body'])
         body = params.get('body')
         cbody = 'BODY ' if body else ''
         result = f'CREATE PACKAGE {cbody}{self.get_quoted_name()}'
         return result+'\nAS\n'+(self.body if body else self.header)
     def _get_alter_sql(self, **params) -> str:
+        "Returns SQL command to ALTER package."
         self._check_params(params, ['header'])
         header = params.get('header')
         if not header:
@@ -4704,17 +4778,20 @@ class Package(SchemaItem):
             hdr = '\n'.join(header) if isinstance(header, list) else header
         return f'ALTER PACKAGE {self.get_quoted_name()}\nAS\nBEGIN\n{hdr}\nEND'
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP package."
         self._check_params(params, ['body'])
         body = params.get('body')
         cbody = 'BODY ' if body else ''
         return f'DROP PACKAGE {cbody}{self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT package."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON PACKAGE {self.get_quoted_name()} IS {comment}'
     def _get_name(self) -> str:
         return self._attributes['RDB$PACKAGE_NAME']
     def has_valid_body(self) -> bool:
+        """Returns True if package has valid body."""
         return None if (result := self._attributes.get('RDB$VALID_BODY_FLAG')) is None \
                else bool(result)
     @property
@@ -4804,7 +4881,7 @@ class Filter(SchemaItem):
         - System UDF: `none`
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
-        super(Filter, self).__init__(schema, attributes)
+        super().__init__(schema, attributes)
         self._type_code.append(ObjectType.BLOB_FILTER)
         self._strip_attribute('RDB$FUNCTION_NAME')
         self._strip_attribute('RDB$MODULE_NAME')
@@ -4812,14 +4889,17 @@ class Filter(SchemaItem):
         if not self.is_sys_object():
             self._actions.extend(['comment', 'declare', 'drop'])
     def _get_declare_sql(self, **params) -> str:
+        "Returns SQL command to DECLARE filter."
         self._check_params(params, [])
         fdef = f'DECLARE FILTER {self.get_quoted_name()}\n' \
                f'INPUT_TYPE {self.input_sub_type} OUTPUT_TYPE {self.output_sub_type}\n'
         return f"{fdef}ENTRY_POINT '{self.entrypoint}' MODULE_NAME '{self.module_name}'"
     def _get_drop_sql(self, **params) -> str:
+        "Returns SQL command to DROP filter."
         self._check_params(params, [])
         return f'DROP FILTER {self.get_quoted_name()}'
     def _get_comment_sql(self, **params) -> str:
+        "Returns SQL command to COMMENT filter."
         comment = 'NULL' if self.description is None \
             else f"'{escape_single_quotes(self.description)}'"
         return f'COMMENT ON FILTER {self.get_quoted_name()} IS {comment}'

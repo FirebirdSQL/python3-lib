@@ -30,6 +30,7 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________.
+# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, C0301
 
 """Saturnin microservices - Firebird log messages for Firebird log parser microservice
 """
@@ -961,31 +962,32 @@ messages = [
 _r_msgs = []
 _h_msgs = {}
 
-for msg in messages:
-    if msg.msg_format[0].startswith('{'):
-        _r_msgs.append(msg)
+for _msg in messages:
+    if _msg.msg_format[0].startswith('{'):
+        _r_msgs.append(_msg)
     else:
-        parts = msg.msg_format[0].split()
-        _h_msgs.setdefault(parts[0], []).append(msg)
+        _parts = _msg.msg_format[0].split()
+        _h_msgs.setdefault(_parts[0], []).append(_msg)
+
+_END_CHUNK = object()
 
 def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
     """Identify Firebird log message.
 
     Arguments:
-        msg: The logged message to be identified.
+        msg: Firebird log entry with message to be identified.
 
     Returns:
         Tuple with matched `.MsgDesc` instance, dictionary with extracted message
         parameters, and boolean flag indicating whether message has optional content. Returns
         `None` if message was not matched against any message descriptor.
     """
-    _END_CHUNK = object()
     parts = msg.split()
     if parts[0] in _h_msgs:
         candidates = _h_msgs[parts[0]]
     else:
         candidates = _r_msgs
-    for candidate in candidates:
+    for candidate in candidates: # pylint: disable=R1702
         chunks = candidate.msg_format.copy()
         chunks.append(_END_CHUNK)
         params = {}
@@ -996,7 +998,7 @@ def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
             chunk = chunks[i]
             if chunk is _END_CHUNK:
                 break
-            elif chunk.startswith('{'):
+            if chunk.startswith('{'):
                 if i + 1 < len(chunks):
                     end_chunk = chunks[i+1]
                     if end_chunk is _END_CHUNK:
@@ -1037,8 +1039,7 @@ def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
                     data = ''
                     without_optional = True
                     break
-                else:
-                    i += 1
+                i += 1
             else:
                 if data.startswith(chunk):
                     data = data[len(chunk):]

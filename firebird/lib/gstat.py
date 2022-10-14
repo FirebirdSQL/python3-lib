@@ -30,13 +30,14 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
+# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903
 
 """firebird.lib.gstat - Module for work with Firebird gstat output
 
 """
 
 from __future__ import annotations
-from typing import List, Iterable, Union
+from typing import List, Tuple, Iterable, Union, Optional
 import weakref
 from dataclasses import dataclass
 import datetime
@@ -46,81 +47,87 @@ from firebird.base.types import Error, STOP, Sentinel
 
 GSTAT_30 = 3
 
-items_hdr = [('Flags', 'i', None),
-             ('Checksum', 'i', None),
-             ('Generation', 'i', None),
-             ('System Change Number', 'i', 'system_change_number'),
-             ('Page size', 'i', None),
-             ('ODS version', 's', None),
-             ('Oldest transaction', 'i', 'oit'),
-             ('Oldest active', 'i', 'oat'),
-             ('Oldest snapshot', 'i', 'ost'),
-             ('Next transaction', 'i', None),
-             ('Bumped transaction', 'i', None),
-             ('Sequence number', 'i', None),
-             ('Next attachment ID', 'i', None),
-             ('Implementation ID', 'i', None),
-             ('Implementation', 's', None),
-             ('Shadow count', 'i', None),
-             ('Page buffers', 'i', None),
-             ('Next header page', 'i', None),
-             ('Database dialect', 'i', None),
-             ('Creation date', 'd', None),
-             ('Attributes', 'l', None)]
+TLogItemSpec = List[Tuple[str, str, Optional[str]]]
 
-items_var = [('Sweep interval:', 'i', None),
-             ('Continuation file:', 's', None),
-             ('Last logical page:', 'i', None),
-             ('Database backup GUID:', 's', 'backup_guid'),
-             ('Root file name:', 's', 'root_filename'),
-             ('Replay logging file:', 's', None),
-             ('Backup difference file:', 's', 'backup_diff_file')]
+items_hdr: TLogItemSpec = [
+    ('Flags', 'i', None),
+    ('Checksum', 'i', None),
+    ('Generation', 'i', None),
+    ('System Change Number', 'i', 'system_change_number'),
+    ('Page size', 'i', None),
+    ('ODS version', 's', None),
+    ('Oldest transaction', 'i', 'oit'),
+    ('Oldest active', 'i', 'oat'),
+    ('Oldest snapshot', 'i', 'ost'),
+    ('Next transaction', 'i', None),
+    ('Bumped transaction', 'i', None),
+    ('Sequence number', 'i', None),
+    ('Next attachment ID', 'i', None),
+    ('Implementation ID', 'i', None),
+    ('Implementation', 's', None),
+    ('Shadow count', 'i', None),
+    ('Page buffers', 'i', None),
+    ('Next header page', 'i', None),
+    ('Database dialect', 'i', None),
+    ('Creation date', 'd', None),
+    ('Attributes', 'l', None)]
 
-items_tbl3 = [('Primary pointer page:', 'i', None),
-              ('Index root page:', 'i', None),
-              ('Total formats:', 'i', None),
-              ('used formats:', 'i', None),
-              ('Average record length:', 'f', 'avg_record_length'),
-              ('total records:', 'i', None),
-              ('Average version length:', 'f', 'avg_version_length'),
-              ('total versions:', 'i', None),
-              ('max versions:', 'i', None),
-              ('Average fragment length:', 'f', 'avg_fragment_length'),
-              ('total fragments:', 'i', None),
-              ('max fragments:', 'i', None),
-              ('Average unpacked length:', 'f', 'avg_unpacked_length'),
-              ('compression ratio:', 'f', None),
-              ('Pointer pages:', 'i', 'pointer_pages'),
-              ('data page slots:', 'i', None),
-              ('Data pages:', 'i', None),
-              ('average fill:', 'p', 'avg_fill'),
-              ('Primary pages:', 'i', None),
-              ('secondary pages:', 'i', None),
-              ('swept pages:', 'i', None),
-              ('Empty pages:', 'i', None),
-              ('full pages:', 'i', None),
-              ('Blobs:', 'i', None),
-              ('total length:', 'i', 'blobs_total_length'),
-              ('blob pages:', 'i', None),
-              ('Level 0:', 'i', None),
-              ('Level 1:', 'i', None),
-              ('Level 2:', 'i', None)]
+items_var: TLogItemSpec = [
+    ('Sweep interval:', 'i', None),
+    ('Continuation file:', 's', None),
+    ('Last logical page:', 'i', None),
+    ('Database backup GUID:', 's', 'backup_guid'),
+    ('Root file name:', 's', 'root_filename'),
+    ('Replay logging file:', 's', None),
+    ('Backup difference file:', 's', 'backup_diff_file')]
 
-items_idx3 = [('Root page:', 'i', None),
-              ('depth:', 'i', None),
-              ('leaf buckets:', 'i', None),
-              ('nodes:', 'i', None),
-              ('Average node length:', 'f', 'avg_node_length'),
-              ('total dup:', 'i', None),
-              ('max dup:', 'i', None),
-              ('Average key length:', 'f', 'avg_key_length'),
-              ('compression ratio:', 'f', None),
-              ('Average prefix length:', 'f', 'avg_prefix_length'),
-              ('average data length:', 'f', 'avg_data_length'),
-              ('Clustering factor:', 'f', None),
-              ('ratio:', 'f', None)]
+items_tbl3: TLogItemSpec = [
+    ('Primary pointer page:', 'i', None),
+    ('Index root page:', 'i', None),
+    ('Total formats:', 'i', None),
+    ('used formats:', 'i', None),
+    ('Average record length:', 'f', 'avg_record_length'),
+    ('total records:', 'i', None),
+    ('Average version length:', 'f', 'avg_version_length'),
+    ('total versions:', 'i', None),
+    ('max versions:', 'i', None),
+    ('Average fragment length:', 'f', 'avg_fragment_length'),
+    ('total fragments:', 'i', None),
+    ('max fragments:', 'i', None),
+    ('Average unpacked length:', 'f', 'avg_unpacked_length'),
+    ('compression ratio:', 'f', None),
+    ('Pointer pages:', 'i', 'pointer_pages'),
+    ('data page slots:', 'i', None),
+    ('Data pages:', 'i', None),
+    ('average fill:', 'p', 'avg_fill'),
+    ('Primary pages:', 'i', None),
+    ('secondary pages:', 'i', None),
+    ('swept pages:', 'i', None),
+    ('Empty pages:', 'i', None),
+    ('full pages:', 'i', None),
+    ('Blobs:', 'i', None),
+    ('total length:', 'i', 'blobs_total_length'),
+    ('blob pages:', 'i', None),
+    ('Level 0:', 'i', None),
+    ('Level 1:', 'i', None),
+    ('Level 2:', 'i', None)]
 
-items_fill = ['0 - 19%', '20 - 39%', '40 - 59%', '60 - 79%', '80 - 99%']
+items_idx3: TLogItemSpec = [
+    ('Root page:', 'i', None),
+    ('depth:', 'i', None),
+    ('leaf buckets:', 'i', None),
+    ('nodes:', 'i', None),
+    ('Average node length:', 'f', 'avg_node_length'),
+    ('total dup:', 'i', None),
+    ('max dup:', 'i', None),
+    ('Average key length:', 'f', 'avg_key_length'),
+    ('compression ratio:', 'f', None),
+    ('Average prefix length:', 'f', 'avg_prefix_length'),
+    ('average data length:', 'f', 'avg_data_length'),
+    ('Clustering factor:', 'f', None),
+    ('ratio:', 'f', None)]
+
+items_fill: List[str] = ['0 - 19%', '20 - 39%', '40 - 59%', '60 - 79%', '80 - 99%']
 
 class DbAttribute(Enum):
     """Database attributes stored in header page clumplets.
@@ -347,6 +354,13 @@ class StatDatabase:
         self.encrypted_blob_pages: int = None
         #: Database file names
         self.continuation_files: List[str] = []
+        #
+        self.__line_no: int = 0
+        self.__table: StatTable = None
+        self.__index: StatIndex = None
+        self.__new_block: bool = True
+        self.__in_table: bool = False
+        self.__step: int = 0
         self.__clear()
     def __clear(self):
         self.gstat_version = None
@@ -383,12 +397,12 @@ class StatDatabase:
         self.__tables: DataList[StatTable] = DataList(type_spec=StatTable, key_expr='item.name')
         self.__indices: DataList[StatIndex] = DataList(type_spec=StatIndex, key_expr='item.name')
         #
-        self.__line_no: int = 0
-        self.__table: StatTable = None
-        self.__index: StatIndex = None
-        self.__new_block: bool = True
-        self.__in_table: bool = False
-        self.__step: int = 0
+        self.__line_no = 0
+        self.__table = None
+        self.__index = None
+        self.__new_block = True
+        self.__in_table = False
+        self.__step = 0
     def __parse_hdr(self, line: str) -> None:
         "Parse line from header"
         for key, valtype, name in items_hdr:
@@ -454,7 +468,7 @@ class StatDatabase:
             raise Error(f"Bad file specification (line {self.__line_no})")
     def __parse_table(self, line: str) -> None:
         "Parse line from table data"
-        if self.__table.name is None:
+        if self.__table.name is None: # pylint: disable=R1702
             # We should parse header
             tname, tid = line.split(' (')
             self.__table.name = tname.strip(' "')
@@ -496,7 +510,7 @@ class StatDatabase:
                     raise Error(f'Unknown information (line {self.__line_no})')
     def __parse_index(self, line: str) -> None:
         "Parse line from index data"
-        if self.__index.name is None:
+        if self.__index.name is None: # pylint: disable=R1702
             # We should parse header
             iname, iid = line[6:].split(' (')
             self.__index.name = iname.strip(' "')
@@ -539,16 +553,19 @@ class StatDatabase:
     def __parse_encryption(self, line: str) -> None:
         "Parse line from encryption data"
         try:
+            total: str
+            encrypted: str
+            unencrypted: str
             total, encrypted, unencrypted = line.split(',')
-            pad, total = total.rsplit(' ', 1)
+            _, total = total.rsplit(' ', 1)
             total = int(total)
-            pad, encrypted = encrypted.rsplit(' ', 1)
+            _, encrypted = encrypted.rsplit(' ', 1)
             encrypted = int(encrypted)
-            pad, unencrypted = unencrypted.rsplit(' ', 1)
+            _, unencrypted = unencrypted.rsplit(' ', 1)
             unencrypted = int(unencrypted)
             data = Encryption(total, encrypted, unencrypted)
-        except:
-            raise Error(f'Malformed encryption information (line {self.__line_no})')
+        except Exception as exc:
+            raise Error(f'Malformed encryption information (line {self.__line_no})') from exc
         if 'Data pages:' in line:
             self.encrypted_data_pages = data
         elif 'Index pages:' in line:
@@ -632,8 +649,8 @@ class StatDatabase:
                 elif empty_str(line):
                     pass
                 elif line.startswith('Database "'):
-                    x, s = line.split(' ')
-                    self.filename = s.strip('"')
+                    _, filename = line.split(' ')
+                    self.filename = filename.strip('"')
                     self.__step = 0
                 else:
                     raise Error(f"Unrecognized data (line {self.__line_no})")

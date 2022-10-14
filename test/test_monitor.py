@@ -304,7 +304,7 @@ class TestMonitor(TestBase):
             self.assertIsInstance(s.oldest, int)
             self.assertIsInstance(s.oldest_active, int)
             self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_RV)
-            self.assertEqual(s.lock_timeout, INFINITE_WAIT)
+            self.assertEqual(s.lock_timeout, -1)
             self.assertIsInstance(s.statements, list)
             for x in s.statements:
                 self.assertIsInstance(x, StatementInfo)

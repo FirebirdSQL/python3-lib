@@ -30,6 +30,7 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
+# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904
 
 """firebird.lib.log - Module for parsing Firebird server log
 
@@ -42,7 +43,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from contextlib import suppress
 from firebird.base.types import Error, STOP, Sentinel
-from .logmsgs import identify_msg, Severity, Facility
+from firebird.lib.logmsgs import identify_msg, Severity, Facility
 
 @dataclass(order=True, frozen=True)
 class LogMessage:

@@ -2,6 +2,13 @@
 Changelog
 #########
 
+Version 1.2.2
+=============
+
+* Further code optimizations.
+* Addressing issues reported by pylint.
+* Improved documentation.
+
 Version 1.2.1
 =============
 

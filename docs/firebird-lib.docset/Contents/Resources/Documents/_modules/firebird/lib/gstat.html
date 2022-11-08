@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>firebird.lib.gstat &#8212; firebird-lib 1.2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../../../_static/bootstrap-2.3.2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+
+        <a class="brand" href="../../../index.html">
+          firebird-lib</a>
+        <span class="navbar-text pull-left"><b>1.2.1</b></span>
+
+        <div class="nav-collapse">
+          <ul class="nav">
+            <li class="divider-vertical"></li>
+            
+                <li><a href="../../../usage-guide.html">Usage Guide</a></li>
+                <li><a href="../../../reference.html">Reference</a></li>
+                <li><a href="../../../genindex.html">Index</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Content <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage-guide.html">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-database-schema">Working with database schema</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#available-information">Available information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#metadata-objects">Metadata objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#visitor-pattern-support">Visitor Pattern support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#index-5">Object dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#enhanced-list-of-objects">Enhanced list of objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#sql-operations">SQL operations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-user-privileges">Working with user privileges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-monitoring-tables">Working with monitoring tables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#id6">Available information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#activity-snapshot">Activity snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#i-o-statistics">I/O statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-output-from-gstat-utility">Processing output from gstat utility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-gstat-output">Parsing gstat output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-firebird-server-log">Processing Firebird server log</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-the-log">Parsing the log</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-output-from-firebird-server-trace-sessions">Processing output from Firebird server trace sessions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-the-output-from-trace-session">Parsing the output from trace session</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">Firebird-lib Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference.html#package-modules">Package modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-schema.html">firebird.lib.schema</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-monitor.html">firebird.lib.monitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-trace.html">firebird.lib.trace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-gstat.html">firebird.lib.gstat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-log.html">firebird.lib.log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-logmsgs.html">firebird.lib.logmsgs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-1">Version 1.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-0">Version 1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-0-1">Version 1.0.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-0-0">Version 1.0.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body span12 content" role="main">
+      
+  <h1>Source code for firebird.lib.gstat</h1><div class="highlight"><pre>
+<span></span><span class="c1">#coding:utf-8</span>
+<span class="c1">#</span>
+<span class="c1"># PROGRAM/MODULE: firebird-lib</span>
+<span class="c1"># FILE:           firebird/lib/gstat.py</span>
+<span class="c1"># DESCRIPTION:    Module for work with Firebird gstat output</span>
+<span class="c1"># CREATED:        6.10.2020</span>
+<span class="c1">#</span>
+<span class="c1"># The contents of this file are subject to the MIT License</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+<span class="c1">#</span>
+<span class="c1"># THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="c1"># IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="c1"># FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="c1"># AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="c1"># LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="c1"># OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="c1"># SOFTWARE.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright (c) 2020 Firebird Project (www.firebirdsql.org)</span>
+<span class="c1"># All Rights Reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Contributor(s): Pavel Císař (original code)</span>
+<span class="c1">#                 ______________________________________</span>
+<span class="c1"># pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903</span>
+
+<span class="sd">&quot;&quot;&quot;firebird.lib.gstat - Module for work with Firebird gstat output</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">firebird.base.collections</span> <span class="kn">import</span> <span class="n">DataList</span>
+<span class="kn">from</span> <span class="nn">firebird.base.types</span> <span class="kn">import</span> <span class="n">Error</span><span class="p">,</span> <span class="n">STOP</span><span class="p">,</span> <span class="n">Sentinel</span>
+
+<span class="n">GSTAT_30</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="n">TLogItemSpec</span> <span class="o">=</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span>
+
+<span class="n">items_hdr</span><span class="p">:</span> <span class="n">TLogItemSpec</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Flags&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Checksum&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Generation&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;System Change Number&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;system_change_number&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Page size&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;ODS version&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Oldest transaction&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;oit&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Oldest active&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;oat&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Oldest snapshot&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;ost&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Next transaction&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Bumped transaction&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Sequence number&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Next attachment ID&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Implementation ID&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Implementation&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Shadow count&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Page buffers&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Next header page&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Database dialect&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Creation date&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Attributes&#39;</span><span class="p">,</span> <span class="s1">&#39;l&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+
+<span class="n">items_var</span><span class="p">:</span> <span class="n">TLogItemSpec</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Sweep interval:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Continuation file:&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Last logical page:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Database backup GUID:&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;backup_guid&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Root file name:&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;root_filename&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Replay logging file:&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Backup difference file:&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;backup_diff_file&#39;</span><span class="p">)]</span>
+
+<span class="n">items_tbl3</span><span class="p">:</span> <span class="n">TLogItemSpec</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Primary pointer page:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Index root page:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Total formats:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;used formats:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average record length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_record_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;total records:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average version length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_version_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;total versions:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;max versions:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average fragment length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_fragment_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;total fragments:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;max fragments:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average unpacked length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_unpacked_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;compression ratio:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Pointer pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;pointer_pages&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;data page slots:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Data pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;average fill:&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_fill&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Primary pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;secondary pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;swept pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Empty pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;full pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Blobs:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;total length:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;blobs_total_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;blob pages:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Level 0:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Level 1:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Level 2:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+
+<span class="n">items_idx3</span><span class="p">:</span> <span class="n">TLogItemSpec</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Root page:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;depth:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;leaf buckets:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;nodes:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average node length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_node_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;total dup:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;max dup:&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average key length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_key_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;compression ratio:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Average prefix length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_prefix_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;average data length:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;avg_data_length&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Clustering factor:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;ratio:&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+
+<span class="n">items_fill</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;0 - 19%&#39;</span><span class="p">,</span> <span class="s1">&#39;20 - 39%&#39;</span><span class="p">,</span> <span class="s1">&#39;40 - 59%&#39;</span><span class="p">,</span> <span class="s1">&#39;60 - 79%&#39;</span><span class="p">,</span> <span class="s1">&#39;80 - 99%&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="DbAttribute"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.DbAttribute">[docs]</a><span class="k">class</span> <span class="nc">DbAttribute</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Database attributes stored in header page clumplets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">WRITE</span> <span class="o">=</span> <span class="s1">&#39;force write&#39;</span>
+    <span class="n">NO_RESERVE</span> <span class="o">=</span> <span class="s1">&#39;no reserve&#39;</span>
+    <span class="n">NO_SHARED_CACHE</span> <span class="o">=</span> <span class="s1">&#39;shared cache disabled&#39;</span>
+    <span class="n">ACTIVE_SHADOW</span> <span class="o">=</span> <span class="s1">&#39;active shadow&#39;</span>
+    <span class="n">SHUTDOWN_MULTI</span> <span class="o">=</span> <span class="s1">&#39;multi-user maintenance&#39;</span>
+    <span class="n">SHUTDOWN_SINGLE</span> <span class="o">=</span> <span class="s1">&#39;single-user maintenance&#39;</span>
+    <span class="n">SHUTDOWN_FULL</span> <span class="o">=</span> <span class="s1">&#39;full shutdown&#39;</span>
+    <span class="n">READ_ONLY</span> <span class="o">=</span> <span class="s1">&#39;read only&#39;</span>
+    <span class="n">BACKUP_LOCK</span> <span class="o">=</span> <span class="s1">&#39;backup lock&#39;</span>
+    <span class="n">BACKUP_MERGE</span> <span class="o">=</span> <span class="s1">&#39;backup merge&#39;</span>
+    <span class="n">BACKUP_WRONG</span> <span class="o">=</span> <span class="s1">&#39;wrong backup state&#39;</span></div>
+
+<div class="viewcode-block" id="FillDistribution"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.FillDistribution">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FillDistribution</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Data/Index page fill distribution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d20</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">d40</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">d60</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">d80</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">d100</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<div class="viewcode-block" id="Encryption"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.Encryption">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Encryption</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Page encryption status.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pages</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">encrypted</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">unencrypted</span><span class="p">:</span> <span class="nb">int</span></div>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">_ParserState</span><span class="p">:</span>
+    <span class="n">line_no</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">StatTable</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">index</span><span class="p">:</span> <span class="n">StatIndex</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">new_block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">in_table</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">def</span> <span class="nf">empty_str</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return True if string is empty (whitespace don&#39;t count) or None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span>
+
+<div class="viewcode-block" id="StatTable"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatTable">[docs]</a><span class="k">class</span> <span class="nc">StatTable</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Statisctics for single database table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#: Table name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Table ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Primary Pointer Page for table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_pointer_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index Root Page for table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_root_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average record length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_record_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Total number of record in table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_records</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average record version length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_version_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Total number of record versions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_versions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Max number of versions for single record</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_versions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of data pages for table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of data page slots for table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_page_slots</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average data page fill ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_fill</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Data page fill distribution statistics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span><span class="p">:</span> <span class="n">FillDistribution</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Indices belonging to table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatIndex</span><span class="p">]</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">(</span><span class="n">type_spec</span><span class="o">=</span><span class="n">StatIndex</span><span class="p">,</span> <span class="n">key_expr</span><span class="o">=</span><span class="s1">&#39;item.name&#39;</span><span class="p">)</span>
+        <span class="c1">#: Number of Pointer Pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointer_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of record formats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_formats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of actually used record formats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_formats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average length of record fragments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_fragment_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Total number of record fragments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_fragments</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Max number of fragments for single record</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_fragments</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average length of unpacked record</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_unpacked_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Record compression ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compression_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of Primary Data Pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">primary_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of Secondary Data Pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secondary_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of swept data pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">swept_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of empty data pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empty_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of full data pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of BLOB values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Total length of BLOB values (bytes)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blobs_total_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of BLOB pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blob_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of Level 0 BLOB values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_0</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of Level 1 BLOB values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of Level 2 BLOB values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="StatIndex"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatIndex">[docs]</a><span class="k">class</span> <span class="nc">StatIndex</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Statisctics for single database index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
+        <span class="c1">#: wekref.proxy: Proxy to parent `.StatTable`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ProxyType</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">weakref</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="c1">#: Index name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Depth of index tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of leaft index tree buckets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leaf_buckets</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of index tree nodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average data length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_data_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Total number of duplicate keys</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_dup</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Max number of occurences for single duplicate key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_dup</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index page fill distribution statistics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span><span class="p">:</span> <span class="n">FillDistribution</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index Root page</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average node length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_node_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average key length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_key_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index key compression ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compression_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Average key prefix length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_prefix_length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Index clustering factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clustering_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="StatDatabase"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase">[docs]</a><span class="k">class</span> <span class="nc">StatDatabase</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Firebird database statistics (produced by gstat).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#: GSTAT version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gstat_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: System change number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_change_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: GSTAT execution timestamp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: GSTAT completion timestamp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">completed</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Database filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Database flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Database header generation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Database page size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Oldest Interesting Transaction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Oldest Active Transaction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Oldest Snapshot Transaction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Next Transaction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_transaction</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Next attachment ID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_attachment_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Implementation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Number of shadows</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shadow_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Number of page buffers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_buffers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Next header page</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_header_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: SQL Dialect</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">database_dialect</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#: Database creation timestamp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Database attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DbAttribute</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Variable data</span>
+        <span class="c1">#: Sweep interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Continuation file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuation_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Last logical page</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_logical_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Backup GUID</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backup_guid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Root file name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Replay logging file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replay_logging_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Backup difference file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backup_diff_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Stats for encrypted data pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_data_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Stats for encrypted index pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_index_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Stats for encrypted blob pages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_blob_pages</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1">#: Database file names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuation_files</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="p">:</span> <span class="n">StatTable</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="p">:</span> <span class="n">StatIndex</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__new_block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__in_table</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__clear</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gstat_version</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_change_number</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">completed</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oit</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oat</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ost</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_transaction</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_attachment_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shadow_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page_buffers</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_header_page</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">database_dialect</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">creation_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sweep_interval</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuation_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_logical_page</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backup_guid</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_filename</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replay_logging_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backup_diff_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_data_pages</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_index_pages</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_blob_pages</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuation_files</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tables</span><span class="p">:</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatTable</span><span class="p">]</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">(</span><span class="n">type_spec</span><span class="o">=</span><span class="n">StatTable</span><span class="p">,</span> <span class="n">key_expr</span><span class="o">=</span><span class="s1">&#39;item.name&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__indices</span><span class="p">:</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatIndex</span><span class="p">]</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">(</span><span class="n">type_spec</span><span class="o">=</span><span class="n">StatIndex</span><span class="p">,</span> <span class="n">key_expr</span><span class="o">=</span><span class="s1">&#39;item.name&#39;</span><span class="p">)</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__table</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__index</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__new_block</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__in_table</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">__parse_hdr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from header&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">valtype</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">items_hdr</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="c1"># Check for GSTAT_VERSION</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gstat_version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;System Change Number&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">gstat_version</span> <span class="o">=</span> <span class="n">GSTAT_30</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;Checksum&#39;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s2">&quot;Output from gstat older than Firebird 3 is not supported&quot;</span><span class="p">)</span>
+                <span class="c1">#</span>
+                <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span>  <span class="c1"># integer</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span>  <span class="c1"># string</span>
+                    <span class="k">pass</span>
+                <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">:</span>  <span class="c1"># date time</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;%b </span><span class="si">%d</span><span class="s1">, %Y %H:%M:%S&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;l&#39;</span><span class="p">:</span>  <span class="c1"># list</span>
+                    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="n">DbAttribute</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value type </span><span class="si">{</span><span class="n">valtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__parse_var</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from variable header data&quot;</span>
+        <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s1">&#39;*END*&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">valtype</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">items_var</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span>  <span class="c1"># integer</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span>  <span class="c1"># string</span>
+                    <span class="k">pass</span>
+                <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">:</span>  <span class="c1"># date time</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;%b </span><span class="si">%d</span><span class="s1">, %Y %H:%M:%S&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value type </span><span class="si">{</span><span class="n">valtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__parse_fseq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from file sequence&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;File &#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bad file specification (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;is the only file&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="s1">&#39; is the &#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">continuation_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39; is the &#39;</span><span class="p">)])</span>
+        <span class="k">elif</span> <span class="s1">&#39; continues as&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">continuation_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39; continues as&#39;</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bad file specification (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__parse_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from table data&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># pylint: disable=R1702</span>
+            <span class="c1"># We should parse header</span>
+            <span class="n">tname</span><span class="p">,</span> <span class="n">tid</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; (&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">tname</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">table_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tid</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;()&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;,&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>  <span class="c1"># Data values</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
+                    <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">items</span> <span class="o">=</span> <span class="n">items_tbl3</span>
+                    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">valtype</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                            <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span>  <span class="c1"># integer</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>  <span class="c1"># float</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>  <span class="c1"># %</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;%&#39;</span><span class="p">))</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value type </span><span class="si">{</span><span class="n">valtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">name</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                            <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Fill distribution</span>
+                <span class="k">if</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">fill_range</span><span class="p">,</span> <span class="n">fill_value</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">items_fill</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">fill_range</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">distribution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="o">.</span><span class="n">distribution</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fill_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Fill distribution:&#39;</span><span class="p">):</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__parse_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from index data&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># pylint: disable=R1702</span>
+            <span class="c1"># We should parse header</span>
+            <span class="n">iname</span><span class="p">,</span> <span class="n">iid</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; (&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">iname</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39; &quot;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">index_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">iid</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;()&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;,&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>  <span class="c1"># Data values</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
+                    <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">items</span> <span class="o">=</span> <span class="n">items_idx3</span>
+                    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">valtype</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                            <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">:</span>  <span class="c1"># integer</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>  <span class="c1"># float</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="n">valtype</span> <span class="o">==</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>  <span class="c1"># %</span>
+                                <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;%&#39;</span><span class="p">))</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value type </span><span class="si">{</span><span class="n">valtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">name</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+                            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                            <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Fill distribution</span>
+                <span class="k">if</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">fill_range</span><span class="p">,</span> <span class="n">fill_value</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">items_fill</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">fill_range</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">distribution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="o">.</span><span class="n">distribution</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fill_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Fill distribution:&#39;</span><span class="p">):</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__parse_encryption</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="s2">&quot;Parse line from encryption data&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">total</span><span class="p">:</span> <span class="nb">str</span>
+            <span class="n">encrypted</span><span class="p">:</span> <span class="nb">str</span>
+            <span class="n">unencrypted</span><span class="p">:</span> <span class="nb">str</span>
+            <span class="n">total</span><span class="p">,</span> <span class="n">encrypted</span><span class="p">,</span> <span class="n">unencrypted</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="n">total</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">encrypted</span> <span class="o">=</span> <span class="n">encrypted</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">encrypted</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">encrypted</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">unencrypted</span> <span class="o">=</span> <span class="n">unencrypted</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">unencrypted</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">unencrypted</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">Encryption</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">encrypted</span><span class="p">,</span> <span class="n">unencrypted</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Malformed encryption information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+        <span class="k">if</span> <span class="s1">&#39;Data pages:&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_data_pages</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="s1">&#39;Index pages:&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_index_pages</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="s1">&#39;Blob pages:&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_blob_pages</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown encryption information (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="StatDatabase.has_table_stats"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.has_table_stats">[docs]</a>    <span class="k">def</span> <span class="nf">has_table_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if instance contains information about tables.</span>
+
+<span class="sd">        .. important::</span>
+
+<span class="sd">           This is not the same as check for empty :data:`tables` list. When gstat is run</span>
+<span class="sd">           with `-i` without `-d` option, :data:`tables` list contains instances that does</span>
+<span class="sd">           not have any other information about table but table name and its indices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">primary_pointer_page</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span></div>
+<div class="viewcode-block" id="StatDatabase.has_row_stats"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.has_row_stats">[docs]</a>    <span class="k">def</span> <span class="nf">has_row_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if instance contains information about table rows.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_table_stats</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">avg_version_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="StatDatabase.has_index_stats"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.has_index_stats">[docs]</a>    <span class="k">def</span> <span class="nf">has_index_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if instance contains information about indices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span></div>
+<div class="viewcode-block" id="StatDatabase.has_encryption_stats"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.has_encryption_stats">[docs]</a>    <span class="k">def</span> <span class="nf">has_encryption_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if instance contains information about database encryption.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_data_pages</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="StatDatabase.has_system"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.has_system">[docs]</a>    <span class="k">def</span> <span class="nf">has_system</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if instance contains information about system tables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;item.name.startswith(&#39;RDB$DATABASE&#39;)&quot;</span><span class="p">)</span></div>
+<div class="viewcode-block" id="StatDatabase.parse"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Parses gstat output.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            lines: Iterable that return lines from database analysis produced by Firebird</span>
+<span class="sd">                   gstat.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">STOP</span><span class="p">)</span></div>
+<div class="viewcode-block" id="StatDatabase.push"><a class="viewcode-back" href="../../../ref-gstat.html#firebird.lib.gstat.StatDatabase.push">[docs]</a>    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sentinel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Push parser.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            line: Single gstat output line, or `~firebird.base.types.STOP` sentinel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__clear</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="n">STOP</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_table_stats</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span>
+                    <span class="n">table</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">FillDistribution</span><span class="p">(</span><span class="o">*</span><span class="n">table</span><span class="o">.</span><span class="n">distribution</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_index_stats</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span>
+                    <span class="n">index</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">FillDistribution</span><span class="p">(</span><span class="o">*</span><span class="n">index</span><span class="o">.</span><span class="n">distribution</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Gstat completion time&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">completed</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">22</span><span class="p">:],</span> <span class="s1">&#39;</span><span class="si">%a</span><span class="s1"> %b </span><span class="si">%d</span><span class="s1"> %H:%M:%S %Y&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Looking for section or self name</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Gstat execution time&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">21</span><span class="p">:],</span> <span class="s1">&#39;</span><span class="si">%a</span><span class="s1"> %b </span><span class="si">%d</span><span class="s1"> %H:%M:%S %Y&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Database header page information:&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Variable header data:&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Database file sequence:&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">3</span>
+                <span class="k">elif</span> <span class="s1">&#39;encrypted&#39;</span> <span class="ow">in</span> <span class="n">line</span> <span class="ow">and</span> <span class="s1">&#39;non-crypted&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__parse_encryption</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Analyzing database pages ...&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">4</span>
+                <span class="k">elif</span> <span class="n">empty_str</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                    <span class="k">pass</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Database &quot;&#39;</span><span class="p">):</span>
+                    <span class="n">_</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized data (line </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__line_no</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># Header</span>
+                <span class="k">if</span> <span class="n">empty_str</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># section ends with empty line</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__parse_hdr</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Variable data</span>
+                <span class="k">if</span> <span class="n">empty_str</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># section ends with empty line</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__parse_var</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># File sequence</span>
+                <span class="k">if</span> <span class="n">empty_str</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># section ends with empty line</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__parse_fseq</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__step</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>  <span class="c1"># Tables and indices</span>
+                <span class="k">if</span> <span class="n">empty_str</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>  <span class="c1"># section ends with empty line</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__new_block</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__new_block</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__new_block</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Index &#39;</span><span class="p">):</span>
+                            <span class="c1"># Should be table</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__table</span> <span class="o">=</span> <span class="n">StatTable</span><span class="p">()</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__in_table</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__parse_table</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>  <span class="c1"># It&#39;s index</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__index</span> <span class="o">=</span> <span class="n">StatIndex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__table</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__index</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__in_table</span> <span class="o">=</span> <span class="kc">False</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__parse_index</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__in_table</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__parse_table</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">__parse_index</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatTable</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;`~firebird.base.collections.DataList` of `.StatTable` instances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tables</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatIndex</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;`~firebird.base.collections.DataList` of `StatIndex` instances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__indices</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2022, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

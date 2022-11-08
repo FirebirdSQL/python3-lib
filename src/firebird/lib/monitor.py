@@ -44,7 +44,7 @@ import weakref
 from enum import Enum, IntEnum
 from firebird.base.collections import DataList
 from firebird.driver import tpb, Connection, Cursor, Statement, Isolation, Error, TraAccessMode
-from firebird.lib.schema import ObjectType, CharacterSet, Procedure, Trigger, Function
+from .schema import ObjectType, CharacterSet, Procedure, Trigger, Function
 
 FLAG_NOT_SET = 0
 FLAG_SET = 1

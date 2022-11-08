@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>firebird.lib.monitor &#8212; firebird-lib 1.2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../../../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../../../_static/bootstrap-2.3.2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+
+        <a class="brand" href="../../../index.html">
+          firebird-lib</a>
+        <span class="navbar-text pull-left"><b>1.2.1</b></span>
+
+        <div class="nav-collapse">
+          <ul class="nav">
+            <li class="divider-vertical"></li>
+            
+                <li><a href="../../../usage-guide.html">Usage Guide</a></li>
+                <li><a href="../../../reference.html">Reference</a></li>
+                <li><a href="../../../genindex.html">Index</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Content <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage-guide.html">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-database-schema">Working with database schema</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#information-provided-by-schema">Information provided by <code class="xref py py-obj docutils literal notranslate"><span class="pre">Schema</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#metadata-objects">Metadata objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#visitor-pattern-support">Visitor Pattern support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#index-5">Object dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#enhanced-list-of-objects">Enhanced list of objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#sql-operations">SQL operations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-user-privileges">Working with user privileges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#working-with-monitoring-tables">Working with monitoring tables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#information-provided-by-monitor">Information provided by <code class="xref py py-obj docutils literal notranslate"><span class="pre">Monitor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#activity-snapshot">Activity snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#i-o-statistics">I/O statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-output-from-gstat-utility">Processing output from gstat utility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-gstat-output">Parsing gstat output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-firebird-server-log">Processing Firebird server log</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-the-log">Parsing the log</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage-guide.html#processing-output-from-firebird-server-trace-sessions">Processing output from Firebird server trace sessions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage-guide.html#parsing-the-output-from-trace-session">Parsing the output from trace session</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference.html">Firebird-lib Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference.html#package-modules">Package modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-schema.html">firebird.lib.schema</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-monitor.html">firebird.lib.monitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-trace.html">firebird.lib.trace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-gstat.html">firebird.lib.gstat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-log.html">firebird.lib.log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../ref-logmsgs.html">firebird.lib.logmsgs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-1">Version 1.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-0">Version 1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-0-1">Version 1.0.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-0-0">Version 1.0.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body span12 content" role="main">
+      
+  <h1>Source code for firebird.lib.monitor</h1><div class="highlight"><pre>
+<span></span><span class="c1">#coding:utf-8</span>
+<span class="c1">#</span>
+<span class="c1"># PROGRAM/MODULE: firebird-lib</span>
+<span class="c1"># FILE:           firebird/lib/monitor.py</span>
+<span class="c1"># DESCRIPTION:    Module for work with Firebird monitoring tables</span>
+<span class="c1"># CREATED:        21.9.2020</span>
+<span class="c1">#</span>
+<span class="c1"># The contents of this file are subject to the MIT License</span>
+<span class="c1">#</span>
+<span class="c1"># Permission is hereby granted, free of charge, to any person obtaining a copy</span>
+<span class="c1"># of this software and associated documentation files (the &quot;Software&quot;), to deal</span>
+<span class="c1"># in the Software without restriction, including without limitation the rights</span>
+<span class="c1"># to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="c1"># copies of the Software, and to permit persons to whom the Software is</span>
+<span class="c1"># furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1"># The above copyright notice and this permission notice shall be included in all</span>
+<span class="c1"># copies or substantial portions of the Software.</span>
+<span class="c1">#</span>
+<span class="c1"># THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="c1"># IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="c1"># FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="c1"># AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="c1"># LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="c1"># OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="c1"># SOFTWARE.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright (c) 2020 Firebird Project (www.firebirdsql.org)</span>
+<span class="c1"># All Rights Reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Contributor(s): Pavel Císař (original code)</span>
+<span class="c1">#                 ______________________________________</span>
+<span class="c1"># pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903, C0103, C0301</span>
+
+<span class="sd">&quot;&quot;&quot;firebird.lib.monitor - Module for work with Firebird monitoring tables</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">IntEnum</span>
+<span class="kn">from</span> <span class="nn">firebird.base.collections</span> <span class="kn">import</span> <span class="n">DataList</span>
+<span class="kn">from</span> <span class="nn">firebird.driver</span> <span class="kn">import</span> <span class="n">tpb</span><span class="p">,</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">Cursor</span><span class="p">,</span> <span class="n">Statement</span><span class="p">,</span> <span class="n">Isolation</span><span class="p">,</span> <span class="n">Error</span><span class="p">,</span> <span class="n">TraAccessMode</span>
+<span class="kn">from</span> <span class="nn">firebird.lib.schema</span> <span class="kn">import</span> <span class="n">ObjectType</span><span class="p">,</span> <span class="n">CharacterSet</span><span class="p">,</span> <span class="n">Procedure</span><span class="p">,</span> <span class="n">Trigger</span><span class="p">,</span> <span class="n">Function</span>
+
+<span class="n">FLAG_NOT_SET</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">FLAG_SET</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># Enums</span>
+<div class="viewcode-block" id="ShutdownMode"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.ShutdownMode">[docs]</a><span class="k">class</span> <span class="nc">ShutdownMode</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shutdown mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ONLINE</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">MULTI</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">SINGLE</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">FULL</span> <span class="o">=</span> <span class="mi">3</span></div>
+
+<div class="viewcode-block" id="BackupState"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.BackupState">[docs]</a><span class="k">class</span> <span class="nc">BackupState</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Physical backup state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">NORMAL</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">STALLED</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">MERGE</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+<div class="viewcode-block" id="State"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.State">[docs]</a><span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Object state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">IDLE</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ACTIVE</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="IsolationMode"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.IsolationMode">[docs]</a><span class="k">class</span> <span class="nc">IsolationMode</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Transaction solation mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CONSISTENCY</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">CONCURRENCY</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">READ_COMMITTED_RV</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">READ_COMMITTED_NO_RV</span> <span class="o">=</span> <span class="mi">3</span></div>
+
+<div class="viewcode-block" id="Group"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Group">[docs]</a><span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistics group.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DATABASE</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ATTACHMENT</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">TRANSACTION</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">STATEMENT</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">CALL</span> <span class="o">=</span> <span class="mi">4</span></div>
+
+<div class="viewcode-block" id="Security"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Security">[docs]</a><span class="k">class</span> <span class="nc">Security</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Security database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s1">&#39;Default&#39;</span>
+    <span class="n">SELF</span> <span class="o">=</span> <span class="s1">&#39;Self&#39;</span>
+    <span class="n">OTHER</span> <span class="o">=</span> <span class="s1">&#39;Other&#39;</span></div>
+
+<span class="c1"># Classes</span>
+<div class="viewcode-block" id="Monitor"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Monitor">[docs]</a><span class="k">class</span> <span class="nc">Monitor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class for access to Firebird monitoring tables.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Monitor.__init__"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Monitor.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection</span><span class="p">:</span> <span class="n">Connection</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            connection: Connection that should be used to access monitoring tables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_con</span><span class="p">:</span> <span class="n">Connection</span> <span class="o">=</span> <span class="n">connection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="p">:</span> <span class="n">Cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">transaction_manager</span><span class="p">(</span><span class="n">tpb</span><span class="p">(</span><span class="n">Isolation</span><span class="o">.</span><span class="n">READ_COMMITTED_RECORD_VERSION</span><span class="p">,</span>
+                                                             <span class="n">access_mode</span><span class="o">=</span><span class="n">TraAccessMode</span><span class="o">.</span><span class="n">READ</span><span class="p">))</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">_logging_id_</span> <span class="o">=</span> <span class="s1">&#39;monitor.internal_cursor&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># pylint: disable=W0238</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_con_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">id</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__database</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__attachments</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__transactions</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__statements</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__callstack</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__iostats</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__variables</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tablestats</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Monitor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">_select_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Statement</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">List</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">description</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">))}</span>
+    <span class="k">def</span> <span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">List</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">description</span>
+        <span class="k">return</span> <span class="p">({</span><span class="n">desc</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">))}</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_set_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># pylint: disable=W0238</span>
+<div class="viewcode-block" id="Monitor.clear"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Monitor.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clear all data fetched from monitoring tables.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            A snapshot is created the first time any of the monitoring information</span>
+<span class="sd">            is being accessed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">transaction</span><span class="o">.</span><span class="n">is_active</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">transaction</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__database</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__attachments</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__transactions</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__statements</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__callstack</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__iostats</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__variables</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__tablestats</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="Monitor.close"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Monitor.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Sever link to `~firebird.driver.Connection`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">transaction</span><span class="o">.</span><span class="n">is_active</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">transaction</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_con</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="Monitor.take_snapshot"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.Monitor.take_snapshot">[docs]</a>    <span class="k">def</span> <span class="nf">take_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Takes fresh snapshot of the monitoring information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">transaction</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">closed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;True if link to `~firebird.driver.core.Connection` is closed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_con</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">db</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabaseInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.DatabaseInfo` object for attached database.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__database</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__database</span> <span class="o">=</span> <span class="n">DatabaseInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select_row</span><span class="p">(</span><span class="s1">&#39;select * from mon$database&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__database</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">attachments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">AttachmentInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all attachments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__attachments</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__attachments</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">AttachmentInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                           <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="s1">&#39;select * from mon$attachments&#39;</span><span class="p">)),</span>
+                                          <span class="n">AttachmentInfo</span><span class="p">,</span> <span class="s1">&#39;item.id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__attachments</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">this_attachment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AttachmentInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.AttachmentInfo` object for current connection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_con_id</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">TransactionInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all transactions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__transactions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__transactions</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">TransactionInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                            <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="s1">&#39;select * from mon$transactions&#39;</span><span class="p">)),</span>
+                                           <span class="n">TransactionInfo</span><span class="p">,</span> <span class="s1">&#39;item.id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__transactions</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">statements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatementInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all statements.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__statements</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__statements</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">StatementInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                          <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="s1">&#39;select * from mon$statements&#39;</span><span class="p">)),</span>
+                                         <span class="n">StatementInfo</span><span class="p">,</span> <span class="s1">&#39;item.id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__statements</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">callstack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">CallStackInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List with complete call stack.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__callstack</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__callstack</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">CallStackInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                         <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="s1">&#39;select * from mon$call_stack&#39;</span><span class="p">)),</span>
+                                        <span class="n">CallStackInfo</span><span class="p">,</span> <span class="s1">&#39;item.id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__callstack</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">IOStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all I/O statistics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iostats</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT r.MON$STAT_ID, r.MON$STAT_GROUP,</span>
+<span class="s2">r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,</span>
+<span class="s2">r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,</span>
+<span class="s2">r.MON$RECORD_PURGES, r.MON$RECORD_EXPUNGES, r.MON$RECORD_LOCKS, r.MON$RECORD_WAITS,</span>
+<span class="s2">r.MON$RECORD_CONFLICTS, r.MON$BACKVERSION_READS, r.MON$FRAGMENT_READS, r.MON$RECORD_RPT_READS,</span>
+<span class="s2">io.MON$PAGE_FETCHES, io.MON$PAGE_MARKS, io.MON$PAGE_READS, io.MON$PAGE_WRITES,</span>
+<span class="s2">m.MON$MEMORY_ALLOCATED, m.MON$MEMORY_USED, m.MON$MAX_MEMORY_ALLOCATED, m.MON$MAX_MEMORY_USED</span>
+<span class="s2">FROM MON$RECORD_STATS r join MON$IO_STATS io</span>
+<span class="s2">  on r.MON$STAT_ID = io.MON$STAT_ID and r.MON$STAT_GROUP = io.MON$STAT_GROUP</span>
+<span class="s2">  join MON$MEMORY_USAGE m</span>
+<span class="s2">  on r.MON$STAT_ID = m.MON$STAT_ID and r.MON$STAT_GROUP = m.MON$STAT_GROUP&quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__iostats</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">IOStatsInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                       <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="n">cmd</span><span class="p">)),</span>
+                                      <span class="n">IOStatsInfo</span><span class="p">,</span> <span class="s1">&#39;item.stat_id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iostats</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">ContextVariableInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all context variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__variables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__variables</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">ContextVariableInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                         <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="s1">&#39;select * from mon$context_variables&#39;</span><span class="p">)),</span>
+                                        <span class="n">ContextVariableInfo</span><span class="p">,</span> <span class="s1">&#39;item.stat_id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__variables</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tablestats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">TableStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of all table record I/O statistics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tablestats</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT ts.MON$STAT_ID, ts.MON$STAT_GROUP, ts.MON$TABLE_NAME,</span>
+<span class="s2">ts.MON$RECORD_STAT_ID, r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,</span>
+<span class="s2">r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,</span>
+<span class="s2">r.MON$RECORD_PURGES, r.MON$RECORD_EXPUNGES, r.MON$RECORD_LOCKS, r.MON$RECORD_WAITS,</span>
+<span class="s2">r.MON$RECORD_CONFLICTS, r.MON$BACKVERSION_READS, r.MON$FRAGMENT_READS, r.MON$RECORD_RPT_READS</span>
+<span class="s2">FROM MON$TABLE_STATS ts join MON$RECORD_STATS r</span>
+<span class="s2">  on ts.MON$RECORD_STAT_ID = r.MON$STAT_ID&quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__tablestats</span> <span class="o">=</span> <span class="n">DataList</span><span class="p">((</span><span class="n">TableStatsInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span>
+                                          <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="n">cmd</span><span class="p">)),</span>
+                                         <span class="n">TableStatsInfo</span><span class="p">,</span> <span class="s1">&#39;item.stat_id&#39;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__tablestats</span></div>
+
+<div class="viewcode-block" id="InfoItem"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.InfoItem">[docs]</a><span class="k">class</span> <span class="nc">InfoItem</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Base class for all database monitoring objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="c1">#: Weak reference to parent `.Monitor` instance.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span> <span class="o">=</span> <span class="n">monitor</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ProxyType</span><span class="p">)</span> <span class="k">else</span> <span class="n">weakref</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">monitor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">attributes</span>
+    <span class="k">def</span> <span class="nf">_strip_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attr</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stat_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Group</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Internal ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$STAT_ID&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DatabaseInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.DatabaseInfo">[docs]</a><span class="k">class</span> <span class="nc">DatabaseInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about attached database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$DATABASE_NAME&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$OWNER&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$SEC_DATABASE&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Database filename or alias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$DATABASE_NAME&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">page_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Size of database page in bytes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_SIZE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ods</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;On-Disk Structure (ODS) version number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ODS_MAJOR&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ODS_MINOR&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">oit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction ID of the oldest [interesting] transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OLDEST_TRANSACTION&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">oat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction ID of the oldest active transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OLDEST_ACTIVE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction ID of the Oldest Snapshot, i.e., the number of the OAT when</span>
+<span class="sd">        the last garbage collection was done.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OLDEST_SNAPSHOT&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">next_transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction ID of the next transaction that will be started.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$NEXT_TRANSACTION&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cache_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of pages allocated in the page cache.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_BUFFERS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sql_dialect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;SQL dialect of the database.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SQL_DIALECT&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shutdown_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShutdownMode</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Current shutdown mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ShutdownMode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SHUTDOWN_MODE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sweep_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The sweep interval configured in the database header. Value 0 indicates that</span>
+<span class="sd">        sweeping is disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SWEEP_INTERVAL&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">read_only</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;True if database is Read Only.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$READ_ONLY&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">forced_writes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;True if database uses synchronous writes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$FORCED_WRITES&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reserve_space</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;True if database reserves space on data pages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RESERVE_SPACE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">created</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Creation date and time, i.e., when the database was created or last restored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CREATION_DATE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of pages allocated on disk.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">backup_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BackupState</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Current state of database with respect to nbackup physical backup.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">BackupState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$BACKUP_STATE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOStatsInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.IOStatsInfo` for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">iostats</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">io</span><span class="p">:</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+                                         <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">crypt_page</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of page being encrypted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$CRYPT_PAGE&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">owner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;User name of database owner.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$OWNER&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">security</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Security</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Type of security database (Default, Self or Other).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Security</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$SEC_DATABASE&#39;</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tablestats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Dictionary of `.TableStatsInfo` instances for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">io</span><span class="o">.</span><span class="n">table_name</span><span class="p">:</span> <span class="n">io</span> <span class="k">for</span> <span class="n">io</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">tablestats</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">)}</span></div>
+
+<div class="viewcode-block" id="AttachmentInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo">[docs]</a><span class="k">class</span> <span class="nc">AttachmentInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about attachment (connection) to database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$ATTACHMENT_NAME&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$USER&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$ROLE&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_PROTOCOL&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_ADDRESS&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_PROCESS&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$CLIENT_VERSION&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_VERSION&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_HOST&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_OS_USER&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$AUTH_METHOD&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="AttachmentInfo.is_active"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo.is_active">[docs]</a>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if attachment is active.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">ACTIVE</span></div>
+<div class="viewcode-block" id="AttachmentInfo.is_idle"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo.is_idle">[docs]</a>    <span class="k">def</span> <span class="nf">is_idle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if attachment is idle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">IDLE</span></div>
+<div class="viewcode-block" id="AttachmentInfo.is_gc_allowed"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo.is_gc_allowed">[docs]</a>    <span class="k">def</span> <span class="nf">is_gc_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if Garbage Collection is enabled for this attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$GARBAGE_COLLECTION&#39;</span><span class="p">])</span></div>
+<div class="viewcode-block" id="AttachmentInfo.is_internal"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo.is_internal">[docs]</a>    <span class="k">def</span> <span class="nf">is_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if attachment is internal system attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$SYSTEM_FLAG&#39;</span><span class="p">))</span></div>
+<div class="viewcode-block" id="AttachmentInfo.terminate"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.AttachmentInfo.terminate">[docs]</a>    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Terminates client session associated with this attachment.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            firebird.base.types.Error: If attachement is current session.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">this_attachment</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s2">&quot;Can&#39;t terminate current session.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;delete from mon$attachments where mon$attachment_id = ?&#39;</span><span class="p">,</span>
+                                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,))</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Attachment ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">server_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Server process ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SERVER_PID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Attachment state (idle/active).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Database filename or alias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_NAME&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;User name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$USER&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">role</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Role name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ROLE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remote protocol name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$REMOTE_PROTOCOL&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_address</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remote address.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$REMOTE_ADDRESS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remote client process ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$REMOTE_PID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_process</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remote client process pathname.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$REMOTE_PROCESS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">character_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CharacterSet</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Character set name for this attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">get_charset_by_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CHARACTER_SET_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Attachment date/time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TIMESTAMP&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">transactions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">TransactionInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of transactions associated with attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                                 <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">statements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatementInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of statements associated with attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">statements</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                               <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">ContextVariableInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of variables associated with attachment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                              <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOStatsInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.IOStatsInfo` for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">iostats</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">io</span><span class="p">:</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+                                         <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">ATTACHMENT</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">auth_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Authentication method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$AUTH_METHOD&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">client_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Client library version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$CLIENT_VERSION&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Remote protocol version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_VERSION&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_os_user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;OS user name of client process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_OS_USER&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">remote_host</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Name of remote host.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$REMOTE_HOST&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">system</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;True for system attachments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$SYSTEM_FLAG&#39;</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tablestats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Dictionary of `.TableStatsInfo` instances for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">io</span><span class="o">.</span><span class="n">table_name</span><span class="p">:</span> <span class="n">io</span> <span class="k">for</span> <span class="n">io</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">tablestats</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">ATTACHMENT</span><span class="p">)}</span></div>
+
+<div class="viewcode-block" id="TransactionInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo">[docs]</a><span class="k">class</span> <span class="nc">TransactionInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about transaction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TransactionInfo.is_active"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_active">[docs]</a>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if transaction is active.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">ACTIVE</span></div>
+<div class="viewcode-block" id="TransactionInfo.is_idle"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_idle">[docs]</a>    <span class="k">def</span> <span class="nf">is_idle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if transaction is idle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">IDLE</span></div>
+<div class="viewcode-block" id="TransactionInfo.is_readonly"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_readonly">[docs]</a>    <span class="k">def</span> <span class="nf">is_readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if transaction is Read Only.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$READ_ONLY&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">FLAG_SET</span></div>
+<div class="viewcode-block" id="TransactionInfo.is_autocommit"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_autocommit">[docs]</a>    <span class="k">def</span> <span class="nf">is_autocommit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True for autocommited transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$AUTO_COMMIT&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">FLAG_SET</span></div>
+<div class="viewcode-block" id="TransactionInfo.is_autoundo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_autoundo">[docs]</a>    <span class="k">def</span> <span class="nf">is_autoundo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True for transaction with automatic undo.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$AUTO_UNDO&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">FLAG_SET</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">attachment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AttachmentInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.AttachmentInfo` instance to which this transaction belongs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction state (idle/active).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction start datetime.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TIMESTAMP&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">top</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Top transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TOP_TRANSACTION&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">oldest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Oldest transaction (local OIT).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OLDEST_TRANSACTION&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">oldest_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Oldest active transaction (local OAT).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OLDEST_ACTIVE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">isolation_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IsolationMode</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transaction isolation mode code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">IsolationMode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ISOLATION_MODE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">lock_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Lock timeout.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$LOCK_TIMEOUT&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">statements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">StatementInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of statements associated with transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">statements</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                               <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">ContextVariableInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List of variables associated with transaction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                              <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOStatsInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.IOStatsInfo` for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">iostats</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">io</span><span class="p">:</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+                                         <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">TRANSACTION</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tablestats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Dictionary of `.TableStatsInfo` instances for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">io</span><span class="o">.</span><span class="n">table_name</span><span class="p">:</span> <span class="n">io</span> <span class="k">for</span> <span class="n">io</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">tablestats</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">TRANSACTION</span><span class="p">)}</span></div>
+
+<div class="viewcode-block" id="StatementInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.StatementInfo">[docs]</a><span class="k">class</span> <span class="nc">StatementInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about executed SQL statement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$SQL_TEXT&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$EXPLAINED_PLAN&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="StatementInfo.is_active"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.StatementInfo.is_active">[docs]</a>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if statement is active.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">ACTIVE</span></div>
+<div class="viewcode-block" id="StatementInfo.is_idle"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.StatementInfo.is_idle">[docs]</a>    <span class="k">def</span> <span class="nf">is_idle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if statement is idle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="ow">is</span> <span class="n">State</span><span class="o">.</span><span class="n">IDLE</span></div>
+<div class="viewcode-block" id="StatementInfo.terminate"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.StatementInfo.terminate">[docs]</a>    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Terminates execution of statement.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Error: If this attachement is current session.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_ic</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;delete from mon$statements where mon$statement_id = ?&#39;</span><span class="p">,</span>
+                                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,))</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Statement ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATEMENT_ID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">attachment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AttachmentInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.AttachmentInfo` instance to which this statement belongs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.TransactionInfo` instance to which this statement belongs or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Statement state (idle/active).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Statement start datetime.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TIMESTAMP&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Statement SQL text, if appropriate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SQL_TEXT&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Explained execution plan.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$EXPLAINED_PLAN&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">callstack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataList</span><span class="p">[</span><span class="n">CallStackInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;List with call stack for statement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">callstack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">callstack</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATEMENT_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="ow">and</span>
+                                                             <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CALLER_ID&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">callstack</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">callstack</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">while</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">caller_id</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">id</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">callstack</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CALLER_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">caller_id</span><span class="p">:</span>
+                        <span class="n">callstack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                        <span class="n">item</span> <span class="o">=</span> <span class="n">x</span>
+                        <span class="k">break</span>
+        <span class="k">return</span> <span class="n">callstack</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOStatsInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.IOStatsInfo` for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">iostats</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">io</span><span class="p">:</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+                                         <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">STATEMENT</span><span class="p">))</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tablestats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableStatsInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Dictionary of `.TableStatsInfo` instances for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">io</span><span class="o">.</span><span class="n">table_name</span><span class="p">:</span> <span class="n">io</span> <span class="k">for</span> <span class="n">io</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">tablestats</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">STATEMENT</span><span class="p">)}</span></div>
+
+<div class="viewcode-block" id="CallStackInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.CallStackInfo">[docs]</a><span class="k">class</span> <span class="nc">CallStackInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about PSQL call (stack frame).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$OBJECT_NAME&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$PACKAGE_NAME&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Call ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CALL_ID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">statement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatementInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Top-level `.StatementInfo` instance to which this call stack entry belongs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">statements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STATEMENT_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">caller</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CallStackInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Call stack entry (`.CallStackInfo`) of the caller.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">callstack</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$CALLER_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dbobject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Procedure</span><span class="p">,</span> <span class="n">Trigger</span><span class="p">,</span> <span class="n">Function</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Database object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object_type</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="n">ObjectType</span><span class="o">.</span><span class="n">PROCEDURE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">procedures</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="n">ObjectType</span><span class="o">.</span><span class="n">TRIGGER</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">triggers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="n">ObjectType</span><span class="o">.</span><span class="n">UDF</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object_name</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized object type &#39;</span><span class="si">{</span><span class="n">obj_type</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">object_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ObjectType</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;PSQL object type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ObjectType</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OBJECT_TYPE&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">object_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;PSQL object name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$OBJECT_NAME&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Request start datetime.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TIMESTAMP&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">line</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;SQL source line number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SOURCE_LINE&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;SQL source column number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$SOURCE_COLUMN&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">package_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Package name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="p">(</span><span class="n">name</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$PACKAGE_NAME&#39;</span><span class="p">))</span> \
+               <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">_con</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iostats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOStatsInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.IOStatsInfo` for this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">iostats</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">io</span><span class="p">:</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+                                         <span class="ow">and</span> <span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">group</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">CALL</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="IOStatsInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.IOStatsInfo">[docs]</a><span class="k">class</span> <span class="nc">IOStatsInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about page and row level I/O operations, and about memory consumption.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">owner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">DatabaseInfo</span><span class="p">,</span> <span class="n">AttachmentInfo</span><span class="p">,</span> <span class="n">TransactionInfo</span><span class="p">,</span>
+                             <span class="n">StatementInfo</span><span class="p">,</span> <span class="n">CallStackInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Object that owns this IOStats instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">db</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">ATTACHMENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">TRANSACTION</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">STATEMENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">statements</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">CALL</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">callstack</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized stat group &#39;</span><span class="si">{</span><span class="n">obj_type</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Group</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Object group code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STAT_GROUP&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of page reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">writes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of page writes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_WRITES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fetches</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of page fetches.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_FETCHES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">marks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of pages with changes pending.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$PAGE_MARKS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">seq_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records read sequentially.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_SEQ_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">idx_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records read via an index.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_IDX_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inserts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of inserted records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_INSERTS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">updates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of updated records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_UPDATES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">deletes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of deleted records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_DELETES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">backouts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where a new primary record version or a change to an existing</span>
+<span class="sd">        primary record version is backed out due to rollback or savepoint undo.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_BACKOUTS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">purges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where record version chain is being purged of versions no</span>
+<span class="sd">        longer needed by OAT or younger transactions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_PURGES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">expunges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where record version chain is being deleted due to deletions</span>
+<span class="sd">        by transactions older than OAT.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_EXPUNGES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">memory_used</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of bytes currently in use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$MEMORY_USED&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">memory_allocated</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of bytes currently allocated at the OS level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$MEMORY_ALLOCATED&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_memory_used</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Maximum number of bytes used by this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$MAX_MEMORY_USED&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_memory_allocated</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Maximum number of bytes allocated from the operating system by this object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$MAX_MEMORY_ALLOCATED&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">locks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record locks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$RECORD_LOCKS&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">waits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record waits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$RECORD_WAITS&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">conflits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record conflits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$RECORD_CONFLICTS&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">backversion_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record backversion reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$BACKVERSION_READS&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fragment_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record fragment reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$FRAGMENT_READS&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">repeated_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of repeated record reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;MON$RECORD_RPT_READS&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TableStatsInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.TableStatsInfo">[docs]</a><span class="k">class</span> <span class="nc">TableStatsInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about row level I/O operations on single table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$TABLE_NAME&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">owner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">DatabaseInfo</span><span class="p">,</span> <span class="n">AttachmentInfo</span><span class="p">,</span> <span class="n">TransactionInfo</span><span class="p">,</span>
+                             <span class="n">StatementInfo</span><span class="p">,</span> <span class="n">CallStackInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Object that owns this TableStatsInfo instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">db</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">ATTACHMENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">TRANSACTION</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">STATEMENT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">statements</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">is</span> <span class="n">Group</span><span class="o">.</span><span class="n">CALL</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">callstack</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stat_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized stat group &#39;</span><span class="si">{</span><span class="n">obj_type</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">row_stat_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Internal ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_STAT_ID&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">table_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Table name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TABLE_NAME&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Group</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Object group code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Group</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$STAT_GROUP&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">seq_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records read sequentially.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_SEQ_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">idx_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records read via an index.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_IDX_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inserts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of inserted records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_INSERTS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">updates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of updated records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_UPDATES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">deletes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of deleted records.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_DELETES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">backouts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where a new primary record version or a change to an existing</span>
+<span class="sd">        primary record version is backed out due to rollback or savepoint undo.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_BACKOUTS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">purges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where record version chain is being purged of versions no</span>
+<span class="sd">        longer needed by OAT or younger transactions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_PURGES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">expunges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of records where record version chain is being deleted due to deletions</span>
+<span class="sd">        by transactions older than OAT.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_EXPUNGES&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">locks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record locks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_LOCKS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">waits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record waits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_WAITS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">conflits</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record conflits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_CONFLICTS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">backversion_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record backversion reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$BACKVERSION_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fragment_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of record fragment reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$FRAGMENT_READS&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">repeated_reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Number of repeated record reads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$RECORD_RPT_READS&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="ContextVariableInfo"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.ContextVariableInfo">[docs]</a><span class="k">class</span> <span class="nc">ContextVariableInfo</span><span class="p">(</span><span class="n">InfoItem</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Information about context variable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">Monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">monitor</span><span class="p">,</span> <span class="n">attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$VARIABLE_NAME&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip_attribute</span><span class="p">(</span><span class="s1">&#39;MON$VARIABLE_VALUE&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="ContextVariableInfo.is_attachment_var"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.ContextVariableInfo.is_attachment_var">[docs]</a>    <span class="k">def</span> <span class="nf">is_attachment_var</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if variable is associated to attachment context.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="ContextVariableInfo.is_transaction_var"><a class="viewcode-back" href="../../../ref-monitor.html#firebird.lib.monitor.ContextVariableInfo.is_transaction_var">[docs]</a>    <span class="k">def</span> <span class="nf">is_transaction_var</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if variable is associated to transaction context.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">attachment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AttachmentInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.AttachmentInfo` instance to which this context variable belongs or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">attachments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$ATTACHMENT_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">transaction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInfo</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;`.TransactionInfo` instance to which this context variable belongs or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">transactions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$TRANSACTION_ID&#39;</span><span class="p">])</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Context variable name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$VARIABLE_NAME&#39;</span><span class="p">]</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Value of context variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes</span><span class="p">[</span><span class="s1">&#39;MON$VARIABLE_VALUE&#39;</span><span class="p">]</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2022, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

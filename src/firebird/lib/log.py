@@ -43,7 +43,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from contextlib import suppress
 from firebird.base.types import Error, STOP, Sentinel
-from firebird.lib.logmsgs import identify_msg, Severity, Facility
+from .logmsgs import identify_msg, Severity, Facility
 
 @dataclass(order=True, frozen=True)
 class LogMessage:

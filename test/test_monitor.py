@@ -34,14 +34,11 @@
 import unittest
 import sys, os
 import datetime
-from contextlib import closing
-from re import finditer
-from pprint import pprint
 from firebird.base.collections import DataList
 from firebird.driver import *
 from firebird.lib.monitor import *
 from firebird.lib.schema import CharacterSet
-from firebird.lib import schema as sm
+#from firebird.lib import schema as sm
 from io import StringIO
 
 FB30 = '3.0'
@@ -187,15 +184,17 @@ class TestMonitor(TestBase):
             self.assertEqual(m.db.page_size, 8192)
             if self.version == FB30:
                 self.assertEqual(m.db.ods, 12.0)
-            else:
+            elif self.version == FB40:
                 self.assertEqual(m.db.ods, 13.0)
+            else:
+                self.assertEqual(m.db.ods, 13.1)
             self.assertIsInstance(m.db.oit, int)
             self.assertIsInstance(m.db.oat, int)
             self.assertIsInstance(m.db.ost, int)
             self.assertIsInstance(m.db.next_transaction, int)
             self.assertIsInstance(m.db.cache_size, int)
             self.assertEqual(m.db.sql_dialect, 3)
-            self.assertIs(m.db.shutdown_mode, ShutdownMode.ONLINE)
+            self.assertIs(m.db.shutdown_mode, ShutdownMode.NORMAL)
             self.assertEqual(m.db.sweep_interval, 20000)
             self.assertFalse(m.db.read_only)
             self.assertTrue(m.db.forced_writes)
@@ -214,6 +213,21 @@ class TestMonitor(TestBase):
                 self.assertIsInstance(stats, TableStatsInfo)
                 self.assertEqual(stats.stat_id, m.db.stat_id)
                 self.assertEqual(stats.owner, m.db)
+            # Firebird 4 properties
+            if self.version == FB30:
+                self.assertIsNone(m.db.crypt_state)
+                self.assertIsNone(m.db.guid)
+                self.assertIsNone(m.db.file_id)
+                self.assertIsNone(m.db.next_attachment)
+                self.assertIsNone(m.db.next_statement)
+                self.assertIsNone(m.db.replica_mode)
+            else:
+                self.assertEqual(m.db.crypt_state, CryptState.NOT_ENCRYPTED)
+                self.assertEqual(m.db.guid, UUID('53e6200c-2b09-42a8-8384-e07bc9aa2883'))
+                self.assertIsInstance(m.db.file_id, str)
+                self.assertGreater(m.db.next_attachment, 0)
+                self.assertGreater(m.db.next_statement, 0)
+                self.assertEqual(m.db.replica_mode, ReplicaMode.NONE)
     def test_04_AttachmentInfo(self):
         with Monitor(self.con) as m:
             sql = "select RDB$SET_CONTEXT('USER_SESSION','TESTVAR','TEST_VALUE') from rdb$database"
@@ -241,8 +255,10 @@ class TestMonitor(TestBase):
                 self.assertIsInstance(s.client_version, str)
                 if self.version == FB30:
                     self.assertEqual(s.remote_version, 'P15')
-                else:
+                elif self.version == FB40:
                     self.assertEqual(s.remote_version, 'P17')
+                else:
+                    self.assertEqual(s.remote_version, 'P18')
                 self.assertIsInstance(s.remote_os_user, str)
                 self.assertIsInstance(s.remote_host, str)
                 self.assertFalse(s.system)
@@ -286,6 +302,27 @@ class TestMonitor(TestBase):
                         m.this_attachment.terminate()
                     self.assertTupleEqual(cm.exception.args,
                                           ("Can't terminate current session.",))
+                # Firebird 4
+                if self.version == FB30:
+                    self.assertIsNone(s.idle_timeout)
+                    self.assertIsNone(s.idle_timer)
+                    self.assertIsNone(s.statement_timeout)
+                    self.assertIsNone(s.wire_compressed)
+                    self.assertIsNone(s.wire_encrypted)
+                    self.assertIsNone(s.wire_crypt_plugin)
+                else:
+                    self.assertEqual(s.idle_timeout, 0)
+                    self.assertIsNone(s.idle_timer)
+                    self.assertEqual(s.statement_timeout, 0)
+                    self.assertFalse(s.wire_compressed)
+                    self.assertTrue(s.wire_encrypted)
+                    self.assertEqual(s.wire_crypt_plugin, 'ChaCha64')
+                # Firebird 5
+                if self.version in [FB30, FB40]:
+                    self.assertIsNone(s.session_timezone)
+                else:
+                    self.assertIsInstance(s.session_timezone, str)
+
     def test_05_TransactionInfo(self):
         c = self.con.cursor()
         sql = "select RDB$SET_CONTEXT('USER_TRANSACTION','TESTVAR','TEST_VALUE') from rdb$database"
@@ -303,7 +340,10 @@ class TestMonitor(TestBase):
             self.assertIsInstance(s.top, int)
             self.assertIsInstance(s.oldest, int)
             self.assertIsInstance(s.oldest_active, int)
-            self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_RV)
+            if self.version == FB30:
+                self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_RV)
+            else: # Firebird 4+
+                self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_READ_CONSISTENCY)
             self.assertEqual(s.lock_timeout, -1)
             self.assertIsInstance(s.statements, list)
             for x in s.statements:
@@ -334,7 +374,7 @@ class TestMonitor(TestBase):
     def test_06_StatementInfo(self):
         with Monitor(self.con) as m:
             m.take_snapshot()
-            s = m.this_attachment.statements[0]
+            s: StatementInfo = m.this_attachment.statements[0]
             #
             self.assertIsInstance(s.id, int)
             self.assertIs(s.attachment, m.this_attachment)
@@ -380,6 +420,21 @@ class TestMonitor(TestBase):
                 self.assertIsInstance(stats, TableStatsInfo)
                 self.assertEqual(stats.stat_id, s.stat_id)
                 self.assertEqual(stats.owner, s)
+            # Firebird 4
+            if self.version == FB30:
+                self.assertIsNone(s.timeout)
+                self.assertIsNone(s.timer)
+            else:
+                self.assertEqual(s.timeout, 0)
+                self.assertIsNone(s.timer)
+            # Firebird 5
+            if self.version in [FB30, FB40]:
+                self.assertIsNone(s.compiled_statement)
+            else:
+                self.assertIsInstance(s.compiled_statement, CompiledStatementInfo)
+                self.assertEqual(s.sql, s.compiled_statement.sql)
+                self.assertEqual(s.plan, s.compiled_statement.plan)
+                self.assertEqual(s._attributes['MON$COMPILED_STATEMENT_ID'], s.compiled_statement.id)
     def test_07_CallStackInfo(self):
         with Monitor(self.con) as m:
             m.take_snapshot()
@@ -438,6 +493,7 @@ class TestMonitor(TestBase):
             self.assertEqual(x.dbobject.name, 'SHIP_ORDER')
             self.assertEqual(x.object_type, 5) # procedure
             self.assertEqual(x.object_name, 'SHIP_ORDER')
+
     def test_08_IOStatsInfo(self):
         with Monitor(self.con) as m:
             m.take_snapshot()
@@ -470,6 +526,11 @@ class TestMonitor(TestBase):
             self.assertIsInstance(s.memory_allocated, int)
             self.assertIsInstance(s.max_memory_used, int)
             self.assertIsInstance(s.max_memory_allocated, int)
+            # Firebird 4
+            if self.version == FB30:
+                self.assertIsNone(s.intermediate_gc)
+            else:
+                self.assertEqual(s.intermediate_gc, 0)
     def test_09_ContextVariableInfo(self):
         c = self.con.cursor()
         sql = "select RDB$SET_CONTEXT('USER_SESSION','SVAR','TEST_VALUE') from rdb$database"
@@ -485,7 +546,7 @@ class TestMonitor(TestBase):
             #
             self.assertEqual(len(m.variables), 2)
             #
-            s = m.variables[0]
+            s: ContextVariableInfo = m.variables[0]
             self.assertIs(s.attachment, m.this_attachment)
             self.assertIsNone(s.transaction)
             self.assertEqual(s.name, 'SVAR')
@@ -503,6 +564,17 @@ class TestMonitor(TestBase):
             self.assertTrue(s.is_transaction_var())
         c.close()
         c2.close()
+    def test_10_CompiledStatementInfo(self):
+        with Monitor(self.con) as m:
+            m.take_snapshot()
+            #
+            if self.version in [FB30, FB40]:
+                self.assertEqual(len(m.compiled_statements), 0)
+            else:
+                self.assertEqual(len(m.compiled_statements), 2)
+                s: CompiledStatementInfo = m.compiled_statements[0]
+                #
+                self.assertEqual(s.sql, "select * from mon$compiled_statements")
 
 if __name__ == '__main__':
     unittest.main()

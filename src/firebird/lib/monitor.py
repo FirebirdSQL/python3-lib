@@ -41,23 +41,17 @@ from __future__ import annotations
 from typing import Dict, List, Any, Union
 import datetime
 import weakref
+from uuid import UUID
 from enum import Enum, IntEnum
 from firebird.base.collections import DataList
-from firebird.driver import tpb, Connection, Cursor, Statement, Isolation, Error, TraAccessMode
-from .schema import ObjectType, CharacterSet, Procedure, Trigger, Function
+from firebird.driver import (tpb, Connection, Cursor, Statement, Isolation, Error,
+                             TraAccessMode, ReplicaMode, ShutdownMode)
+from .schema import ObjectType, CharacterSet, Procedure, Trigger, Function, ObjectType
 
 FLAG_NOT_SET = 0
 FLAG_SET = 1
 
 # Enums
-class ShutdownMode(IntEnum):
-    """Shutdown mode.
-    """
-    ONLINE = 0
-    MULTI = 1
-    SINGLE = 2
-    FULL = 3
-
 class BackupState(IntEnum):
     """Physical backup state.
     """
@@ -73,11 +67,14 @@ class State(IntEnum):
 
 class IsolationMode(IntEnum):
     """Transaction solation mode.
+
+    .. versionchanged:: 1.4.0 - `READ_COMMITTED_READ_CONSISTENCY` value added
     """
     CONSISTENCY = 0
     CONCURRENCY = 1
     READ_COMMITTED_RV = 2
     READ_COMMITTED_NO_RV = 3
+    READ_COMMITTED_READ_CONSISTENCY = 4
 
 class Group(IntEnum):
     """Statistics group.
@@ -94,6 +91,17 @@ class Security(Enum):
     DEFAULT = 'Default'
     SELF = 'Self'
     OTHER = 'Other'
+
+class CryptState(IntEnum):
+    """Database encryption state.
+
+    .. versionadded:: 1.4.0
+    """
+    NOT_ENCRYPTED = 0
+    ENCRYPTED = 1
+    DECRYPTION_IN_PROGRESS = 2
+    ENCRYPTION_IN_PROGRESS = 3
+
 
 # Classes
 class Monitor:
@@ -119,6 +127,7 @@ class Monitor:
         self.__iostats = None
         self.__variables = None
         self.__tablestats = None
+        self.__compiled_statements = None
     def __del__(self):
         if not self.closed:
             self.close()
@@ -224,13 +233,14 @@ class Monitor:
         """List of all I/O statistics.
         """
         if self.__iostats is None:
-            cmd = """SELECT r.MON$STAT_ID, r.MON$STAT_GROUP,
+            ext = '' if self.db.ods < 13.0 else  ', r.MON$RECORD_IMGC'
+            cmd = f"""SELECT r.MON$STAT_ID, r.MON$STAT_GROUP,
 r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,
 r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,
 r.MON$RECORD_PURGES, r.MON$RECORD_EXPUNGES, r.MON$RECORD_LOCKS, r.MON$RECORD_WAITS,
 r.MON$RECORD_CONFLICTS, r.MON$BACKVERSION_READS, r.MON$FRAGMENT_READS, r.MON$RECORD_RPT_READS,
 io.MON$PAGE_FETCHES, io.MON$PAGE_MARKS, io.MON$PAGE_READS, io.MON$PAGE_WRITES,
-m.MON$MEMORY_ALLOCATED, m.MON$MEMORY_USED, m.MON$MAX_MEMORY_ALLOCATED, m.MON$MAX_MEMORY_USED
+m.MON$MEMORY_ALLOCATED, m.MON$MEMORY_USED, m.MON$MAX_MEMORY_ALLOCATED, m.MON$MAX_MEMORY_USED{ext}
 FROM MON$RECORD_STATS r join MON$IO_STATS io
   on r.MON$STAT_ID = io.MON$STAT_ID and r.MON$STAT_GROUP = io.MON$STAT_GROUP
   join MON$MEMORY_USAGE m
@@ -253,17 +263,29 @@ FROM MON$RECORD_STATS r join MON$IO_STATS io
         """List of all table record I/O statistics.
         """
         if self.__tablestats is None:
-            cmd = """SELECT ts.MON$STAT_ID, ts.MON$STAT_GROUP, ts.MON$TABLE_NAME,
+            ext = '' if self.db.ods < 13.0 else  ', r.MON$RECORD_IMGC'
+            cmd = f"""SELECT ts.MON$STAT_ID, ts.MON$STAT_GROUP, ts.MON$TABLE_NAME,
 ts.MON$RECORD_STAT_ID, r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,
 r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,
 r.MON$RECORD_PURGES, r.MON$RECORD_EXPUNGES, r.MON$RECORD_LOCKS, r.MON$RECORD_WAITS,
-r.MON$RECORD_CONFLICTS, r.MON$BACKVERSION_READS, r.MON$FRAGMENT_READS, r.MON$RECORD_RPT_READS
+r.MON$RECORD_CONFLICTS, r.MON$BACKVERSION_READS, r.MON$FRAGMENT_READS, r.MON$RECORD_RPT_READS{ext}
 FROM MON$TABLE_STATS ts join MON$RECORD_STATS r
   on ts.MON$RECORD_STAT_ID = r.MON$STAT_ID"""
             self.__tablestats = DataList((TableStatsInfo(self, row) for row
                                           in self._select(cmd)),
                                          TableStatsInfo, 'item.stat_id', frozen=True)
         return self.__tablestats
+    @property
+    def compiled_statements(self) -> DataList[CompiledStatementInfo]:
+        """List of all compiled statements.
+
+        .. versionadded:: 1.4.0
+        """
+        if self.__compiled_statements is None:
+            self.__compiled_statements = DataList((CompiledStatementInfo(self, row) for row
+                                                   in self._select('select * from mon$compiled_statements')),
+                                                  CompiledStatementInfo, 'item.id', frozen=True)
+        return self.__compiled_statements
 
 class InfoItem:
     """Base class for all database monitoring objects.
@@ -403,6 +425,52 @@ class DatabaseInfo(InfoItem):
         """
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.DATABASE)}
+    # Firebird 4
+    @property
+    def crypt_state(self) -> Optional[CryptState]:
+        """Current state of database encryption.
+
+        .. versionadded:: 1.4.0
+        """
+        value = self._attributes.get('MON$CRYPT_STATE')
+        return None if value is None else CryptState(value)
+    @property
+    def guid(self) -> Optional[UUID]:
+        """Database GUID (persistent until restore / fixup).
+
+        .. versionadded:: 1.4.0
+        """
+        value = self._attributes.get('MON$GUID')
+        return None if value is None else UUID(value)
+    @property
+    def file_id(self) -> Optional[str]:
+        """Unique ID of the database file at the filesystem level.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$FILE_ID')
+    @property
+    def next_attachment(self) -> Optional[int]:
+        """Current value of the next attachment ID counter.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$NEXT_ATTACHMENT')
+    @property
+    def next_statement(self) -> Optional[int]:
+        """Current value of the next statement ID counter.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$NEXT_STATEMENT')
+    @property
+    def replica_mode(self) -> Optional[ReplicaMode]:
+        """Database replica mode.
+
+        .. versionadded:: 1.4.0
+        """
+        value = self._attributes.get('MON$REPLICA_MODE')
+        return None if value is None else ReplicaMode(value)
 
 class AttachmentInfo(InfoItem):
     """Information about attachment (connection) to database.
@@ -472,27 +540,27 @@ class AttachmentInfo(InfoItem):
         """
         return self._attributes['MON$USER']
     @property
-    def role(self) -> str:
+    def role(self) -> Optional[str]:
         """Role name.
         """
         return self._attributes['MON$ROLE']
     @property
-    def remote_protocol(self) -> str:
+    def remote_protocol(self) -> Optional[str]:
         """Remote protocol name.
         """
         return self._attributes['MON$REMOTE_PROTOCOL']
     @property
-    def remote_address(self) -> str:
+    def remote_address(self) -> Optional[str]:
         """Remote address.
         """
         return self._attributes['MON$REMOTE_ADDRESS']
     @property
-    def remote_pid(self) -> int:
+    def remote_pid(self) -> Optional[int]:
         """Remote client process ID.
         """
         return self._attributes['MON$REMOTE_PID']
     @property
-    def remote_process(self) -> str:
+    def remote_process(self) -> Optional[str]:
         """Remote client process pathname.
         """
         return self._attributes['MON$REMOTE_PROCESS']
@@ -566,6 +634,57 @@ class AttachmentInfo(InfoItem):
         """
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.ATTACHMENT)}
+    # Firebird 4
+    @property
+    def idle_timeout(self) -> Optional[int]:
+        """Connection level idle timeout.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$IDLE_TIMEOUT')
+    @property
+    def idle_timer(self) -> Optional[datetime]:
+        """Idle timer expiration time.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$IDLE_TIMER')
+    @property
+    def statement_timeout(self) -> Optional[int]:
+        """Connection level statement timeout.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$STATEMENT_TIMEOUT')
+    @property
+    def wire_compressed(self) -> Optional[bool]:
+        """Wire compression.
+
+        .. versionadded:: 1.4.0
+        """
+        return bool(self._attributes.get('MON$WIRE_COMPRESSED'))
+    @property
+    def wire_encrypted(self) -> Optional[bool]:
+        """Wire encryption.
+
+        .. versionadded:: 1.4.0
+        """
+        return bool(self._attributes.get('MON$WIRE_ENCRYPTED'))
+    @property
+    def wire_crypt_plugin(self) -> Optional[str]:
+        """Name of the wire encryption plugin used by client.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$WIRE_CRYPT_PLUGIN')
+    # Firebird 5
+    @property
+    def session_timezone(self) -> Optional[str]:
+        """Actual timezone of the session.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$SESSION_TIMEZONE')
 
 class TransactionInfo(InfoItem):
     """Information about transaction.
@@ -747,6 +866,29 @@ class StatementInfo(InfoItem):
         """
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.STATEMENT)}
+    # Firebird 4
+    @property
+    def timeout(self) -> Optional[int]:
+        """Connection level statement timeout.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$STATEMENT_TIMEOUT')
+    @property
+    def timer(self) -> Optional[datetime]:
+        """Statement timer expiration time.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$STATEMENT_TIMER')
+    # Firebird 5
+    @property
+    def compiled_statement(self) -> Optional[CompiledStatementInfo]:
+        """`.CompiledStatementInfo` instance to which this statement relates.
+
+        .. versionadded:: 1.4.0
+        """
+        return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
 
 class CallStackInfo(InfoItem):
     """Information about PSQL call (stack frame).
@@ -819,6 +961,14 @@ class CallStackInfo(InfoItem):
         """
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.CALL))
+    # Firebird 5
+    @property
+    def compiled_statement(self) -> Optional[CompiledStatementInfo]:
+        """`.CompiledStatementInfo` instance to which this statement relates.
+
+        .. versionadded:: 1.4.0
+        """
+        return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
 
 class IOStatsInfo(InfoItem):
     """Information about page and row level I/O operations, and about memory consumption.
@@ -958,6 +1108,15 @@ class IOStatsInfo(InfoItem):
         """Number of repeated record reads.
         """
         return self._attributes.get('MON$RECORD_RPT_READS')
+    # Firebird 4
+    @property
+    def intermediate_gc(self) -> Optional[int]:
+        """Number of records processed by the intermediate garbage collection.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes.get('MON$RECORD_IMGC')
+
 
 class TableStatsInfo(InfoItem):
     """Information about row level I/O operations on single table.
@@ -1106,3 +1265,54 @@ class ContextVariableInfo(InfoItem):
         """Value of context variable.
         """
         return self._attributes['MON$VARIABLE_VALUE']
+
+# Firebird 5
+
+class CompiledStatementInfo(InfoItem):
+    """Information about compiled statement.
+
+    .. versionadded:: 1.4.0
+    """
+    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+        super().__init__(monitor, attributes)
+        self._strip_attribute('MON$OBJECT_NAME')
+        self._strip_attribute('MON$PACKAGE_NAME')
+        self._strip_attribute('MON$SQL_TEXT')
+        self._strip_attribute('MON$EXPLAINED_PLAN')
+    @property
+    def id(self) -> int:
+        """Compiled statement ID.
+        """
+        return self._attributes['MON$COMPILED_STATEMENT_ID']
+    @property
+    def sql(self) -> Optional[str]:
+        """Text of the SQL query.
+        """
+        return self._attributes['MON$SQL_TEXT']
+    @property
+    def plan(self) -> Optional[str]:
+        """Plan (in the explained form) of the SQL query.
+        """
+        return self._attributes.get('MON$EXPLAINED_PLAN')
+    @property
+    def object_name(self) -> Optional[str]:
+        """PSQL object name.
+        """
+        return self._attributes.get('MON$OBJECT_NAME')
+    @property
+    def object_type(self) -> Optional[ObjectType]:
+        """PSQL object type.
+        """
+        value = self._attributes.get('MON$OBJECT_TYPE')
+        return value if value is None else ObjectType(value)
+    @property
+    def package_name(self) -> Optional[str]:
+        """Package name of the PSQL object.
+        """
+        return self._attributes.get('MON$PACKAGE_NAME')
+    @property
+    def iostats(self) -> IOStatsInfo:
+        """`.IOStatsInfo` for this object.
+        """
+        return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
+                                         and (io.group is Group.STATEMENT))

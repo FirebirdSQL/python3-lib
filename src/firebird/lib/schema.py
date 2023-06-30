@@ -2,7 +2,7 @@
 #
 # PROGRAM/MODULE: firebird-lib
 # FILE:           firebird/lib/schema.py
-# DESCRIPTION:    Module work with Firebird database schema
+# DESCRIPTION:    Module for work with Firebird database schema
 # CREATED:        21.9.2020
 #
 # The contents of this file are subject to the MIT License
@@ -32,7 +32,7 @@
 #                 ______________________________________
 # pylint: disable=C0302, C0301, W0212, R0902, R0912,R0913, R0914, R0915, R0904, C0103
 
-"""firebird.lib.schema - Module work with Firebird database schema
+"""firebird.lib.schema - Module for work with Firebird database schema
 
 
 """
@@ -105,8 +105,16 @@ COLUMN_TYPES = {None: 'UNKNOWN', FieldType.SHORT: 'SMALLINT',
 
 INTEGRAL_SUBTYPES = ('UNKNOWN', 'NUMERIC', 'DECIMAL')
 
+class IndexType(Enum):
+    """Index ordering.
+    """
+    ASCENDING = 'ASCENDING'
+    DESCENDING = 'DESCENDING'
+
 class ObjectType(IntEnum):
     """Dependent type codes.
+
+    .. versionchanged:: 1.4.0 - `PACKAGE` renamed to `PACKAGE_HEADER`, added values 20-37
     """
     TABLE = 0
     VIEW = 1
@@ -126,14 +134,28 @@ class ObjectType(IntEnum):
     UDF = 15
     BLOB_FILTER = 16
     COLLATION = 17
-    PACKAGE = 18
+    PACKAGE_HEADER = 18
     PACKAGE_BODY = 19
-
-class IndexType(Enum):
-    """Index ordering.
-    """
-    ASCENDING = 'ASCENDING'
-    DESCENDING = 'DESCENDING'
+    PRIVILEGE = 20
+    # Object types for DDL operations
+    DATABASE = 21
+    RELATIONS = 22
+    VIEWS = 23
+    PROCEDURES = 24
+    FUNCTIONS = 25
+    PACKAGES = 26
+    GENERATORS = 27
+    DOMAINS = 28
+    EXCEPTIONS = 29
+    ROLES = 30
+    CHARSETS = 31
+    COLLATIONS = 32
+    FILTERS = 33
+    # Codes that could be used in RDB$DEPENDENCIES or RDB$USER_PRIVILEGES
+    JOBS = 34
+    TABLESPACE = 35
+    TABLESPACES = 36
+    INDEX_CONDITION = 37
 
 class FunctionType(IntEnum):
     """Function type codes.
@@ -824,10 +846,11 @@ class Schema(Visitable):
             # Index.is_sys_object() that is called in Index.__init__() will
             # drop result from internal cursor and we'll not load all indices.
             self._get_constraint_indices()
-            cmd = """select RDB$INDEX_NAME, RDB$RELATION_NAME, RDB$INDEX_ID,
+            ext = '' if self.ods < 13.0 else  ', RDB$CONDITION_SOURCE'
+            cmd = f"""select RDB$INDEX_NAME, RDB$RELATION_NAME, RDB$INDEX_ID,
             RDB$UNIQUE_FLAG, RDB$DESCRIPTION, RDB$SEGMENT_COUNT, RDB$INDEX_INACTIVE,
             RDB$INDEX_TYPE, RDB$FOREIGN_KEY, RDB$SYSTEM_FLAG, RDB$EXPRESSION_SOURCE,
-            RDB$STATISTICS from RDB$INDICES"""
+            RDB$STATISTICS{ext} from RDB$INDICES"""
             indices = DataList((Index(self, row) for row in self._select(cmd)),
                                Index, 'item.name', frozen=True)
             sys_indices, user_indices = indices.split(lambda i: i.is_sys_object(), frozen=True)
@@ -1019,6 +1042,9 @@ class Schema(Visitable):
                                'VAR_POP', 'VAR_SAMP', 'VARBINARY', 'VARCHAR', 'VARIABLE',
                                'VARYING', 'VIEW', 'WHEN', 'WHERE', 'WHILE', 'WINDOW',
                                'WITH', 'WITHOUT', 'YEAR']
+        elif self.ods == 13.1: # Firebird 5.0
+            self._ic.execute("SELECT RDB$KEYWORD_NAME FROM RDB$KEYWORDS WHERE RDB$KEYWORD_RESERVED")
+            self._reserved_ = [r[0] for r in self._ic]
         else:
             raise Error(f"Unsupported ODS version: {self.ods}")
         self.__attrs = self._select_row('select * from RDB$DATABASE')
@@ -1126,7 +1152,10 @@ class Schema(Visitable):
                 self.__users.append(res)
             result = res
         elif itype is ObjectType.COLUMN:
-            result = self.all_tables.get(name).columns.get(subname)
+            if subname is None:
+                result = self.all_domains.get(name)
+            else:
+                result = self.all_tables.get(name).columns.get(subname)
         elif itype is ObjectType.INDEX:
             result = self.all_indices.get(name)
         elif itype is ObjectType.CHARACTER_SET:
@@ -1139,7 +1168,7 @@ class Schema(Visitable):
             result = self.all_functions.get(name)
         elif itype is ObjectType.COLLATION:
             result = self.collations.get(name)
-        elif itype in (ObjectType.PACKAGE, ObjectType.PACKAGE_BODY): # Package
+        elif itype in (ObjectType.PACKAGE_HEADER, ObjectType.PACKAGE_BODY): # Package
             result = self.packages.get(name)
         return result
     def get_metadata_ddl(self, *, sections=SCRIPT_DEFAULT_ORDER) -> List[str]:
@@ -2310,14 +2339,14 @@ class Index(SchemaItem):
         return (IndexType.DESCENDING if self._attributes['RDB$INDEX_TYPE'] == 1
                 else IndexType.ASCENDING)
     @property
-    def partner_index(self) -> Index:
+    def partner_index(self) -> Optional[Index]:
         """Associated unique/primary key :class:`Index` instance, or None.
         """
         return (self.schema.all_indices.get(pname) if (pname := self._attributes['RDB$FOREIGN_KEY'])
                 else None)
     @property
-    def expression(self) -> str:
-        """Source of an expression or None.
+    def expression(self) -> Optional[str]:
+        """Index expression or None.
         """
         return self._attributes['RDB$EXPRESSION_SOURCE']
     @property
@@ -2355,10 +2384,18 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         """
         return DataList(self.table.columns.get(colname) for colname in self.segment_names)
     @property
-    def constraint(self) -> Constraint:
+    def constraint(self) -> Optional[Constraint]:
         """`Constraint` instance that uses this index or None.
         """
         return self.schema.constraints.get(self.schema._get_constraint_indices().get(self.name))
+    # Firebird 5
+    @property
+    def condition(self) -> Optional[str]:
+        """Index condition or None.
+
+        .. versionadded:: 1.4.0
+        """
+        return self._attributes['RDB$CONDITION_SOURCE']
 
 class ViewColumn(SchemaItem):
     """Represents view column.
@@ -4755,7 +4792,7 @@ class Package(SchemaItem):
     """
     def __init__(self, schema: Schema, attributes: Dict[str, Any]):
         super().__init__(schema, attributes)
-        self._type_code.extend([ObjectType.PACKAGE, ObjectType.PACKAGE_BODY])
+        self._type_code.extend([ObjectType.PACKAGE_HEADER, ObjectType.PACKAGE_BODY])
         self._actions.extend(['create', 'recreate', 'create_or_alter', 'alter', 'drop',
                               'comment'])
         self._strip_attribute('RDB$PACKAGE_NAME')

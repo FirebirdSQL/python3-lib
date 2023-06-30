@@ -191,20 +191,38 @@ class TestSchema(TestBase):
         s = self.con.schema
         self.assertDictEqual(s.param_type_from,
                              {0: 'DATATYPE', 1: 'DOMAIN', 2: 'TYPE OF DOMAIN', 3: 'TYPE OF COLUMN'})
-        self.assertDictEqual(s.object_types,
-                             {0: 'RELATION', 1: 'VIEW', 2: 'TRIGGER', 3: 'COMPUTED_FIELD',
-                              4: 'VALIDATION', 5: 'PROCEDURE', 6: 'EXPRESSION_INDEX',
-                              7: 'EXCEPTION', 8: 'USER', 9: 'FIELD', 10: 'INDEX',
-                              11: 'CHARACTER_SET', 12: 'USER_GROUP', 13: 'ROLE',
-                              14: 'GENERATOR', 15: 'UDF', 16: 'BLOB_FILTER', 17: 'COLLATION',
-                              18:'PACKAGE', 19:'PACKAGE BODY'})
-        self.assertDictEqual(s.object_type_codes,
-                             {'INDEX': 10, 'EXCEPTION': 7, 'GENERATOR': 14, 'COLLATION': 17,
-                              'UDF': 15, 'EXPRESSION_INDEX': 6, 'FIELD': 9,
-                              'COMPUTED_FIELD': 3, 'TRIGGER': 2, 'RELATION': 0, 'USER': 8,
-                              'USER_GROUP': 12, 'BLOB_FILTER': 16, 'ROLE': 13,
-                              'VALIDATION': 4, 'PROCEDURE': 5, 'VIEW': 1, 'CHARACTER_SET':11,
-                              'PACKAGE':18, 'PACKAGE BODY':19})
+        if self.version in (FB30, FB40):
+            self.assertDictEqual(s.object_types,
+                                 {0: 'RELATION', 1: 'VIEW', 2: 'TRIGGER', 3: 'COMPUTED_FIELD',
+                                  4: 'VALIDATION', 5: 'PROCEDURE', 6: 'EXPRESSION_INDEX',
+                                  7: 'EXCEPTION', 8: 'USER', 9: 'FIELD', 10: 'INDEX',
+                                  11: 'CHARACTER_SET', 12: 'USER_GROUP', 13: 'ROLE',
+                                  14: 'GENERATOR', 15: 'UDF', 16: 'BLOB_FILTER', 17: 'COLLATION',
+                                  18:'PACKAGE', 19:'PACKAGE BODY'})
+        else: # Firebird 5.0
+            self.assertDictEqual(s.object_types,
+                                 {0: 'RELATION', 1: 'VIEW', 2: 'TRIGGER', 3: 'COMPUTED_FIELD',
+                                  4: 'VALIDATION', 5: 'PROCEDURE', 6: 'INDEX_EXPRESSION',
+                                  7: 'EXCEPTION', 8: 'USER', 9: 'FIELD', 10: 'INDEX',
+                                  11: 'CHARACTER_SET', 12: 'USER_GROUP', 13: 'ROLE',
+                                  14: 'GENERATOR', 15: 'UDF', 16: 'BLOB_FILTER', 17: 'COLLATION',
+                                  18:'PACKAGE', 19:'PACKAGE BODY', 37: 'INDEX_CONDITION'})
+        if self.version in (FB30, FB40):
+            self.assertDictEqual(s.object_type_codes,
+                                 {'INDEX': 10, 'EXCEPTION': 7, 'GENERATOR': 14, 'COLLATION': 17,
+                                  'UDF': 15, 'EXPRESSION_INDEX': 6, 'FIELD': 9,
+                                  'COMPUTED_FIELD': 3, 'TRIGGER': 2, 'RELATION': 0, 'USER': 8,
+                                  'USER_GROUP': 12, 'BLOB_FILTER': 16, 'ROLE': 13,
+                                  'VALIDATION': 4, 'PROCEDURE': 5, 'VIEW': 1, 'CHARACTER_SET':11,
+                                  'PACKAGE':18, 'PACKAGE BODY':19})
+        else: # Firebird 5.0
+            self.assertDictEqual(s.object_type_codes,
+                                 {'INDEX': 10, 'EXCEPTION': 7, 'GENERATOR': 14, 'COLLATION': 17,
+                                  'UDF': 15, 'INDEX_EXPRESSION': 6, 'FIELD': 9,
+                                  'COMPUTED_FIELD': 3, 'TRIGGER': 2, 'RELATION': 0, 'USER': 8,
+                                  'USER_GROUP': 12, 'BLOB_FILTER': 16, 'ROLE': 13,
+                                  'VALIDATION': 4, 'PROCEDURE': 5, 'VIEW': 1, 'CHARACTER_SET':11,
+                                  'PACKAGE':18, 'PACKAGE BODY':19, 'INDEX_CONDITION': 37})
         self.assertDictEqual(s.character_set_names,
                              {0: 'NONE', 1: 'BINARY', 2: 'ASCII7', 3: 'SQL_TEXT', 4: 'UTF-8',
                               5: 'SJIS', 6: 'EUCJ', 9: 'DOS_737', 10: 'DOS_437', 11: 'DOS_850',
@@ -338,7 +356,9 @@ class TestSchema(TestBase):
             self.assertEqual(len(s.constraints), 110)
             self.assertEqual(len(s.sys_functions), 0)
             self.assertEqual(len(s.all_functions), 6)
-        else:
+            self.assertEqual(len(s.sys_triggers), 57)
+            self.assertEqual(len(s.all_triggers), 65)
+        elif self.version == FB40:
             self.assertEqual(len(s.sys_domains), 297)
             self.assertEqual(len(s.all_domains), 312)
             self.assertEqual(len(s.sys_indices), 85)
@@ -350,14 +370,28 @@ class TestSchema(TestBase):
             self.assertEqual(len(s.constraints), 113)
             self.assertEqual(len(s.sys_functions), 1)
             self.assertEqual(len(s.all_functions), 7)
+            self.assertEqual(len(s.sys_triggers), 57)
+            self.assertEqual(len(s.all_triggers), 65)
+        else:
+            self.assertEqual(len(s.sys_domains), 306)
+            self.assertEqual(len(s.all_domains), 321)
+            self.assertEqual(len(s.sys_indices), 86)
+            self.assertEqual(len(s.all_indices), 98)
+            self.assertEqual(len(s.sys_tables), 56)
+            self.assertEqual(len(s.all_tables), 72)
+            self.assertEqual(len(s.sys_procedures), 10)
+            self.assertEqual(len(s.all_procedures), 21)
+            self.assertEqual(len(s.constraints), 113)
+            self.assertEqual(len(s.sys_functions), 7)
+            self.assertEqual(len(s.all_functions), 13)
+            self.assertEqual(len(s.sys_triggers), 54)
+            self.assertEqual(len(s.all_triggers), 62)
         self.assertEqual(len(s.indices), 12)
         self.assertEqual(len(s.tables), 16)
         self.assertEqual(len(s.views), 1)
         self.assertEqual(len(s.sys_views), 0)
         self.assertEqual(len(s.all_views), 1)
         self.assertEqual(len(s.triggers), 8)
-        self.assertEqual(len(s.sys_triggers), 57)
-        self.assertEqual(len(s.all_triggers), 65)
         self.assertEqual(len(s.procedures), 11)
         self.assertEqual(len(s.roles), 2)
         self.assertEqual(len(s.dependencies), 168)
@@ -446,8 +480,10 @@ class TestSchema(TestBase):
         self.assertListEqual(c.get_dependencies(), [])
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$263')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$283')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$337')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 10)
@@ -509,8 +545,10 @@ class TestSchema(TestBase):
         self.assertListEqual(c.get_dependencies(), [])
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$166')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$186')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$240')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 4)
@@ -559,8 +597,10 @@ class TestSchema(TestBase):
         self.assertListEqual(c.get_dependencies(), [])
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$476')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$604')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$617')
         self.assertEqual(c.owner_name, 'SYSDBA')
         #
         self.assertEqual(c.id, 1)
@@ -624,8 +664,10 @@ class TestSchema(TestBase):
         self.assertEqual(c.id, 12)
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$429')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$600')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$613')
         self.assertEqual(c.owner_name, 'SYSDBA')
         self.assertEqual(c.inital_value, 0)
         self.assertEqual(c.increment, 1)
@@ -747,7 +789,7 @@ class TestSchema(TestBase):
         s = Schema()
         s.bind(self.con)
         # System index
-        c = s.all_indices.get('RDB$INDEX_0')
+        c: Index = s.all_indices.get('RDB$INDEX_0')
         # common properties
         self.assertEqual(c.name, 'RDB$INDEX_0')
         self.assertIsNone(c.description)
@@ -756,6 +798,7 @@ class TestSchema(TestBase):
         self.assertEqual(c.get_quoted_name(), 'RDB$INDEX_0')
         self.assertListEqual(c.get_dependents(), [])
         self.assertListEqual(c.get_dependencies(), [])
+        self.assertIsNone(c.condition)
         #
         self.assertEqual(c.table.name, 'RDB$RELATIONS')
         self.assertListEqual(c.segment_names, ['RDB$RELATION_NAME'])
@@ -775,6 +818,7 @@ class TestSchema(TestBase):
         self.assertEqual(c.index_type, IndexType.DESCENDING)
         self.assertIsNone(c.partner_index)
         self.assertIsNone(c.expression)
+        self.assertIsNone(c.condition)
         # startswith() is necessary, because Python 3 returns more precise value.
         self.assertTrue(str(c.statistics).startswith('0.0384615398943'))
         self.assertListEqual(c.segment_names, ['JOB_COUNTRY', 'MAX_SALARY'])
@@ -861,8 +905,10 @@ class TestSchema(TestBase):
         self.assertListEqual(c.get_dependencies(), [])
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$439')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$460')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$473')
         self.assertEqual(c.owner_name, 'SYSDBA')
         # User domain
         c = s.all_domains.get('PRODTYPE')
@@ -1170,10 +1216,14 @@ class TestSchema(TestBase):
             self.assertEqual(c.format, 1)
             self.assertEqual(c.security_class, 'SQL$440')
             self.assertEqual(c.default_class, 'SQL$DEFAULT54')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.format, 2)
             self.assertEqual(c.security_class, 'SQL$586')
             self.assertEqual(c.default_class, 'SQL$DEFAULT58')
+        else: # FB5
+            self.assertEqual(c.format, 2)
+            self.assertEqual(c.security_class, 'SQL$599')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT60')
         self.assertEqual(c.table_type, RelationType.PERSISTENT)
         self.assertIsNone(c.external_file)
         self.assertEqual(c.owner_name, 'SYSDBA')
@@ -1323,7 +1373,7 @@ class TestSchema(TestBase):
             self.assertEqual(c.id, 132)
             self.assertEqual(c.security_class, 'SQL$444')
             self.assertEqual(c.default_class, 'SQL$DEFAULT55')
-        else:
+        elif self.version == FB40:
             self.assertListEqual([(x.depended_on_name, x.field_name, x.depended_on_type) for x in d],
                                  [('DEPARTMENT', 'DEPT_NO', 0), ('EMPLOYEE', 'DEPT_NO', 0),
                                   ('DEPARTMENT', None, 0), ('EMPLOYEE', None, 0),
@@ -1333,6 +1383,16 @@ class TestSchema(TestBase):
             self.assertEqual(c.id, 144)
             self.assertEqual(c.security_class, 'SQL$587')
             self.assertEqual(c.default_class, 'SQL$DEFAULT71')
+        else: # FB5
+            self.assertListEqual([(x.depended_on_name, x.field_name, x.depended_on_type) for x in d],
+                                 [('DEPARTMENT', 'DEPT_NO', 0), ('EMPLOYEE', 'DEPT_NO', 0),
+                                  ('DEPARTMENT', None, 0), ('EMPLOYEE', None, 0),
+                                  ('EMPLOYEE', 'EMP_NO', 0), ('EMPLOYEE', 'LAST_NAME', 0),
+                                  ('EMPLOYEE', 'PHONE_EXT', 0), ('DEPARTMENT', 'PHONE_NO', 0),
+                                  ('EMPLOYEE', 'FIRST_NAME', 0), ('DEPARTMENT', 'LOCATION', 0)])
+            self.assertEqual(c.id, 144)
+            self.assertEqual(c.security_class, 'SQL$600')
+            self.assertEqual(c.default_class, 'SQL$DEFAULT73')
         #
         self.assertEqual(c.sql, """SELECT
     emp_no, first_name, last_name, phone_ext, location, phone_no
@@ -1615,9 +1675,12 @@ END""")
         if self.version == FB30:
             self.assertEqual(c.id, 1)
             self.assertEqual(c.security_class, 'SQL$473')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.id, 2)
             self.assertEqual(c.security_class, 'SQL$612')
+        else: # FB5
+            self.assertEqual(c.id, 11)
+            self.assertEqual(c.security_class, 'SQL$625')
         self.assertEqual(c.source, """BEGIN
 	FOR SELECT proj_id
 		FROM employee_project
@@ -2338,9 +2401,12 @@ MODULE_NAME 'fbudf'""")
         if self.version == FB30:
             self.assertEqual(c.id, 3)
             self.assertEqual(c.security_class, 'SQL$588')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.id, 4)
             self.assertEqual(c.security_class, 'SQL$609')
+        else: # FB5
+            self.assertEqual(c.id, 10)
+            self.assertEqual(c.security_class, 'SQL$622')
         self.assertTrue(c.valid_blr)
         self.assertEqual(c.owner_name, 'SYSDBA')
         self.assertEqual(c.legacy_flag, 0)
@@ -2605,8 +2671,10 @@ END""")
         p = s.get_privileges_of(u)
         if self.version == FB30:
             self.assertEqual(len(p), 115)
-        else:
+        elif self.version == FB40:
             self.assertEqual(len(p), 119)
+        else: # FB5
+            self.assertEqual(len(p), 515)
         with self.assertRaises(ValueError) as cm:
             p = s.get_privileges_of('PUBLIC')
         self.assertTupleEqual(cm.exception.args,
@@ -3284,8 +3352,10 @@ END""")
         self.assertEqual(c.owner_name, 'SYSDBA')
         if self.version == FB30:
             self.assertEqual(c.security_class, 'SQL$575')
-        else:
+        elif self.version == FB40:
             self.assertEqual(c.security_class, 'SQL$622')
+        else: # FB5
+            self.assertEqual(c.security_class, 'SQL$635')
         self.assertEqual(c.header, """BEGIN
   PROCEDURE P1(I INT) RETURNS (O INT); -- public procedure
   FUNCTION F(X INT) RETURNS INT;

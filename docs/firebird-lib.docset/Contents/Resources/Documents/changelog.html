@@ -3,14 +3,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="Docutils 0.17: http://docutils.sourceforge.net/" name="generator"/>
-<title>Changelog — firebird-lib 1.2.2 documentation</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="Docutils 0.19: https://docutils.sourceforge.io/" name="generator"/>
+<title>Changelog — firebird-lib 1.4.0 documentation</title>
 <link href="_static/pygments.css" rel="stylesheet" type="text/css"/>
 <link href="_static/bootstrap-sphinx.css" rel="stylesheet" type="text/css"/>
 <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-<script src="_static/jquery.js"></script>
-<script src="_static/underscore.js"></script>
-<script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
 <script src="_static/doctools.js"></script>
 <script src="_static/sphinx_highlight.js"></script>
 <link href="genindex.html" rel="index" title="Index"/>
@@ -37,7 +34,7 @@
 </button>
 <a class="brand" href="index.html">
           firebird-lib</a>
-<span class="navbar-text pull-left"><b>1.2.2</b></span>
+<span class="navbar-text pull-left"><b>1.4.0</b></span>
 <div class="nav-collapse">
 <ul class="nav">
 <li class="divider-vertical"></li>
@@ -92,6 +89,8 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-4-0">Version 1.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-1-3-0">Version 1.3.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-1-2-2">Version 1.2.2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-1-2-1">Version 1.2.1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-1-2-0">Version 1.2.0</a></li>
@@ -107,6 +106,8 @@
 <a data-target="#" data-toggle="dropdown" href="#" id="dLabelLocalToc" role="button">Page <b class="caret"></b></a>
 <ul aria-labelledby="dLabelLocalToc" class="dropdown-menu localtoc" role="menu"><ul>
 <li><a class="reference internal" href="#">Changelog</a><ul>
+<li><a class="reference internal" href="#version-1-4-0">Version 1.4.0</a></li>
+<li><a class="reference internal" href="#version-1-3-0">Version 1.3.0</a></li>
 <li><a class="reference internal" href="#version-1-2-2">Version 1.2.2</a></li>
 <li><a class="reference internal" href="#version-1-2-1">Version 1.2.1</a></li>
 <li><a class="reference internal" href="#version-1-2-0">Version 1.2.0</a></li>
@@ -134,6 +135,30 @@
 <div class="body span12 content" role="main">
 <a class="dashAnchor" name="//apple_ref/cpp/Section/Changelog"></a><section id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this heading">¶</a></h1>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Version 1.4.0"></a><section id="version-1-4-0">
+<h2>Version 1.4.0<a class="headerlink" href="#version-1-4-0" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Initial support for Firebird 5 (new items in <code class="xref py py-obj docutils literal notranslate"><span class="pre">schema</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor</span></code> modules).</p></li>
+<li><p>Finally, Firebird 4 support was added (new items in <code class="xref py py-obj docutils literal notranslate"><span class="pre">schema</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">monitor</span></code> modules).</p></li>
+<li><p>Potentially breaking changes:</p>
+<ul>
+<li><p>Enum <code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.lib.monitor.ShutdownMode</span></code> was removed and replaced with
+<a class="reference external" href="https://firebird-driver.readthedocs.io/en/latest/ref-types.html#firebird.driver.types.ShutdownMode" title="(in firebird-driver v1.9.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">firebird.driver.types.ShutdownMode</span></code></a>. They are basically the same, but differ in value
+name ONLINE-&gt;NORMAL.</p></li>
+<li><p><a class="reference internal" href="ref-schema.html#firebird.lib.schema.ObjectType" title="firebird.lib.schema.ObjectType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ObjectType</span></code></a> value <code class="xref py py-obj docutils literal notranslate"><span class="pre">PACKAGE</span></code> was renamed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">PACKAGE_HEADER</span></code></p></li>
+</ul>
+</li>
+<li><p>Updated dependencies: firebird-driver&gt;=1.9.0 and firebird-base&gt;=1.6.1</p></li>
+<li><p>Note: The list of reserved words (used internally to correctly quote identifiers) is
+not hardcoded in Firebird 5, but is instead read from RDB$KEYWORDS.</p></li>
+</ul>
+</section>
+<a class="dashAnchor" name="//apple_ref/cpp/Section/Version 1.3.0"></a><section id="version-1-3-0">
+<h2>Version 1.3.0<a class="headerlink" href="#version-1-3-0" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Move away from setup.cfg to pyproject.toml, changed source three layout.</p></li>
+</ul>
+</section>
 <a class="dashAnchor" name="//apple_ref/cpp/Section/Version 1.2.2"></a><section id="version-1-2-2">
 <h2>Version 1.2.2<a class="headerlink" href="#version-1-2-2" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
@@ -198,8 +223,8 @@
 <a href="#">Back to top</a>
 </p>
 <p>
-        © Copyright 2020-2022, The Firebird Project.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br/>
+        © Copyright 2020-2023, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1.<br/>
 </p>
 </div>
 </footer>

@@ -4,13 +4,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; firebird-lib 1.2.2 documentation</title>
+    <title>Index &#8212; firebird-lib 1.4.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="#" />
@@ -38,7 +35,7 @@
 
         <a class="brand" href="index.html">
           firebird-lib</a>
-        <span class="navbar-text pull-left"><b>1.2.2</b></span>
+        <span class="navbar-text pull-left"><b>1.4.0</b></span>
 
         <div class="nav-collapse">
           <ul class="nav">
@@ -103,6 +100,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-4-0">Version 1.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-3-0">Version 1.3.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-2-2">Version 1.2.2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-2-1">Version 1.2.1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-2-0">Version 1.2.0</a></li>
@@ -166,6 +165,7 @@
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
@@ -733,6 +733,8 @@
         <li><a href="ref-trace.html#firebird.lib.trace.EventDrop.charset">(firebird.lib.trace.EventDrop attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.CHARSETS">CHARSETS (firebird.lib.schema.ObjectType attribute)</a>
+</li>
       <li><a href="ref-schema.html#firebird.lib.schema.ConstraintType.CHECK">CHECK (firebird.lib.schema.ConstraintType attribute)</a>
 
       <ul>
@@ -792,11 +794,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.Category.COLLATIONS">COLLATIONS (firebird.lib.schema.Category attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.CharacterSet.collations">collations (firebird.lib.schema.CharacterSet property)</a>
-
-      <ul>
-        <li><a href="ref-schema.html#firebird.lib.schema.Schema.collations">(firebird.lib.schema.Schema property)</a>
 </li>
-      </ul></li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.COLLATIONS">COLLATIONS (firebird.lib.schema.ObjectType attribute)</a>
+</li>
+      <li><a href="ref-schema.html#firebird.lib.schema.Schema.collations">collations (firebird.lib.schema.Schema property)</a>
+</li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.COLLATIONS">COLLATIONS (firebird.lib.schema.Section attribute)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.column">column (firebird.lib.monitor.CallStackInfo property)</a>
@@ -809,8 +811,6 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.ProcedureParameter.column">column (firebird.lib.schema.ProcedureParameter property)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ref-schema.html#firebird.lib.schema.Constraint.column_name">column_name (firebird.lib.schema.Constraint property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Table.columns">columns (firebird.lib.schema.Table property)</a>
@@ -819,6 +819,8 @@
         <li><a href="ref-schema.html#firebird.lib.schema.View.columns">(firebird.lib.schema.View property)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.COMMENTS">COMMENTS (firebird.lib.schema.Section attribute)</a>
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.Event.COMMIT_RETAINING">COMMIT_RETAINING (firebird.lib.trace.Event attribute)</a>
@@ -829,6 +831,16 @@
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.Event.COMPILE_BLR">COMPILE_BLR (firebird.lib.trace.Event attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.compiled_statement">compiled_statement (firebird.lib.monitor.CallStackInfo property)</a>
+
+      <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.compiled_statement">(firebird.lib.monitor.StatementInfo property)</a>
+</li>
+      </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.Monitor.compiled_statements">compiled_statements (firebird.lib.monitor.Monitor property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo">CompiledStatementInfo (class in firebird.lib.monitor)</a>
+</li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.completed">completed (firebird.lib.gstat.StatDatabase attribute)</a>
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatIndex.compression_ratio">compression_ratio (firebird.lib.gstat.StatIndex attribute)</a>
@@ -838,6 +850,8 @@
 </li>
       </ul></li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IsolationMode.CONCURRENCY">CONCURRENCY (firebird.lib.monitor.IsolationMode attribute)</a>
+</li>
+      <li><a href="ref-schema.html#firebird.lib.schema.Index.condition">condition (firebird.lib.schema.Index property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.ShadowFlag.CONDITIONAL">CONDITIONAL (firebird.lib.schema.ShadowFlag attribute)</a>
 </li>
@@ -939,6 +953,10 @@
       </ul></li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.crypt_page">crypt_page (firebird.lib.monitor.DatabaseInfo property)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.crypt_state">crypt_state (firebird.lib.monitor.DatabaseInfo property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CryptState">CryptState (class in firebird.lib.monitor)</a>
+</li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType.CSTRING">CSTRING (firebird.lib.schema.FieldType attribute)</a>
 </li>
   </ul></td>
@@ -956,7 +974,11 @@
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatTable.data_pages">data_pages (firebird.lib.gstat.StatTable attribute)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.Group.DATABASE">DATABASE (firebird.lib.monitor.Group attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.DATABASE">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-trace.html#firebird.lib.trace.AttachmentInfo.database">database (firebird.lib.trace.AttachmentInfo attribute)</a>
 
       <ul>
@@ -1040,6 +1062,8 @@
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType.DEC34">DEC34 (firebird.lib.schema.FieldType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldSubType.DECIMAL">DECIMAL (firebird.lib.schema.FieldSubType attribute)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CryptState.DECRYPTION_IN_PROGRESS">DECRYPTION_IN_PROGRESS (firebird.lib.monitor.CryptState attribute)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.Security.DEFAULT">DEFAULT (firebird.lib.monitor.Security attribute)</a>
 </li>
@@ -1169,7 +1193,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.ViewColumn.domain">domain (firebird.lib.schema.ViewColumn property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.DOMAINS">DOMAINS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.DOMAINS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.domains">domains (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.DOMAINS">DOMAINS (firebird.lib.schema.Section attribute)</a>
@@ -1218,6 +1246,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatTable.empty_pages">empty_pages (firebird.lib.gstat.StatTable attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CryptState.ENCRYPTED">ENCRYPTED (firebird.lib.monitor.CryptState attribute)</a>
+</li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.encrypted_blob_pages">encrypted_blob_pages (firebird.lib.gstat.StatDatabase attribute)</a>
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.encrypted_data_pages">encrypted_data_pages (firebird.lib.gstat.StatDatabase attribute)</a>
@@ -1225,6 +1255,8 @@
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.encrypted_index_pages">encrypted_index_pages (firebird.lib.gstat.StatDatabase attribute)</a>
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.Encryption">Encryption (class in firebird.lib.gstat)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CryptState.ENCRYPTION_IN_PROGRESS">ENCRYPTION_IN_PROGRESS (firebird.lib.monitor.CryptState attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Function.engine_mame">engine_mame (firebird.lib.schema.Function property)</a>
 </li>
@@ -1357,10 +1389,10 @@
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.EventCloseCursor">EventCloseCursor (class in firebird.lib.trace)</a>
 </li>
-      <li><a href="ref-trace.html#firebird.lib.trace.EventCommit">EventCommit (class in firebird.lib.trace)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ref-trace.html#firebird.lib.trace.EventCommit">EventCommit (class in firebird.lib.trace)</a>
+</li>
       <li><a href="ref-trace.html#firebird.lib.trace.EventCommitRetaining">EventCommitRetaining (class in firebird.lib.trace)</a>
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.EventCreate">EventCreate (class in firebird.lib.trace)</a>
@@ -1441,7 +1473,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.EXCEPTION">EXCEPTION (firebird.lib.schema.ObjectType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.EXCEPTIONS">EXCEPTIONS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.EXCEPTIONS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.exceptions">exceptions (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.EXCEPTIONS">EXCEPTIONS (firebird.lib.schema.Section attribute)</a>
@@ -1564,6 +1600,8 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType">FieldType (class in firebird.lib.schema)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.file_id">file_id (firebird.lib.monitor.DatabaseInfo property)</a>
+</li>
       <li><a href="ref-log.html#firebird.lib.log.Facility.FILEIO">FILEIO (firebird.lib.log.Facility attribute)</a>
 
       <ul>
@@ -1591,7 +1629,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.Filter">Filter (class in firebird.lib.schema)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.FILTERS">FILTERS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.FILTERS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.filters">filters (firebird.lib.schema.Schema property)</a>
 </li>
       <li>
@@ -1690,8 +1732,6 @@
       </ul></li>
       <li><a href="ref-trace.html#firebird.lib.trace.Event.FREE_STATEMENT">FREE_STATEMENT (firebird.lib.trace.Event attribute)</a>
 </li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.ShutdownMode.FULL">FULL (firebird.lib.monitor.ShutdownMode attribute)</a>
-</li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatTable.full_pages">full_pages (firebird.lib.gstat.StatTable attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Function">Function (class in firebird.lib.schema)</a>
@@ -1715,7 +1755,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.FunctionArgument">FunctionArgument (class in firebird.lib.schema)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.FUNCTIONS">FUNCTIONS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.FUNCTIONS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Package.functions">functions (firebird.lib.schema.Package property)</a>
 
       <ul>
@@ -1739,7 +1783,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.TableColumn.generator">generator (firebird.lib.schema.TableColumn property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.GENERATORS">GENERATORS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.GENERATORS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.generators">generators (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.GENERATORS">GENERATORS (firebird.lib.schema.Section attribute)</a>
@@ -1841,8 +1889,12 @@
         <li><a href="ref-logmsgs.html#firebird.lib.logmsgs.Facility.GUARDIAN">(firebird.lib.logmsgs.Facility attribute)</a>
 </li>
       </ul></li>
-      <li><a href="ref-schema.html#firebird.lib.schema.BackupHistory.guid">guid (firebird.lib.schema.BackupHistory property)</a>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.guid">guid (firebird.lib.monitor.DatabaseInfo property)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.BackupHistory.guid">(firebird.lib.schema.BackupHistory property)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -1908,6 +1960,8 @@
       <ul>
         <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.id">(firebird.lib.monitor.CallStackInfo property)</a>
 </li>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.id">(firebird.lib.monitor.CompiledStatementInfo property)</a>
+</li>
         <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.id">(firebird.lib.monitor.StatementInfo property)</a>
 </li>
         <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.id">(firebird.lib.monitor.TransactionInfo property)</a>
@@ -1951,6 +2005,10 @@
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.State.IDLE">IDLE (firebird.lib.monitor.State attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.idle_timeout">idle_timeout (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.idle_timer">idle_timer (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IOStatsInfo.idx_reads">idx_reads (firebird.lib.monitor.IOStatsInfo property)</a>
 
       <ul>
@@ -1976,6 +2034,8 @@
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.index_activity_flags">index_activity_flags (firebird.lib.schema.Schema attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.PageType.INDEX_BUCKET">INDEX_BUCKET (firebird.lib.schema.PageType attribute)</a>
+</li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.INDEX_CONDITION">INDEX_CONDITION (firebird.lib.schema.ObjectType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.INDEX_DEACTIVATIONS">INDEX_DEACTIVATIONS (firebird.lib.schema.Section attribute)</a>
 </li>
@@ -2043,6 +2103,8 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType.INT64">INT64 (firebird.lib.schema.FieldType attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.IOStatsInfo.intermediate_gc">intermediate_gc (firebird.lib.monitor.IOStatsInfo property)</a>
+</li>
       <li><a href="ref-log.html#firebird.lib.log.Facility.INTL">INTL (firebird.lib.log.Facility attribute)</a>
 
       <ul>
@@ -2053,6 +2115,8 @@
 
       <ul>
         <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.iostats">(firebird.lib.monitor.CallStackInfo property)</a>
+</li>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.iostats">(firebird.lib.monitor.CompiledStatementInfo property)</a>
 </li>
         <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.iostats">(firebird.lib.monitor.DatabaseInfo property)</a>
 </li>
@@ -2073,14 +2137,14 @@
         <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_active">(firebird.lib.monitor.TransactionInfo method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ref-schema.html#firebird.lib.schema.Trigger.is_after">is_after() (firebird.lib.schema.Trigger method)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Domain.is_array">is_array() (firebird.lib.schema.Domain method)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.ContextVariableInfo.is_attachment_var">is_attachment_var() (firebird.lib.monitor.ContextVariableInfo method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_autocommit">is_autocommit() (firebird.lib.monitor.TransactionInfo method)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.is_autoundo">is_autoundo() (firebird.lib.monitor.TransactionInfo method)</a>
@@ -2264,6 +2328,14 @@
       <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.isolation_mode">isolation_mode (firebird.lib.monitor.TransactionInfo property)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IsolationMode">IsolationMode (class in firebird.lib.monitor)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.JOBS">JOBS (firebird.lib.schema.ObjectType attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -2453,6 +2525,8 @@
       <ul>
         <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.monitor">(firebird.lib.monitor.CallStackInfo attribute)</a>
 </li>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.monitor">(firebird.lib.monitor.CompiledStatementInfo attribute)</a>
+</li>
         <li><a href="ref-monitor.html#firebird.lib.monitor.ContextVariableInfo.monitor">(firebird.lib.monitor.ContextVariableInfo attribute)</a>
 </li>
         <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.monitor">(firebird.lib.monitor.DatabaseInfo attribute)</a>
@@ -2480,8 +2554,6 @@
       <li><a href="ref-logmsgs.html#firebird.lib.logmsgs.MsgDesc.msg_id">msg_id (firebird.lib.logmsgs.MsgDesc attribute)</a>
 </li>
       <li><a href="ref-logmsgs.html#firebird.lib.logmsgs.MsgDesc">MsgDesc (class in firebird.lib.logmsgs)</a>
-</li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.ShutdownMode.MULTI">MULTI (firebird.lib.monitor.ShutdownMode attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -2525,17 +2597,21 @@
         <li><a href="ref-trace.html#firebird.lib.trace.EventSweepStart.next">(firebird.lib.trace.EventSweepStart attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.next_attachment">next_attachment (firebird.lib.monitor.DatabaseInfo property)</a>
+</li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.next_attachment_id">next_attachment_id (firebird.lib.gstat.StatDatabase attribute)</a>
+</li>
+      <li><a href="ref-trace.html#firebird.lib.trace.TraceParser.next_event_id">next_event_id (firebird.lib.trace.TraceParser attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ref-trace.html#firebird.lib.trace.TraceParser.next_event_id">next_event_id (firebird.lib.trace.TraceParser attribute)</a>
-</li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.next_header_page">next_header_page (firebird.lib.gstat.StatDatabase attribute)</a>
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.TraceParser.next_param_id">next_param_id (firebird.lib.trace.TraceParser attribute)</a>
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.TraceParser.next_sql_id">next_sql_id (firebird.lib.trace.TraceParser attribute)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.next_statement">next_statement (firebird.lib.monitor.DatabaseInfo property)</a>
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.next_transaction">next_transaction (firebird.lib.gstat.StatDatabase attribute)</a>
 
@@ -2563,6 +2639,8 @@
         <li><a href="ref-schema.html#firebird.lib.schema.ParameterMechanism.NORMAL">(firebird.lib.schema.ParameterMechanism attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CryptState.NOT_ENCRYPTED">NOT_ENCRYPTED (firebird.lib.monitor.CryptState attribute)</a>
+</li>
       <li><a href="ref-schema.html#firebird.lib.schema.ConstraintType.NOT_NULL">NOT_NULL (firebird.lib.schema.ConstraintType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldSubType.NUMERIC">NUMERIC (firebird.lib.schema.FieldSubType attribute)</a>
@@ -2584,9 +2662,17 @@
 </li>
       </ul></li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.object_name">object_name (firebird.lib.monitor.CallStackInfo property)</a>
+
+      <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.object_name">(firebird.lib.monitor.CompiledStatementInfo property)</a>
 </li>
+      </ul></li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.object_type">object_type (firebird.lib.monitor.CallStackInfo property)</a>
+
+      <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.object_type">(firebird.lib.monitor.CompiledStatementInfo property)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.object_type_codes">object_type_codes (firebird.lib.schema.Schema attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.object_types">object_types (firebird.lib.schema.Schema attribute)</a>
@@ -2610,8 +2696,6 @@
       <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.oldest">oldest (firebird.lib.monitor.TransactionInfo property)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.TransactionInfo.oldest_active">oldest_active (firebird.lib.monitor.TransactionInfo property)</a>
-</li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.ShutdownMode.ONLINE">ONLINE (firebird.lib.monitor.ShutdownMode attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.opt_always_quote">opt_always_quote (firebird.lib.schema.Schema attribute)</a>
 </li>
@@ -2702,12 +2786,8 @@
 </li>
         <li><a href="ref-schema.html#firebird.lib.schema.FunctionArgument.package">(firebird.lib.schema.FunctionArgument property)</a>
 </li>
-      </ul></li>
-      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.PACKAGE">PACKAGE (firebird.lib.schema.ObjectType attribute)</a>
+        <li><a href="ref-schema.html#firebird.lib.schema.Procedure.package">(firebird.lib.schema.Procedure property)</a>
 </li>
-      <li><a href="ref-schema.html#firebird.lib.schema.Procedure.package">package (firebird.lib.schema.Procedure property)</a>
-
-      <ul>
         <li><a href="ref-schema.html#firebird.lib.schema.ProcedureParameter.package">(firebird.lib.schema.ProcedureParameter property)</a>
 </li>
       </ul></li>
@@ -2717,10 +2797,20 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.PACKAGE_DEFS">PACKAGE_DEFS (firebird.lib.schema.Section attribute)</a>
 </li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.PACKAGE_HEADER">PACKAGE_HEADER (firebird.lib.schema.ObjectType attribute)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.CallStackInfo.package_name">package_name (firebird.lib.monitor.CallStackInfo property)</a>
+
+      <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.package_name">(firebird.lib.monitor.CompiledStatementInfo property)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.PACKAGES">PACKAGES (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.PACKAGES">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.packages">packages (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.CollationFlag.PAD_SPACE">PAD_SPACE (firebird.lib.schema.CollationFlag attribute)</a>
@@ -2809,9 +2899,11 @@
         <li><a href="ref-trace.html#firebird.lib.trace.EventWarning.place">(firebird.lib.trace.EventWarning attribute)</a>
 </li>
       </ul></li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.plan">plan (firebird.lib.monitor.StatementInfo property)</a>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.plan">plan (firebird.lib.monitor.CompiledStatementInfo property)</a>
 
       <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.plan">(firebird.lib.monitor.StatementInfo property)</a>
+</li>
         <li><a href="ref-trace.html#firebird.lib.trace.SQLInfo.plan">(firebird.lib.trace.SQLInfo attribute)</a>
 </li>
       </ul></li>
@@ -2871,6 +2963,8 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Privilege">Privilege (class in firebird.lib.schema)</a>
 </li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.PRIVILEGE">PRIVILEGE (firebird.lib.schema.ObjectType attribute)</a>
+</li>
       <li><a href="ref-schema.html#firebird.lib.schema.Privilege.privilege">privilege (firebird.lib.schema.Privilege property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.PrivilegeCode">PrivilegeCode (class in firebird.lib.schema)</a>
@@ -2923,7 +3017,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.ProcedureParameter">ProcedureParameter (class in firebird.lib.schema)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.PROCEDURES">PROCEDURES (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.PROCEDURES">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Package.procedures">procedures (firebird.lib.schema.Package property)</a>
 
       <ul>
@@ -3001,6 +3099,8 @@
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IsolationMode.READ_COMMITTED_NO_RV">READ_COMMITTED_NO_RV (firebird.lib.monitor.IsolationMode attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.IsolationMode.READ_COMMITTED_READ_CONSISTENCY">READ_COMMITTED_READ_CONSISTENCY (firebird.lib.monitor.IsolationMode attribute)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IsolationMode.READ_COMMITTED_RV">READ_COMMITTED_RV (firebird.lib.monitor.IsolationMode attribute)</a>
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.DbAttribute.READ_ONLY">READ_ONLY (firebird.lib.gstat.DbAttribute attribute)</a>
@@ -3048,6 +3148,8 @@
       <li><a href="ref-schema.html#firebird.lib.schema.Trigger.relation">relation (firebird.lib.schema.Trigger property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.relation_types">relation_types (firebird.lib.schema.Schema attribute)</a>
+</li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.RELATIONS">RELATIONS (firebird.lib.schema.ObjectType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.RelationType">RelationType (class in firebird.lib.schema)</a>
 </li>
@@ -3105,6 +3207,8 @@
       </ul></li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.StatDatabase.replay_logging_file">replay_logging_file (firebird.lib.gstat.StatDatabase attribute)</a>
 </li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.replica_mode">replica_mode (firebird.lib.monitor.DatabaseInfo property)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.DatabaseInfo.reserve_space">reserve_space (firebird.lib.monitor.DatabaseInfo property)</a>
 </li>
       <li><a href="ref-trace.html#firebird.lib.trace.TraceParser.retrieve_info">retrieve_info() (firebird.lib.trace.TraceParser method)</a>
@@ -3138,7 +3242,11 @@
 </li>
       </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.ROLES">ROLES (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.ROLES">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.roles">roles (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.ROLES">ROLES (firebird.lib.schema.Section attribute)</a>
@@ -3311,6 +3419,8 @@
         <li><a href="ref-trace.html#firebird.lib.trace.EventTraceSuspend.session_name">(firebird.lib.trace.EventTraceSuspend attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.session_timezone">session_timezone (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
       <li><a href="ref-trace.html#firebird.lib.trace.Event.SET_CONTEXT">SET_CONTEXT (firebird.lib.trace.Event attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.SET_GENERATORS">SET_GENERATORS (firebird.lib.schema.Section attribute)</a>
@@ -3345,10 +3455,6 @@
 </li>
       <li><a href="ref-gstat.html#firebird.lib.gstat.DbAttribute.SHUTDOWN_SINGLE">SHUTDOWN_SINGLE (firebird.lib.gstat.DbAttribute attribute)</a>
 </li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.ShutdownMode">ShutdownMode (class in firebird.lib.monitor)</a>
-</li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.ShutdownMode.SINGLE">SINGLE (firebird.lib.monitor.ShutdownMode attribute)</a>
-</li>
       <li><a href="ref-schema.html#firebird.lib.schema.Function.source">source (firebird.lib.schema.Function property)</a>
 
       <ul>
@@ -3359,9 +3465,11 @@
       </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Collation.specific_attributes">specific_attributes (firebird.lib.schema.Collation property)</a>
 </li>
-      <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.sql">sql (firebird.lib.monitor.StatementInfo property)</a>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.CompiledStatementInfo.sql">sql (firebird.lib.monitor.CompiledStatementInfo property)</a>
 
       <ul>
+        <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.sql">(firebird.lib.monitor.StatementInfo property)</a>
+</li>
         <li><a href="ref-schema.html#firebird.lib.schema.View.sql">(firebird.lib.schema.View property)</a>
 </li>
         <li><a href="ref-trace.html#firebird.lib.trace.SQLInfo.sql">(firebird.lib.trace.SQLInfo attribute)</a>
@@ -3431,6 +3539,8 @@
         <li><a href="ref-trace.html#firebird.lib.trace.EventStatementStart.statement_id">(firebird.lib.trace.EventStatementStart attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.statement_timeout">statement_timeout (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo">StatementInfo (class in firebird.lib.monitor)</a>
 </li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.statements">statements (firebird.lib.monitor.AttachmentInfo property)</a>
@@ -3613,6 +3723,10 @@
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.TABLES">TABLES (firebird.lib.schema.Section attribute)</a>
 </li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.TABLESPACE">TABLESPACE (firebird.lib.schema.ObjectType attribute)</a>
+</li>
+      <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.TABLESPACES">TABLESPACES (firebird.lib.schema.ObjectType attribute)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.tablestats">tablestats (firebird.lib.monitor.AttachmentInfo property)</a>
 
       <ul>
@@ -3650,6 +3764,10 @@
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType.TIME_TZ">TIME_TZ (firebird.lib.schema.FieldType attribute)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.FieldType.TIME_TZ_EX">TIME_TZ_EX (firebird.lib.schema.FieldType attribute)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.timeout">timeout (firebird.lib.monitor.StatementInfo property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.StatementInfo.timer">timer (firebird.lib.monitor.StatementInfo property)</a>
 </li>
       <li><a href="ref-log.html#firebird.lib.log.LogMessage.timestamp">timestamp (firebird.lib.log.LogMessage attribute)</a>
 
@@ -4059,7 +4177,11 @@
       <li><a href="ref-schema.html#firebird.lib.schema.ViewColumn">ViewColumn (class in firebird.lib.schema)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Category.VIEWS">VIEWS (firebird.lib.schema.Category attribute)</a>
+
+      <ul>
+        <li><a href="ref-schema.html#firebird.lib.schema.ObjectType.VIEWS">(firebird.lib.schema.ObjectType attribute)</a>
 </li>
+      </ul></li>
       <li><a href="ref-schema.html#firebird.lib.schema.Schema.views">views (firebird.lib.schema.Schema property)</a>
 </li>
       <li><a href="ref-schema.html#firebird.lib.schema.Section.VIEWS">VIEWS (firebird.lib.schema.Section attribute)</a>
@@ -4103,6 +4225,12 @@
         <li><a href="ref-trace.html#firebird.lib.trace.Event.WARNING">(firebird.lib.trace.Event attribute)</a>
 </li>
       </ul></li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.wire_compressed">wire_compressed (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.wire_crypt_plugin">wire_crypt_plugin (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
+      <li><a href="ref-monitor.html#firebird.lib.monitor.AttachmentInfo.wire_encrypted">wire_encrypted (firebird.lib.monitor.AttachmentInfo property)</a>
+</li>
       <li>
     working with
 
@@ -4116,10 +4244,10 @@
         <li><a href="usage-guide.html#index-7">privileges</a>
 </li>
       </ul></li>
-      <li><a href="ref-gstat.html#firebird.lib.gstat.DbAttribute.WRITE">WRITE (firebird.lib.gstat.DbAttribute attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ref-gstat.html#firebird.lib.gstat.DbAttribute.WRITE">WRITE (firebird.lib.gstat.DbAttribute attribute)</a>
+</li>
       <li><a href="ref-monitor.html#firebird.lib.monitor.IOStatsInfo.writes">writes (firebird.lib.monitor.IOStatsInfo property)</a>
 
       <ul>
@@ -4162,8 +4290,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2020-2022, The Firebird Project.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br/>
+        &copy; Copyright 2020-2023, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1.<br/>
     </p>
   </div>
 </footer>

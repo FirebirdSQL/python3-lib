@@ -4,13 +4,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>firebird.lib.logmsgs &#8212; firebird-lib 1.2.1 documentation</title>
+    <title>firebird.lib.logmsgs &#8212; firebird-lib 1.4.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -38,7 +35,7 @@
 
         <a class="brand" href="../../../index.html">
           firebird-lib</a>
-        <span class="navbar-text pull-left"><b>1.2.1</b></span>
+        <span class="navbar-text pull-left"><b>1.4.0</b></span>
 
         <div class="nav-collapse">
           <ul class="nav">
@@ -103,6 +100,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-4-0">Version 1.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-3-0">Version 1.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-2">Version 1.2.2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-1">Version 1.2.1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-2-0">Version 1.2.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#version-1-0-1">Version 1.0.1</a></li>
@@ -194,8 +194,8 @@
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">IntEnum</span>
 
-<div class="viewcode-block" id="Severity"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.logmsgs.Severity">[docs]</a><span class="k">class</span> <span class="nc">Severity</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Firebird Log Message severity.</span>
+<div class="viewcode-block" id="Severity"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.log.Severity">[docs]</a><span class="k">class</span> <span class="nc">Severity</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Firebird Log Message severity.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">INFO</span> <span class="o">=</span> <span class="mi">1</span>
@@ -203,8 +203,8 @@
     <span class="n">ERROR</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="n">CRITICAL</span> <span class="o">=</span> <span class="mi">4</span></div>
 
-<div class="viewcode-block" id="Facility"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.logmsgs.Facility">[docs]</a><span class="k">class</span> <span class="nc">Facility</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Firebird Log Server facility.</span>
+<div class="viewcode-block" id="Facility"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.log.Facility">[docs]</a><span class="k">class</span> <span class="nc">Facility</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Firebird Log Server facility.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">SYSTEM</span> <span class="o">=</span> <span class="mi">1</span>
@@ -219,9 +219,9 @@
     <span class="n">NET</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="n">AUTH</span> <span class="o">=</span> <span class="mi">11</span></div>
 
-<div class="viewcode-block" id="MsgDesc"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.logmsgs.MsgDesc">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="MsgDesc"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.log.MsgDesc">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">MsgDesc</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Firebird log message descriptor.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Firebird log message descriptor.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#: Message ID</span>
     <span class="n">msg_id</span><span class="p">:</span> <span class="nb">int</span>
@@ -231,8 +231,8 @@
     <span class="n">facility</span><span class="p">:</span> <span class="n">Facility</span>
     <span class="c1">#: Message format description</span>
     <span class="n">msg_format</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-<div class="viewcode-block" id="MsgDesc.get_pattern"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.logmsgs.MsgDesc.get_pattern">[docs]</a>    <span class="k">def</span> <span class="nf">get_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">without_optional</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Returns message pattern.</span>
+<div class="viewcode-block" id="MsgDesc.get_pattern"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.log.MsgDesc.get_pattern">[docs]</a>    <span class="k">def</span> <span class="nf">get_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">without_optional</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns message pattern.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            without_optional: When True, the pattern does not include optional part.</span>
@@ -1125,8 +1125,8 @@
 
 <span class="n">_END_CHUNK</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
 
-<div class="viewcode-block" id="identify_msg"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.logmsgs.identify_msg">[docs]</a><span class="k">def</span> <span class="nf">identify_msg</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">MsgDesc</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Identify Firebird log message.</span>
+<div class="viewcode-block" id="identify_msg"><a class="viewcode-back" href="../../../ref-logmsgs.html#firebird.lib.log.identify_msg">[docs]</a><span class="k">def</span> <span class="nf">identify_msg</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">MsgDesc</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Identify Firebird log message.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        msg: Firebird log entry with message to be identified.</span>
@@ -1217,8 +1217,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2020-2022, The Firebird Project.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.2.3.<br/>
+        &copy; Copyright 2020-2023, The Firebird Project.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1.<br/>
     </p>
   </div>
 </footer>

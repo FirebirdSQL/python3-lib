@@ -8,12 +8,12 @@ firebird.lib.monitor
 Enums
 =====
 
-.. autoclass:: ShutdownMode
 .. autoclass:: BackupState
 .. autoclass:: State
 .. autoclass:: IsolationMode
 .. autoclass:: Group
 .. autoclass:: Security
+.. autoclass:: CryptState
 
 Classes
 =======
@@ -28,4 +28,4 @@ Classes
 .. autoclass:: IOStatsInfo
 .. autoclass:: TableStatsInfo
 .. autoclass:: ContextVariableInfo
-
+.. autoclass:: CompiledStatementInfo

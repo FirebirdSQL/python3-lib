@@ -1,6 +1,8 @@
-#coding:utf-8
+# SPDX-FileCopyrightText: 2020-present The Firebird Projects <www.firebirdsql.org>
 #
-# PROGRAM/MODULE: Saturnin microservices
+# SPDX-License-Identifier: MIT
+#
+# PROGRAM/MODULE: firebird-lib
 # FILE:           firebird/lib/logmsgs.py
 # DESCRIPTION:    Firebird log messages for Firebird log parser
 # CREATED:        22.11.2019

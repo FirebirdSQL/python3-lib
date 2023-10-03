@@ -29,8 +29,8 @@ classifiers = [
     "Topic :: Database",
     ]
 dependencies = [
-    "firebird-base>=1.6.1",
-    "firebird-driver>=1.9.0",
+    "firebird-base>=1.7.0",
+    "firebird-driver>=1.10.0",
     ]
 
 [project.urls]

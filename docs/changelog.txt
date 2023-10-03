@@ -2,10 +2,11 @@
 Changelog
 #########
 
-Version 1.5.0 [Unreleased]
-==========================
+Version 1.5.0
+=============
 
 * Build system changed from setuptools to hatch
+* Package version is now defined in firebird.lib.__about__.py (__version__)
 
 Version 1.4.0
 =============

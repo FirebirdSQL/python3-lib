@@ -848,7 +848,7 @@ class Schema(Visitable):
             # Index.is_sys_object() that is called in Index.__init__() will
             # drop result from internal cursor and we'll not load all indices.
             self._get_constraint_indices()
-            ext = '' if self.ods < 13.0 else  ', RDB$CONDITION_SOURCE'
+            ext = '' if self.ods <= 13.0 else  ', RDB$CONDITION_SOURCE'
             cmd = f"""select RDB$INDEX_NAME, RDB$RELATION_NAME, RDB$INDEX_ID,
             RDB$UNIQUE_FLAG, RDB$DESCRIPTION, RDB$SEGMENT_COUNT, RDB$INDEX_INACTIVE,
             RDB$INDEX_TYPE, RDB$FOREIGN_KEY, RDB$SYSTEM_FLAG, RDB$EXPRESSION_SOURCE,

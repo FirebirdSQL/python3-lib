@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.1] - Unreleased
+
+### Fixed
+
+- Bug in `schema_get_all_indices` with ODS 13.0
+
 ## [1.5.0] - 2023-10-03
 
 ### Changed

@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.5.1] - Unreleased
+## [1.5.1] - 2025-04-25
 
 ### Fixed
 
 - Bug in `schema_get_all_indices` with ODS 13.0
+
+### Changed
+
+- Dependencies fixed to `firebird-base~=1.8` and `firebird-driver~=1.10`
 
 ## [1.5.0] - 2023-10-03
 

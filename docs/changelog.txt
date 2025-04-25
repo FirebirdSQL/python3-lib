@@ -6,6 +6,7 @@ Version 1.5.1
 =============
 
 * Dependencies fixed to `firebird-base~=1.8` and `firebird-driver~=1.10`
+* Fixed bug in `schema_get_all_indices` with ODS 13.0
 
 Version 1.5.0
 =============

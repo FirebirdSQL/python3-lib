@@ -4,7 +4,8 @@
 #
 # PROGRAM/MODULE: firebird-lib
 # FILE:           firebird/lib/log.py
-# DESCRIPTION:    Module for parsing Firebird server log
+# DESCRIPTION:    Module for parsing Firebird server log (`firebird.log`).
+
 # CREATED:        8.10.2020
 #
 # The contents of this file are subject to the MIT License
@@ -32,24 +33,33 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
-# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904
 
-"""firebird.lib.log - Module for parsing Firebird server log
+"""firebird.lib.log - Module for parsing Firebird server log (`firebird.log`).
 
-
+This module provides the `LogParser` class to read and parse entries from
+a Firebird server log file, yielding structured `LogMessage` objects.
+It handles multi-line log entries and uses message definitions from `logmsgs`
+to identify specific events and extract parameters.
 """
 
 from __future__ import annotations
-from typing import List, Dict, Any, Iterable, Optional, Union
-from datetime import datetime
-from dataclasses import dataclass
+
+from collections.abc import Generator, Iterable
 from contextlib import suppress
-from firebird.base.types import Error, STOP, Sentinel
-from .logmsgs import identify_msg, Severity, Facility
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+from firebird.base.types import STOP, Error
+
+from .logmsgs import Facility, Severity, identify_msg
+
 
 @dataclass(order=True, frozen=True)
 class LogMessage:
-    """Firebird log message.
+    """Represents a single, parsed entry from the Firebird log.
+
+    Instances are immutable and orderable by timestamp.
     """
     #: Firebird server identification
     origin: str
@@ -61,26 +71,37 @@ class LogMessage:
     code: int
     #: Firebird server facility that wrote the message
     facility: Facility
-    #: Message text. It may contain `str.format` `{<param_name>}` placeholders for
-    #: message parameters.
+    #: Message text. It may contain `str.format()` style `{param_name}` placeholders for
+    #: message parameters found in the `params` dictionary.
     message: str
-    #:  Dictionary with message parameters
-    params: Dict[str, Any]
+    #: Dictionary containing parameters extracted from the log message text.
+    params: dict[str, Any]
 
 class LogParser:
-    """Parser for firebird.log files.
+    """A stateful parser for Firebird server log files (`firebird.log`).
+
+    It processes the log line by line, handling multi-line entries.
+    Use the `push()` method for incremental parsing or the `parse()`
+    method to process an entire iterable of lines.
     """
     def __init__(self):
-        self.__buffer: List[str] = []
-    def push(self, line: Union[str, Sentinel]) -> Optional[LogMessage]:
-        """Push parser.
+        #: Internal buffer holding lines for the current log entry being processed.
+        self.__buffer: list[str] = []
+    def push(self, line: str| STOP) -> LogMessage | None:
+        """Pushes a single line (or STOP sentinel) into the parser.
+
+        This method accumulates lines in an internal buffer. When a new log entry
+        starts or the `STOP` sentinel is received, it attempts to parse the
+        buffered lines into a complete `LogMessage`.
 
         Arguments:
-            line: Single line from Firebird log, or `~firebird.base.types.STOP` sentinel.
+            line: Single line from Firebird log, or the `~firebird.base.types.STOP` sentinel
+                  to signal the end of input and process any remaining buffered lines.
 
         Returns:
-            `LogMessage`, or None if method did not accumulated all lines for the whole
-            log entry.
+            A `LogMessage` instance if a complete log entry was parsed from the
+            buffer, or `None` if more lines are needed for the current entry.
+            Returns the final entry when `STOP` is pushed and the buffer is non-empty.
         """
         result = None
         if line is STOP:
@@ -88,11 +109,11 @@ class LogParser:
             self.__buffer.clear()
         elif line := line.strip():
             items = line.split()
-            if len(items) >= 6:
+            if len(items) >= 6: # noqa: PLR2004
                 # potential new entry
                 new_entry = False
                 with suppress(ValueError):
-                    datetime.strptime(' '.join(items[len(items)-5:]), '%a %b %d %H:%M:%S %Y')
+                    datetime.strptime(' '.join(items[len(items)-5:]), '%a %b %d %H:%M:%S %Y') # noqa: DTZ007
                     new_entry = True
                 if new_entry:
                     if self.__buffer:
@@ -103,19 +124,30 @@ class LogParser:
                     self.__buffer.append(line)
             else:
                 self.__buffer.append(line)
-        else:
-            if self.__buffer:
-                self.__buffer.append(line)
+        elif self.__buffer:
+            self.__buffer.append(line)
         return result
-    def parse_entry(self, log_entry: List[str]) -> LogMessage:
-        """Parse single log entry.
+    def parse_entry(self, log_entry: list[str]) -> LogMessage:
+        """Parses a single, complete log entry from a list of lines.
+
+        Assumes `log_entry` contains all lines belonging to exactly one log entry,
+        with the first line being the header containing timestamp and origin.
 
         Arguments:
-            log_entry: List with log entry lines.
+            log_entry: List of strings representing the lines of a single log entry.
+
+        Returns:
+            A `LogMessage` instance representing the parsed entry. If the specific
+            message cannot be identified via `logmsgs`, a generic `LogMessage`
+            with `Severity.UNKNOWN` and `Facility.UNKNOWN` is returned.
+
+        Raises:
+            firebird.base.types.Error: If the first line doesn't conform to the expected
+                                       log entry header format (origin + timestamp).
         """
         try:
             items = log_entry[0].split()
-            timestamp = datetime.strptime(' '.join(items[len(items)-5:]),
+            timestamp = datetime.strptime(' '.join(items[len(items)-5:]), # noqa: DTZ007
                                           '%a %b %d %H:%M:%S %Y')
             origin = ' '.join(items[:len(items)-5])
         except Exception as exc:
@@ -125,19 +157,26 @@ class LogParser:
         if (found := identify_msg(msg)) is not None:
             log_msg = found[0]
             return LogMessage(origin, timestamp, log_msg.severity, log_msg.msg_id,
-                              log_msg.facility, log_msg.get_pattern(found[2]), found[1])
+                              log_msg.facility, log_msg.get_pattern(without_optional=found[2]),
+                              found[1])
         return LogMessage(origin, timestamp, Severity.UNKNOWN, 0, Facility.UNKNOWN, msg, {})
-    def parse(self, lines: Iterable):
-        """Parse output from Firebird log.
+    def parse(self, lines: Iterable) -> Generator[LogMessage, None, None]:
+        """Parses Firebird log lines from an iterable source.
+
+        This is a convenience method that iterates over `lines`, calls `push()`
+        for each line, and yields complete `LogMessage` objects as they are parsed.
+        It automatically handles the final `push(STOP)` call.
 
         Arguments:
-            lines: Iterable that returns Firebird log lines.
+            lines: An iterable yielding lines from a Firebird log
+                   (e.g., a file object or list of strings).
 
         Yields:
             `.LogMessage` instances describing individual log entries.
 
         Raises:
-            firebird.base.types.Error: When any problem is found in input stream.
+            firebird.base.types.Error: When a malformed log entry header is detected
+                                       by `parse_entry`.
         """
         for line in lines:
             result = self.push(line)

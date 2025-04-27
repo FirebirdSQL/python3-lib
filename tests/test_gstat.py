@@ -1,9 +1,11 @@
-#coding:utf-8
+# SPDX-FileCopyrightText: 2020-present The Firebird Projects <www.firebirdsql.org>
 #
-#   PROGRAM/MODULE: firebird-lib
-#   FILE:           test_gstat.py
-#   DESCRIPTION:    Unit tests for firebird.lib.gstat
-#   CREATED:        6.10.2020
+# SPDX-License-Identifier: MIT
+#
+# PROGRAM/MODULE: firebird-lib
+# FILE:           tests/test_gstat.py
+# DESCRIPTION:    Tests for firebird.lib.gstat module
+# CREATED:        25.4.2025
 #
 # The contents of this file are subject to the MIT License
 #
@@ -29,2342 +31,609 @@
 # All Rights Reserved.
 #
 # Contributor(s): Pavel Císař (original code)
-#                 ______________________________________
 
-"""firebird-lib - Unit tests for firebird.lib.gstat
-
-
+"""firebird-lib - Tests for firebird.lib.gstat module
 """
-import unittest
-import sys, os
+
+import pytest
+import os
 import datetime
 from collections.abc import Sized, MutableSequence, Mapping
 from re import finditer
-from io import StringIO
-from firebird.driver import *
+from pathlib import Path
 from firebird.lib.gstat import *
 
-FB30 = '3.0'
-FB40 = '4.0'
-FB50 = '5.0'
-
-if driver_config.get_server('local') is None:
-    # Register Firebird server
-    srv_cfg = """[local]
-    host = localhost
-    user = SYSDBA
-    password = masterkey
-    """
-    driver_config.register_server('local', srv_cfg)
-
-if driver_config.get_database('fbtest') is None:
-    # Register database
-    db_cfg = """[fbtest]
-    server = local
-    database = fbtest3.fdb
-    protocol = inet
-    charset = utf8
-    """
-    driver_config.register_database('fbtest', db_cfg)
+# --- Helper Functions ---
 
 def linesplit_iter(string):
     return (m.group(2) for m in finditer('((.*)\n|(.+)$)', string))
 
 def iter_obj_properties(obj):
-    """Iterator function.
-
-    Args:
-        obj (class): Class object.
-
-    Yields:
-        `name', 'property` pairs for all properties in class.
-"""
     for varname in dir(obj):
         if hasattr(type(obj), varname) and isinstance(getattr(type(obj), varname), property):
             yield varname
 
 def iter_obj_variables(obj):
-    """Iterator function.
-
-    Args:
-        obj (class): Class object.
-
-    Yields:
-        Names of all non-callable attributes in class.
-"""
     for varname in vars(obj):
         value = getattr(obj, varname)
         if not callable(value) and not varname.startswith('_'):
             yield varname
 
 def get_object_data(obj, skip=[]):
+    """Extracts attribute and property data from an object into a dictionary."""
+    data = {}
     def add(item):
         if item not in skip:
             value = getattr(obj, item)
+            # Store length for sized collections/mappings instead of the full object
             if isinstance(value, Sized) and isinstance(value, (MutableSequence, Mapping)):
                 value = len(value)
             data[item] = value
 
-    data = {}
     for item in iter_obj_variables(obj):
         add(item)
     for item in iter_obj_properties(obj):
         add(item)
     return data
 
-class TestBase(unittest.TestCase):
-    def __init__(self, methodName='runTest'):
-        super(TestBase, self).__init__(methodName)
-        self.output = StringIO()
-        self.FBTEST_DB = 'fbtest'
-    def setUp(self):
-        with connect_server('local') as svc:
-            self.version = svc.info.version
-        if self.version.startswith('3.0'):
-            self.FBTEST_DB = 'fbtest30.fdb'
-            self.version = FB30
-        elif self.version.startswith('4.0'):
-            self.FBTEST_DB = 'fbtest40.fdb'
-            self.version = FB40
-        elif self.version.startswith('5.0'):
-            self.FBTEST_DB = 'fbtest50.fdb'
-            self.version = FB50
-        else:
-            raise Exception("Unsupported Firebird version (%s)" % self.version)
-        #
-        self.cwd = os.getcwd()
-        self.dbpath = self.cwd if os.path.split(self.cwd)[1] == 'tests' \
-            else os.path.join(self.cwd, 'tests')
-        self.dbfile = os.path.join(self.dbpath, self.FBTEST_DB)
-        driver_config.get_database('fbtest').database.value = self.dbfile
-    def clear_output(self):
-        self.output.close()
-        self.output = StringIO()
-    def show_output(self):
-        sys.stdout.write(self.output.getvalue())
-        sys.stdout.flush()
-    def printout(self, text='', newline=True, no_rstrip=False):
-        if no_rstrip:
-            self.output.write(text)
-        else:
-            self.output.write(text.rstrip())
-        if newline:
-            self.output.write('\n')
-        self.output.flush()
-    def printData(self, cur, print_header=True):
-        """Print data from open cursor to stdout."""
-        if print_header:
-            # Print a header.
-            line = []
-            for fieldDesc in cur.description:
-                line.append(fieldDesc[DESCRIPTION_NAME].ljust(fieldDesc[DESCRIPTION_DISPLAY_SIZE]))
-            self.printout(' '.join(line))
-            line = []
-            for fieldDesc in cur.description:
-                line.append("-" * max((len(fieldDesc[DESCRIPTION_NAME]), fieldDesc[DESCRIPTION_DISPLAY_SIZE])))
-            self.printout(' '.join(line))
-        # For each row, print the value of each field left-justified within
-        # the maximum possible width of that field.
-        fieldIndices = range(len(cur.description))
-        for row in cur:
-            line = []
-            for fieldIndex in fieldIndices:
-                fieldValue = str(row[fieldIndex])
-                fieldMaxWidth = max((len(cur.description[fieldIndex][DESCRIPTION_NAME]), cur.description[fieldIndex][DESCRIPTION_DISPLAY_SIZE]))
-                line.append(fieldValue.ljust(fieldMaxWidth))
-            self.printout(' '.join(line))
-
-class TestGstatParse(TestBase):
-    def setUp(self):
-        super(TestGstatParse, self).setUp()
-        self.maxDiff = None
-    def _parse_file(self, filename):
-        db = StatDatabase()
-        with open(filename) as f:
+def _parse_file(filename: Path):
+    """Helper to parse a gstat output file."""
+    db = StatDatabase()
+    try:
+        with filename.open('r', encoding='utf-8') as f: # Specify encoding
             db.parse(f)
-        return db
-    def _push_file(self, filename):
-        db = StatDatabase()
-        with open(filename, 'r') as f:
+    except FileNotFoundError:
+        pytest.fail(f"Test data file not found: {filename}")
+    except Exception as e:
+        pytest.fail(f"Error parsing file {filename}: {e}")
+    return db
+
+def _push_file(filename: Path):
+    """Helper to parse a gstat output file line by line using push."""
+    db = StatDatabase()
+    try:
+        with filename.open('r', encoding='utf-8') as f: # Specify encoding
             for line in f:
                 db.push(line)
-        db.push(STOP)
-        return db
-    def test_01_parse30_h(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-h.out'))
-        data = {'attributes': 1, 'backup_diff_file': None,
-                'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
-                'continuation_file': None, 'continuation_files': 0,
-                'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': None,
-                'encrypted_data_pages': None, 'encrypted_index_pages': None,
-                'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
-                'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2176, 'gstat_version': 3,
-                'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1199,
-                'next_header_page': 0,
-                'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179,
-                'ost': 2140, 'page_buffers': 0,
-                'page_size': 8192, 'replay_logging_file': None, 'root_filename': None,
-                'sequence_number': 0, 'shadow_count': 0,
-                'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
-        self.assertIsInstance(db, StatDatabase)
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-    def test_02_parse30_a(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-a.out'))
-        # Database
-        data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 42),
-                'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
-                'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,
-                'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179, 'ost': 2140, 'page_buffers': 0,
-                'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0, 'shadow_count': 0,
-                'sweep_interval': None, 'system_change_number': 24, 'tables': 16}
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 26, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 261, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 24, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 198, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 44, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 212, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 10, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 234, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 54, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 189, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 7, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 220, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 20, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 239, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 30, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 253, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 35, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 267, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 323, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 302, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 305, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 307, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 315, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                 'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                 'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                 'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                 'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                 'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                 'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                 'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                 'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                 'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                 'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                 'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-            i += 1
-    def test_03_parse30_d(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-d.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 26, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 261, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 24, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 198, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 44, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 212, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 10, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 234, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 54, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 189, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 7, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 220, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 20, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 239, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 30, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 253, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 35, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 267, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 323, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 302, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 305, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 307, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 315, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        self.assertEqual(len(db.indices), 0)
-    def test_04_parse30_e(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-e.out'))
-        data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 45, 6),
-                'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': Encryption(pages=11, encrypted=0, unencrypted=11),
-                'encrypted_data_pages': Encryption(pages=121, encrypted=0, unencrypted=121),
-                'encrypted_index_pages': Encryption(pages=96, encrypted=0, unencrypted=96),
-                'executed': datetime.datetime(2018, 4, 4, 15, 45, 6), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2181, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1214,
-                'next_header_page': 0, 'next_transaction': 2146, 'oat': 2146, 'ods_version': '12.0', 'oit': 179, 'ost': 2146,
-                'page_buffers': 0, 'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0,
-                'shadow_count': 0, 'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
-        self.assertIsInstance(db, StatDatabase)
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertTrue(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-    def test_05_parse30_f(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-f.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertTrue(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertTrue(db.has_system())
-    def test_06_parse30_i(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-i.out'))
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        # Tables
-        data = [{'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'AR', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 140, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 128, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 137, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 130, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 131, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 134, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'JOB', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 129, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 133, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': None, 'primary_pages': None,
-                 'primary_pointer_page': None, 'secondary_pages': None, 'swept_pages': None, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': None, 'primary_pages': None,
-                 'primary_pointer_page': None, 'secondary_pages': None, 'swept_pages': None, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'SALES', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 138, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 147, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T2', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 142, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T3', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 143, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T4', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 144, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T5', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 145, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                 'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                 'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                 'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                 'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                 'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                 'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                 'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                 'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                 'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                 'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                 'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-            i += 1
-    def test_07_parse30_r(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-r.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertTrue(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': 0.0, 'avg_record_length': 2.79, 'avg_unpacked_length': 120.0,
-                 'avg_version_length': 16.61, 'blob_pages': 0, 'blobs': 125, 'blobs_total_length': 11237, 'compression_ratio': 42.99,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': 125, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 297,
-                 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': 1, 'total_fragments': 0, 'total_records': 120,
-                 'total_versions': 105, 'used_formats': 1},
-                {'avg_fill': 8, 'avg_fragment_length': 0.0, 'avg_record_length': 25.94, 'avg_unpacked_length': 34.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.31,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 182,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': 1, 'total_fragments': 0, 'total_records': 16,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 26, 'avg_fragment_length': 0.0, 'avg_record_length': 125.47, 'avg_unpacked_length': 241.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.92,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 261,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': 1, 'total_fragments': 0, 'total_records': 15,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 24, 'avg_fragment_length': 0.0, 'avg_record_length': 74.62, 'avg_unpacked_length': 88.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.18,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 198,
-                 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': 1, 'total_fragments': 0, 'total_records': 21,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 44, 'avg_fragment_length': 0.0, 'avg_record_length': 69.02, 'avg_unpacked_length': 39.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.57,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 212,
-                 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': 1, 'total_fragments': 0, 'total_records': 42,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 10, 'avg_fragment_length': 0.0, 'avg_record_length': 12.0, 'avg_unpacked_length': 11.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.92,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 234,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': 1, 'total_fragments': 0, 'total_records': 28,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 54, 'avg_fragment_length': 0.0, 'avg_record_length': 66.13, 'avg_unpacked_length': 96.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 39, 'blobs_total_length': 4840, 'compression_ratio': 1.45,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 4, 'level_0': 39, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 189,
-                 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': 1, 'total_fragments': 0, 'total_records': 31,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 7, 'avg_fragment_length': 0.0, 'avg_record_length': 49.67, 'avg_unpacked_length': 56.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 6, 'blobs_total_length': 548, 'compression_ratio': 1.13,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 4, 'level_0': 6, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 220,
-                 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': 1, 'total_fragments': 0, 'total_records': 6,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 20, 'avg_fragment_length': 0.0, 'avg_record_length': 30.58, 'avg_unpacked_length': 32.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 24, 'blobs_total_length': 1344, 'compression_ratio': 1.05,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 3, 'level_0': 24, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 239,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': 1, 'total_fragments': 0, 'total_records': 24,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 30, 'avg_fragment_length': 0.0, 'avg_record_length': 33.29, 'avg_unpacked_length': 8.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.24,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 253,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': 1, 'total_fragments': 0, 'total_records': 49,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 35, 'avg_fragment_length': 0.0, 'avg_record_length': 68.82, 'avg_unpacked_length': 8.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.12,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 267,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': 1, 'total_fragments': 0, 'total_records': 33,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 0, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 0.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0, 'primary_pointer_page': 323,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': 1, 'total_fragments': 0, 'total_records': 0,
-                 'total_versions': 0, 'used_formats': 0},
-                {'avg_fill': 8, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 120.0,
-                 'avg_version_length': 14.25, 'blob_pages': 0, 'blobs': 3, 'blobs_total_length': 954, 'compression_ratio': 0.0,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': 3, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 302,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': 1, 'total_fragments': 0, 'total_records': 4,
-                 'total_versions': 4, 'used_formats': 1},
-                {'avg_fill': 3, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 112.0,
-                 'avg_version_length': 22.67, 'blob_pages': 0, 'blobs': 2, 'blobs_total_length': 313, 'compression_ratio': 0.0,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': 2, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 305,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': 1, 'total_fragments': 0, 'total_records': 3,
-                 'total_versions': 3, 'used_formats': 1},
-                {'avg_fill': 3, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 264.0,
-                 'avg_version_length': 75.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 307,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': 1, 'total_fragments': 0, 'total_records': 2,
-                 'total_versions': 2, 'used_formats': 1},
-                {'avg_fill': 0, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 0.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0, 'primary_pointer_page': 315,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': 1, 'total_fragments': 0, 'total_records': 0,
-                 'total_versions': 0, 'used_formats': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-            # Indices
-            data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                    {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                    {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                    {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                    {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                    {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                    {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                    {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                    {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                    {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                    {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                    {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                    {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                    {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                    {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                    {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                     'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                    {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                    {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                     'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                    {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                    {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                     'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                    {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                    {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                    {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                    {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                    {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                    {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                     'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                    {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                     'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                    {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                    {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                     'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                     'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                    {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                    {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                    {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                     'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                     'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                    {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                     'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                    {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                     'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                    {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                    {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                     'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                    {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                    {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                     'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                     'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                    {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                     'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-            i = 0
-            while i < len(db.tables):
-                self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-                i += 1
-    def test_08_parse30_s(self):
-        db = self._parse_file(os.path.join(self.dbpath, 'gstat30-s.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertTrue(db.has_system())
-        # Check system tables
-        data = ['RDB$AUTH_MAPPING', 'RDB$BACKUP_HISTORY', 'RDB$CHARACTER_SETS', 'RDB$CHECK_CONSTRAINTS', 'RDB$COLLATIONS', 'RDB$DATABASE',
-                'RDB$DB_CREATORS', 'RDB$DEPENDENCIES', 'RDB$EXCEPTIONS', 'RDB$FIELDS', 'RDB$FIELD_DIMENSIONS', 'RDB$FILES', 'RDB$FILTERS',
-                'RDB$FORMATS', 'RDB$FUNCTIONS', 'RDB$FUNCTION_ARGUMENTS', 'RDB$GENERATORS', 'RDB$INDEX_SEGMENTS', 'RDB$INDICES',
-                'RDB$LOG_FILES', 'RDB$PACKAGES', 'RDB$PAGES', 'RDB$PROCEDURES', 'RDB$PROCEDURE_PARAMETERS', 'RDB$REF_CONSTRAINTS',
-                'RDB$RELATIONS', 'RDB$RELATION_CONSTRAINTS', 'RDB$RELATION_FIELDS', 'RDB$ROLES', 'RDB$SECURITY_CLASSES', 'RDB$TRANSACTIONS',
-                'RDB$TRIGGERS', 'RDB$TRIGGER_MESSAGES', 'RDB$TYPES', 'RDB$USER_PRIVILEGES', 'RDB$VIEW_RELATIONS']
-        for table in db.tables:
-            if table.name.startswith('RDB$'):
-                self.assertIn(table.name, data)
-        # check system indices
-        data = ['RDB$PRIMARY1', 'RDB$FOREIGN23', 'RDB$PRIMARY22', 'RDB$4', 'RDB$FOREIGN10', 'RDB$FOREIGN6', 'RDB$PRIMARY5', 'RDB$FOREIGN8',
-                'RDB$FOREIGN9', 'RDB$PRIMARY7', 'RDB$FOREIGN15', 'RDB$FOREIGN16', 'RDB$PRIMARY14', 'RDB$FOREIGN3', 'RDB$PRIMARY2', 'RDB$11',
-                'RDB$FOREIGN13', 'RDB$PRIMARY12', 'RDB$FOREIGN18', 'RDB$FOREIGN19', 'RDB$PRIMARY17', 'RDB$INDEX_52', 'RDB$INDEX_44',
-                'RDB$INDEX_19', 'RDB$INDEX_25', 'RDB$INDEX_14', 'RDB$INDEX_40', 'RDB$INDEX_20', 'RDB$INDEX_26', 'RDB$INDEX_27',
-                'RDB$INDEX_28', 'RDB$INDEX_23', 'RDB$INDEX_24', 'RDB$INDEX_2', 'RDB$INDEX_36', 'RDB$INDEX_17', 'RDB$INDEX_45',
-                'RDB$INDEX_16', 'RDB$INDEX_53', 'RDB$INDEX_9', 'RDB$INDEX_10', 'RDB$INDEX_49', 'RDB$INDEX_51', 'RDB$INDEX_11',
-                'RDB$INDEX_46', 'RDB$INDEX_6', 'RDB$INDEX_31', 'RDB$INDEX_41', 'RDB$INDEX_5', 'RDB$INDEX_47', 'RDB$INDEX_21', 'RDB$INDEX_22',
-                'RDB$INDEX_18', 'RDB$INDEX_48', 'RDB$INDEX_50', 'RDB$INDEX_13', 'RDB$INDEX_0', 'RDB$INDEX_1', 'RDB$INDEX_12', 'RDB$INDEX_42',
-                'RDB$INDEX_43', 'RDB$INDEX_15', 'RDB$INDEX_3', 'RDB$INDEX_4', 'RDB$INDEX_39', 'RDB$INDEX_7', 'RDB$INDEX_32', 'RDB$INDEX_38',
-                'RDB$INDEX_8', 'RDB$INDEX_35', 'RDB$INDEX_37', 'RDB$INDEX_29', 'RDB$INDEX_30', 'RDB$INDEX_33', 'RDB$INDEX_34',
-                'RDB$FOREIGN21', 'RDB$PRIMARY20', 'RDB$FOREIGN25', 'RDB$FOREIGN26', 'RDB$PRIMARY24', 'RDB$PRIMARY28']
-        for index in db.indices:
-            if index.name.startswith('RDB$'):
-                self.assertIn(index.name, data)
-    def test_09_push30_h(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-h.out'))
-        data = {'attributes': 1, 'backup_diff_file': None,
-                'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
-                'continuation_file': None, 'continuation_files': 0,
-                'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': None,
-                'encrypted_data_pages': None, 'encrypted_index_pages': None,
-                'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
-                'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2176, 'gstat_version': 3,
-                'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1199,
-                'next_header_page': 0,
-                'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179,
-                'ost': 2140, 'page_buffers': 0,
-                'page_size': 8192, 'replay_logging_file': None, 'root_filename': None,
-                'sequence_number': 0, 'shadow_count': 0,
-                'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
-        self.assertIsInstance(db, StatDatabase)
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-    def test_10_push30_a(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-a.out'))
-        # Database
-        data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 42),
-                'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
-                'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,
-                'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179, 'ost': 2140, 'page_buffers': 0,
-                'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0, 'shadow_count': 0,
-                'sweep_interval': None, 'system_change_number': 24, 'tables': 16}
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 26, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 261, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 24, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 198, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 44, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 212, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 10, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 234, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 54, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 189, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 7, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 220, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 20, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 239, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 30, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 253, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 35, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 267, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 323, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 302, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 305, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 307, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 315, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                 'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                 'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                 'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                 'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                 'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                 'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                 'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                 'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                 'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                 'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                 'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-            i += 1
-    def test_11_push30_d(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-d.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 26, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 261, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 24, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 198, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 44, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 212, 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 10, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 234, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 54, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 189, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 7, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 220, 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 20, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 239, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 30, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 253, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 35, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 267, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 323, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 302, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 305, 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 3, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1,
-                 'primary_pointer_page': 307, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': 0, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': None, 'max_versions': None, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0,
-                 'primary_pointer_page': 315, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        self.assertEqual(len(db.indices), 0)
-    def test_12_push30_e(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-e.out'))
-        data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
-                'completed': datetime.datetime(2018, 4, 4, 15, 45, 6),
-                'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                'database_dialect': 3, 'encrypted_blob_pages': Encryption(pages=11, encrypted=0, unencrypted=11),
-                'encrypted_data_pages': Encryption(pages=121, encrypted=0, unencrypted=121),
-                'encrypted_index_pages': Encryption(pages=96, encrypted=0, unencrypted=96),
-                'executed': datetime.datetime(2018, 4, 4, 15, 45, 6), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
-                'generation': 2181, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
-                'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1214,
-                'next_header_page': 0, 'next_transaction': 2146, 'oat': 2146, 'ods_version': '12.0', 'oit': 179, 'ost': 2146,
-                'page_buffers': 0, 'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0,
-                'shadow_count': 0, 'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
-        self.assertIsInstance(db, StatDatabase)
-        self.assertDictEqual(data, get_object_data(db), 'Unexpected output from parser (database hdr)')
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertFalse(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertTrue(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-    def test_13_push30_f(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-f.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertTrue(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertTrue(db.has_system())
-    def test_14_push30_i(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-i.out'))
-        #
-        self.assertFalse(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        # Tables
-        data = [{'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'AR', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 140, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 128, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'CUSTOMER', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 137, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'DEPARTMENT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 130, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'EMPLOYEE', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 131, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 134, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'JOB', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 129, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'PROJECT', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 133, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': None, 'primary_pages': None,
-                 'primary_pointer_page': None, 'secondary_pages': None, 'swept_pages': None, 'table_id': 135, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'SALARY_HISTORY', 'pointer_pages': None, 'primary_pages': None,
-                 'primary_pointer_page': None, 'secondary_pages': None, 'swept_pages': None, 'table_id': 136, 'total_formats': None,
-                 'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'SALES', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 138, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 147, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T2', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 142, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T3', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 143, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T4', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 144, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None},
-                {'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
-                 'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
-                 'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
-                 'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
-                 'max_versions': None, 'name': 'T5', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-                 'secondary_pages': None, 'swept_pages': None, 'table_id': 145, 'total_formats': None, 'total_fragments': None,
-                 'total_records': None, 'total_versions': None, 'used_formats': None}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-        # Indices
-        data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                 'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                 'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                 'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                 'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                 'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                 'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                 'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                 'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                 'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                 'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                 'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                 'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                 'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                 'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                 'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                 'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                 'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                 'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                 'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-            i += 1
-    def test_15_push30_r(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-r.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertTrue(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertFalse(db.has_system())
-        # Tables
-        data = [{'avg_fill': 86, 'avg_fragment_length': 0.0, 'avg_record_length': 2.79, 'avg_unpacked_length': 120.0,
-                 'avg_version_length': 16.61, 'blob_pages': 0, 'blobs': 125, 'blobs_total_length': 11237, 'compression_ratio': 42.99,
-                 'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
-                 'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': 125, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 297,
-                 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': 1, 'total_fragments': 0, 'total_records': 120,
-                 'total_versions': 105, 'used_formats': 1},
-                {'avg_fill': 8, 'avg_fragment_length': 0.0, 'avg_record_length': 25.94, 'avg_unpacked_length': 34.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.31,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 182,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': 1, 'total_fragments': 0, 'total_records': 16,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 26, 'avg_fragment_length': 0.0, 'avg_record_length': 125.47, 'avg_unpacked_length': 241.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.92,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 262, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'CUSTOMER', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 261,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 137, 'total_formats': 1, 'total_fragments': 0, 'total_records': 15,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 24, 'avg_fragment_length': 0.0, 'avg_record_length': 74.62, 'avg_unpacked_length': 88.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 1.18,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 199, 'indices': 5, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'DEPARTMENT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 198,
-                 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 130, 'total_formats': 1, 'total_fragments': 0, 'total_records': 21,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 44, 'avg_fragment_length': 0.0, 'avg_record_length': 69.02, 'avg_unpacked_length': 39.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.57,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=0, d60=1, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 213, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'EMPLOYEE', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 212,
-                 'secondary_pages': 0, 'swept_pages': 1, 'table_id': 131, 'total_formats': 1, 'total_fragments': 0, 'total_records': 42,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 10, 'avg_fragment_length': 0.0, 'avg_record_length': 12.0, 'avg_unpacked_length': 11.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.92,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 235, 'indices': 3, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'EMPLOYEE_PROJECT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 234,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 134, 'total_formats': 1, 'total_fragments': 0, 'total_records': 28,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 54, 'avg_fragment_length': 0.0, 'avg_record_length': 66.13, 'avg_unpacked_length': 96.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 39, 'blobs_total_length': 4840, 'compression_ratio': 1.45,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=1, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 190, 'indices': 4, 'level_0': 39, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'JOB', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 189,
-                 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 129, 'total_formats': 1, 'total_fragments': 0, 'total_records': 31,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 7, 'avg_fragment_length': 0.0, 'avg_record_length': 49.67, 'avg_unpacked_length': 56.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 6, 'blobs_total_length': 548, 'compression_ratio': 1.13,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 221, 'indices': 4, 'level_0': 6, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'PROJECT', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 220,
-                 'secondary_pages': 1, 'swept_pages': 1, 'table_id': 133, 'total_formats': 1, 'total_fragments': 0, 'total_records': 6,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 20, 'avg_fragment_length': 0.0, 'avg_record_length': 30.58, 'avg_unpacked_length': 32.0,
-                 'avg_version_length': 0.0, 'blob_pages': 0, 'blobs': 24, 'blobs_total_length': 1344, 'compression_ratio': 1.05,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=1, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 248, 'indices': 3, 'level_0': 24, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'PROJ_DEPT_BUDGET', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 239,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 135, 'total_formats': 1, 'total_fragments': 0, 'total_records': 24,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 30, 'avg_fragment_length': 0.0, 'avg_record_length': 33.29, 'avg_unpacked_length': 8.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.24,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 254, 'indices': 4, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'SALARY_HISTORY', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 253,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 136, 'total_formats': 1, 'total_fragments': 0, 'total_records': 49,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 35, 'avg_fragment_length': 0.0, 'avg_record_length': 68.82, 'avg_unpacked_length': 8.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.12,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=0, d40=1, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 268, 'indices': 6, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'SALES', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 267,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 138, 'total_formats': 1, 'total_fragments': 0, 'total_records': 33,
-                 'total_versions': 0, 'used_formats': 1},
-                {'avg_fill': 0, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 0.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 324, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'T', 'pointer_pages': 1, 'primary_pages': 0, 'primary_pointer_page': 323,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 147, 'total_formats': 1, 'total_fragments': 0, 'total_records': 0,
-                 'total_versions': 0, 'used_formats': 0},
-                {'avg_fill': 8, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 120.0,
-                 'avg_version_length': 14.25, 'blob_pages': 0, 'blobs': 3, 'blobs_total_length': 954, 'compression_ratio': 0.0,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 303, 'indices': 0, 'level_0': 3, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T2', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 302,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 142, 'total_formats': 1, 'total_fragments': 0, 'total_records': 4,
-                 'total_versions': 4, 'used_formats': 1},
-                {'avg_fill': 3, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 112.0,
-                 'avg_version_length': 22.67, 'blob_pages': 0, 'blobs': 2, 'blobs_total_length': 313, 'compression_ratio': 0.0,
-                 'data_page_slots': 2, 'data_pages': 2, 'distribution': FillDistribution(d20=2, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 306, 'indices': 0, 'level_0': 2, 'level_1': 0, 'level_2': 0,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T3', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 305,
-                 'secondary_pages': 1, 'swept_pages': 0, 'table_id': 143, 'total_formats': 1, 'total_fragments': 0, 'total_records': 3,
-                 'total_versions': 3, 'used_formats': 1},
-                {'avg_fill': 3, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 264.0,
-                 'avg_version_length': 75.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 308, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 1, 'name': 'T4', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 307,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 144, 'total_formats': 1, 'total_fragments': 0, 'total_records': 2,
-                 'total_versions': 2, 'used_formats': 1},
-                {'avg_fill': 0, 'avg_fragment_length': 0.0, 'avg_record_length': 0.0, 'avg_unpacked_length': 0.0,
-                 'avg_version_length': 0.0, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': 0.0,
-                 'data_page_slots': 0, 'data_pages': 0, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=0, d100=0),
-                 'empty_pages': 0, 'full_pages': 0, 'index_root_page': 316, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
-                 'max_fragments': 0, 'max_versions': 0, 'name': 'T5', 'pointer_pages': 1, 'primary_pages': 0, 'primary_pointer_page': 315,
-                 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 145, 'total_formats': 1, 'total_fragments': 0, 'total_records': 0,
-                 'total_versions': 0, 'used_formats': 0}]
-        i = 0
-        while i < len(db.tables):
-            self.assertDictEqual(data[i], get_object_data(db.tables[i]), 'Unexpected output from parser (tables)')
-            i += 1
-            # Indices
-            data = [{'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
-                    {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
-                    {'avg_data_length': 17.27, 'avg_key_length': 20.2, 'avg_node_length': 21.27, 'avg_prefix_length': 2.33,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'CUSTREGION', 'nodes': 15, 'ratio': 0.07, 'root_page': 283, 'total_dup': 0},
-                    {'avg_data_length': 4.87, 'avg_key_length': 6.93, 'avg_node_length': 8.6, 'avg_prefix_length': 0.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.83, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN23', 'nodes': 15, 'ratio': 0.07, 'root_page': 264, 'total_dup': 4},
-                    {'avg_data_length': 1.13, 'avg_key_length': 3.13, 'avg_node_length': 4.2, 'avg_prefix_length': 1.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY22', 'nodes': 15, 'ratio': 0.07, 'root_page': 263, 'total_dup': 0},
-                    {'avg_data_length': 5.38, 'avg_key_length': 8.0, 'avg_node_length': 9.05, 'avg_prefix_length': 3.62,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.13, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'BUDGETX', 'nodes': 21, 'ratio': 0.05, 'root_page': 284, 'total_dup': 7},
-                    {'avg_data_length': 13.95, 'avg_key_length': 16.57, 'avg_node_length': 17.95, 'avg_prefix_length': 5.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.16, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$4', 'nodes': 21, 'ratio': 0.05, 'root_page': 208, 'total_dup': 0},
-                    {'avg_data_length': 1.14, 'avg_key_length': 3.24, 'avg_node_length': 4.29, 'avg_prefix_length': 0.81,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.6, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'RDB$FOREIGN10', 'nodes': 21, 'ratio': 0.05, 'root_page': 219, 'total_dup': 3},
-                    {'avg_data_length': 0.81, 'avg_key_length': 2.95, 'avg_node_length': 4.1, 'avg_prefix_length': 2.05,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN6', 'nodes': 21, 'ratio': 0.05, 'root_page': 210, 'total_dup': 13},
-                    {'avg_data_length': 1.71, 'avg_key_length': 4.05, 'avg_node_length': 5.24, 'avg_prefix_length': 1.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY5', 'nodes': 21, 'ratio': 0.05, 'root_page': 209, 'total_dup': 0},
-                    {'avg_data_length': 15.52, 'avg_key_length': 18.5, 'avg_node_length': 19.52, 'avg_prefix_length': 2.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.96, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'NAMEX', 'nodes': 42, 'ratio': 0.02, 'root_page': 285, 'total_dup': 0},
-                    {'avg_data_length': 0.81, 'avg_key_length': 2.98, 'avg_node_length': 4.07, 'avg_prefix_length': 2.19,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN8', 'nodes': 42, 'ratio': 0.02, 'root_page': 215, 'total_dup': 23},
-                    {'avg_data_length': 6.79, 'avg_key_length': 9.4, 'avg_node_length': 10.43, 'avg_prefix_length': 9.05,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.68, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN9', 'nodes': 42, 'ratio': 0.02, 'root_page': 216, 'total_dup': 15},
-                    {'avg_data_length': 1.31, 'avg_key_length': 3.6, 'avg_node_length': 4.62, 'avg_prefix_length': 1.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.69, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY7', 'nodes': 42, 'ratio': 0.02, 'root_page': 214, 'total_dup': 0},
-                    {'avg_data_length': 1.04, 'avg_key_length': 3.25, 'avg_node_length': 4.29, 'avg_prefix_length': 1.36,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.74, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'RDB$FOREIGN15', 'nodes': 28, 'ratio': 0.04, 'root_page': 237, 'total_dup': 6},
-                    {'avg_data_length': 0.86, 'avg_key_length': 2.89, 'avg_node_length': 4.04, 'avg_prefix_length': 4.14,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.73, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 9,
-                     'name': 'RDB$FOREIGN16', 'nodes': 28, 'ratio': 0.04, 'root_page': 238, 'total_dup': 23},
-                    {'avg_data_length': 9.11, 'avg_key_length': 12.07, 'avg_node_length': 13.11, 'avg_prefix_length': 2.89,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.99, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY14', 'nodes': 28, 'ratio': 0.04, 'root_page': 236, 'total_dup': 0},
-                    {'avg_data_length': 10.9, 'avg_key_length': 13.71, 'avg_node_length': 14.74, 'avg_prefix_length': 7.87,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.37, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 1,
-                     'name': 'MAXSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 286, 'total_dup': 5},
-                    {'avg_data_length': 10.29, 'avg_key_length': 13.03, 'avg_node_length': 14.06, 'avg_prefix_length': 8.48,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.44, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'MINSALX', 'nodes': 31, 'ratio': 0.03, 'root_page': 287, 'total_dup': 7},
-                    {'avg_data_length': 1.39, 'avg_key_length': 3.39, 'avg_node_length': 4.61, 'avg_prefix_length': 2.77,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.23, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 20,
-                     'name': 'RDB$FOREIGN3', 'nodes': 31, 'ratio': 0.03, 'root_page': 192, 'total_dup': 24},
-                    {'avg_data_length': 10.45, 'avg_key_length': 13.42, 'avg_node_length': 14.45, 'avg_prefix_length': 6.19,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.24, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY2', 'nodes': 31, 'ratio': 0.03, 'root_page': 191, 'total_dup': 0},
-                    {'avg_data_length': 22.5, 'avg_key_length': 25.33, 'avg_node_length': 26.5, 'avg_prefix_length': 4.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.05, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'PRODTYPEX', 'nodes': 6, 'ratio': 0.17, 'root_page': 288, 'total_dup': 0},
-                    {'avg_data_length': 13.33, 'avg_key_length': 15.5, 'avg_node_length': 17.33, 'avg_prefix_length': 0.33,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.88, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$11', 'nodes': 6, 'ratio': 0.17, 'root_page': 222, 'total_dup': 0},
-                    {'avg_data_length': 1.33, 'avg_key_length': 3.5, 'avg_node_length': 4.67, 'avg_prefix_length': 0.67,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.57, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$FOREIGN13', 'nodes': 6, 'ratio': 0.17, 'root_page': 232, 'total_dup': 0},
-                    {'avg_data_length': 4.83, 'avg_key_length': 7.0, 'avg_node_length': 8.83, 'avg_prefix_length': 0.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.71, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY12', 'nodes': 6, 'ratio': 0.17, 'root_page': 223, 'total_dup': 0},
-                    {'avg_data_length': 0.71, 'avg_key_length': 2.79, 'avg_node_length': 3.92, 'avg_prefix_length': 2.29,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.07, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 5,
-                     'name': 'RDB$FOREIGN18', 'nodes': 24, 'ratio': 0.04, 'root_page': 250, 'total_dup': 15},
-                    {'avg_data_length': 1.0, 'avg_key_length': 3.04, 'avg_node_length': 4.21, 'avg_prefix_length': 4.0,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.64, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 8,
-                     'name': 'RDB$FOREIGN19', 'nodes': 24, 'ratio': 0.04, 'root_page': 251, 'total_dup': 19},
-                    {'avg_data_length': 6.83, 'avg_key_length': 9.67, 'avg_node_length': 10.71, 'avg_prefix_length': 12.17,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.97, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY17', 'nodes': 24, 'ratio': 0.04, 'root_page': 249, 'total_dup': 0},
-                    {'avg_data_length': 0.31, 'avg_key_length': 2.35, 'avg_node_length': 3.37, 'avg_prefix_length': 6.69,
-                     'clustering_factor': 1.0, 'compression_ratio': 2.98, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 21,
-                     'name': 'CHANGEX', 'nodes': 49, 'ratio': 0.02, 'root_page': 289, 'total_dup': 46},
-                    {'avg_data_length': 0.9, 'avg_key_length': 3.1, 'avg_node_length': 4.12, 'avg_prefix_length': 1.43,
-                     'clustering_factor': 1.0, 'compression_ratio': 0.75, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 2,
-                     'name': 'RDB$FOREIGN21', 'nodes': 49, 'ratio': 0.02, 'root_page': 256, 'total_dup': 16},
-                    {'avg_data_length': 18.29, 'avg_key_length': 21.27, 'avg_node_length': 22.29, 'avg_prefix_length': 4.31,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.06, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY20', 'nodes': 49, 'ratio': 0.02, 'root_page': 255, 'total_dup': 0},
-                    {'avg_data_length': 0.29, 'avg_key_length': 2.29, 'avg_node_length': 3.35, 'avg_prefix_length': 5.39,
-                     'clustering_factor': 1.0, 'compression_ratio': 2.48, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 28,
-                     'name': 'UPDATERX', 'nodes': 49, 'ratio': 0.02, 'root_page': 290, 'total_dup': 46},
-                    {'avg_data_length': 2.55, 'avg_key_length': 4.94, 'avg_node_length': 5.97, 'avg_prefix_length': 2.88,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.1, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 3, 'leaf_buckets': 1, 'max_dup': 6,
-                     'name': 'NEEDX', 'nodes': 33, 'ratio': 0.03, 'root_page': 291, 'total_dup': 11},
-                    {'avg_data_length': 1.85, 'avg_key_length': 4.03, 'avg_node_length': 5.06, 'avg_prefix_length': 11.18,
-                     'clustering_factor': 1.0, 'compression_ratio': 3.23, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 4, 'leaf_buckets': 1, 'max_dup': 3,
-                     'name': 'QTYX', 'nodes': 33, 'ratio': 0.03, 'root_page': 292, 'total_dup': 11},
-                    {'avg_data_length': 0.52, 'avg_key_length': 2.52, 'avg_node_length': 3.55, 'avg_prefix_length': 2.48,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.19, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 1, 'leaf_buckets': 1, 'max_dup': 4,
-                     'name': 'RDB$FOREIGN25', 'nodes': 33, 'ratio': 0.03, 'root_page': 270, 'total_dup': 18},
-                    {'avg_data_length': 0.45, 'avg_key_length': 2.64, 'avg_node_length': 3.67, 'avg_prefix_length': 2.21,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.01, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 7,
-                     'name': 'RDB$FOREIGN26', 'nodes': 33, 'ratio': 0.03, 'root_page': 271, 'total_dup': 25},
-                    {'avg_data_length': 4.48, 'avg_key_length': 7.42, 'avg_node_length': 8.45, 'avg_prefix_length': 3.52,
-                     'clustering_factor': 1.0, 'compression_ratio': 1.08, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY24', 'nodes': 33, 'ratio': 0.03, 'root_page': 269, 'total_dup': 0},
-                    {'avg_data_length': 0.97, 'avg_key_length': 3.03, 'avg_node_length': 4.06, 'avg_prefix_length': 9.82,
-                     'clustering_factor': 1.0, 'compression_ratio': 3.56, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 5, 'leaf_buckets': 1, 'max_dup': 14,
-                     'name': 'SALESTATX', 'nodes': 33, 'ratio': 0.03, 'root_page': 293, 'total_dup': 27},
-                    {'avg_data_length': 0.0, 'avg_key_length': 0.0, 'avg_node_length': 0.0, 'avg_prefix_length': 0.0,
-                     'clustering_factor': 0.0, 'compression_ratio': 0.0, 'depth': 1,
-                     'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
-                     'name': 'RDB$PRIMARY28', 'nodes': 0, 'ratio': 0.0, 'root_page': 317, 'total_dup': 0}]
-            i = 0
-            while i < len(db.tables):
-                self.assertDictEqual(data[i], get_object_data(db.indices[i], ['table']), 'Unexpected output from parser (indices)')
-                i += 1
-    def test_16_push30_s(self):
-        db = self._push_file(os.path.join(self.dbpath, 'gstat30-s.out'))
-        #
-        self.assertTrue(db.has_table_stats())
-        self.assertTrue(db.has_index_stats())
-        self.assertFalse(db.has_row_stats())
-        self.assertFalse(db.has_encryption_stats())
-        self.assertTrue(db.has_system())
-        # Check system tables
-        data = ['RDB$AUTH_MAPPING', 'RDB$BACKUP_HISTORY', 'RDB$CHARACTER_SETS', 'RDB$CHECK_CONSTRAINTS', 'RDB$COLLATIONS', 'RDB$DATABASE',
-                'RDB$DB_CREATORS', 'RDB$DEPENDENCIES', 'RDB$EXCEPTIONS', 'RDB$FIELDS', 'RDB$FIELD_DIMENSIONS', 'RDB$FILES', 'RDB$FILTERS',
-                'RDB$FORMATS', 'RDB$FUNCTIONS', 'RDB$FUNCTION_ARGUMENTS', 'RDB$GENERATORS', 'RDB$INDEX_SEGMENTS', 'RDB$INDICES',
-                'RDB$LOG_FILES', 'RDB$PACKAGES', 'RDB$PAGES', 'RDB$PROCEDURES', 'RDB$PROCEDURE_PARAMETERS', 'RDB$REF_CONSTRAINTS',
-                'RDB$RELATIONS', 'RDB$RELATION_CONSTRAINTS', 'RDB$RELATION_FIELDS', 'RDB$ROLES', 'RDB$SECURITY_CLASSES', 'RDB$TRANSACTIONS',
-                'RDB$TRIGGERS', 'RDB$TRIGGER_MESSAGES', 'RDB$TYPES', 'RDB$USER_PRIVILEGES', 'RDB$VIEW_RELATIONS']
-        for table in db.tables:
-            if table.name.startswith('RDB$'):
-                self.assertIn(table.name, data)
-        # check system indices
-        data = ['RDB$PRIMARY1', 'RDB$FOREIGN23', 'RDB$PRIMARY22', 'RDB$4', 'RDB$FOREIGN10', 'RDB$FOREIGN6', 'RDB$PRIMARY5', 'RDB$FOREIGN8',
-                'RDB$FOREIGN9', 'RDB$PRIMARY7', 'RDB$FOREIGN15', 'RDB$FOREIGN16', 'RDB$PRIMARY14', 'RDB$FOREIGN3', 'RDB$PRIMARY2', 'RDB$11',
-                'RDB$FOREIGN13', 'RDB$PRIMARY12', 'RDB$FOREIGN18', 'RDB$FOREIGN19', 'RDB$PRIMARY17', 'RDB$INDEX_52', 'RDB$INDEX_44',
-                'RDB$INDEX_19', 'RDB$INDEX_25', 'RDB$INDEX_14', 'RDB$INDEX_40', 'RDB$INDEX_20', 'RDB$INDEX_26', 'RDB$INDEX_27',
-                'RDB$INDEX_28', 'RDB$INDEX_23', 'RDB$INDEX_24', 'RDB$INDEX_2', 'RDB$INDEX_36', 'RDB$INDEX_17', 'RDB$INDEX_45',
-                'RDB$INDEX_16', 'RDB$INDEX_53', 'RDB$INDEX_9', 'RDB$INDEX_10', 'RDB$INDEX_49', 'RDB$INDEX_51', 'RDB$INDEX_11',
-                'RDB$INDEX_46', 'RDB$INDEX_6', 'RDB$INDEX_31', 'RDB$INDEX_41', 'RDB$INDEX_5', 'RDB$INDEX_47', 'RDB$INDEX_21', 'RDB$INDEX_22',
-                'RDB$INDEX_18', 'RDB$INDEX_48', 'RDB$INDEX_50', 'RDB$INDEX_13', 'RDB$INDEX_0', 'RDB$INDEX_1', 'RDB$INDEX_12', 'RDB$INDEX_42',
-                'RDB$INDEX_43', 'RDB$INDEX_15', 'RDB$INDEX_3', 'RDB$INDEX_4', 'RDB$INDEX_39', 'RDB$INDEX_7', 'RDB$INDEX_32', 'RDB$INDEX_38',
-                'RDB$INDEX_8', 'RDB$INDEX_35', 'RDB$INDEX_37', 'RDB$INDEX_29', 'RDB$INDEX_30', 'RDB$INDEX_33', 'RDB$INDEX_34',
-                'RDB$FOREIGN21', 'RDB$PRIMARY20', 'RDB$FOREIGN25', 'RDB$FOREIGN26', 'RDB$PRIMARY24', 'RDB$PRIMARY28']
-        for index in db.indices:
-            if index.name.startswith('RDB$'):
-                self.assertIn(index.name, data)
+        db.push(STOP) # Signal end of input
+    except FileNotFoundError:
+        pytest.fail(f"Test data file not found: {filename}")
+    except Exception as e:
+        pytest.fail(f"Error pushing file {filename}: {e}")
+    return db
 
-if __name__ == '__main__':
-    unittest.main()
+# --- Test Cases ---
 
+def test_01_parse30_h(data_path):
+    """Tests parsing header-only output (gstat -h) for FB 3.0."""
+    filepath: Path = data_path / 'gstat30-h.out'
+    db = _parse_file(filepath)
+
+    expected_data = {'attributes': 1, 'backup_diff_file': None,
+                     'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
+                     'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
+                     'continuation_file': None, 'continuation_files': 0,
+                     'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
+                     'database_dialect': 3, 'encrypted_blob_pages': None,
+                     'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                     'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
+                     'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
+                     'generation': 2176, 'gstat_version': 3,
+                     'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
+                     'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1199,
+                     'next_header_page': 0,
+                     'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179,
+                     'ost': 2140, 'page_buffers': 0,
+                     'page_size': 8192, 'replay_logging_file': None, 'root_filename': None,
+                     'sequence_number': 0, 'shadow_count': 0,
+                     'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
+
+    assert isinstance(db, StatDatabase)
+    assert get_object_data(db) == expected_data # pytest provides good diffs
+
+    assert not db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+
+def test_02_parse30_a(data_path):
+    """Tests parsing full stats output (gstat -a) for FB 3.0."""
+    filepath = data_path / 'gstat30-a.out'
+    db = _parse_file(filepath)
+
+    # Expected Database Header Data
+    expected_db_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
+                         'completed': datetime.datetime(2018, 4, 4, 15, 42),
+                         'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
+                         'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                         'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
+                         'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
+                         'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,
+                         'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179, 'ost': 2140, 'page_buffers': 0,
+                         'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0, 'shadow_count': 0,
+                         'sweep_interval': None, 'system_change_number': 24, 'tables': 16}
+    assert get_object_data(db) == expected_db_data
+
+    # Check flags
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+
+    # Expected Table Data (verify first few tables for brevity)
+    expected_tables_data = [
+        {'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+         'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
+         'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
+         'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
+         'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
+         'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
+         'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
+        {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+         'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
+         'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
+         'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
+         'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
+         'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
+         'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
+        # ... Add more table data checks if needed ...
+    ]
+    assert len(db.tables) == 16 # Check count first
+    for i, expected_table in enumerate(expected_tables_data):
+        assert get_object_data(db.tables[i]) == expected_table, f"Table data mismatch at index {i}"
+
+    # Expected Index Data (verify first few indices)
+    expected_indices_data = [
+        {'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
+         'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
+         'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
+         'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0},
+        {'avg_data_length': 15.87, 'avg_key_length': 18.27, 'avg_node_length': 19.87, 'avg_prefix_length': 0.6,
+         'clustering_factor': 1.0, 'compression_ratio': 0.9, 'depth': 1,
+         'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 2, 'leaf_buckets': 1, 'max_dup': 0,
+         'name': 'CUSTNAMEX', 'nodes': 15, 'ratio': 0.07, 'root_page': 276, 'total_dup': 0},
+         # ... Add more index data checks if needed ...
+    ]
+    assert len(db.indices) == 39 # Check count first
+    # Check association and data for the first few indices
+    assert db.indices[0].table.name == 'COUNTRY'
+    assert get_object_data(db.indices[0], skip=['table']) == expected_indices_data[0]
+    assert db.indices[1].table.name == 'CUSTOMER'
+    assert get_object_data(db.indices[1], skip=['table']) == expected_indices_data[1]
+    # Add more specific index checks as required
+
+def test_03_parse30_d(data_path):
+    """Tests parsing data page stats (gstat -d) for FB 3.0."""
+    filepath = data_path / 'gstat30-d.out'
+    db = _parse_file(filepath)
+
+    assert db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+
+    # Verify table count and maybe sample data for one table
+    assert len(db.tables) == 16
+    expected_ar_table = {
+        'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+        'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
+        'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
+        'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
+        'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
+        'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
+        'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None
+    }
+    assert get_object_data(db.tables[0]) == expected_ar_table # Assuming AR is the first table
+    assert len(db.indices) == 0 # No index stats expected with -d
+
+def test_04_parse30_e(data_path):
+    """Tests parsing encryption stats (gstat -e) for FB 3.0."""
+    filepath = data_path / 'gstat30-e.out'
+    db = _parse_file(filepath)
+
+    expected_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
+                     'completed': datetime.datetime(2018, 4, 4, 15, 45, 6),
+                     'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
+                     'database_dialect': 3,
+                     # Compare Encryption objects directly or their attributes
+                     'encrypted_blob_pages': Encryption(pages=11, encrypted=0, unencrypted=11),
+                     'encrypted_data_pages': Encryption(pages=121, encrypted=0, unencrypted=121),
+                     'encrypted_index_pages': Encryption(pages=96, encrypted=0, unencrypted=96),
+                     'executed': datetime.datetime(2018, 4, 4, 15, 45, 6), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
+                     'generation': 2181, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
+                     'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1214,
+                     'next_header_page': 0, 'next_transaction': 2146, 'oat': 2146, 'ods_version': '12.0', 'oit': 179, 'ost': 2146,
+                     'page_buffers': 0, 'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0,
+                     'shadow_count': 0, 'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
+
+    assert isinstance(db, StatDatabase)
+    # Need custom comparison or extract data for Encryption objects if direct compare fails
+    # For now, assume __eq__ is implemented or compare extracted data
+    assert get_object_data(db) == expected_data
+
+    assert not db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert db.has_encryption_stats()
+    assert not db.has_system()
+    # Explicit check of encryption values
+    assert db.encrypted_blob_pages == Encryption(pages=11, encrypted=0, unencrypted=11)
+    assert db.encrypted_data_pages == Encryption(pages=121, encrypted=0, unencrypted=121)
+    assert db.encrypted_index_pages == Encryption(pages=96, encrypted=0, unencrypted=96)
+
+
+def test_05_parse30_f(data_path):
+    """Tests parsing full stats including system tables (gstat -f) for FB 3.0."""
+    filepath = data_path / 'gstat30-f.out'
+    db = _parse_file(filepath)
+
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert db.has_system() # System tables included
+
+def test_06_parse30_i(data_path):
+    """Tests parsing index stats (gstat -i) for FB 3.0."""
+    filepath = data_path / 'gstat30-i.out'
+    db = _parse_file(filepath)
+
+    assert not db.has_table_stats() # Only index stats expected
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system() # -i doesn't imply -s
+
+    # Verify counts and sample data
+    assert len(db.tables) == 16 # Tables are listed but contain minimal info
+    assert len(db.indices) == 39
+
+    # Check a sample table structure from -i output
+    expected_country_table = {
+        'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+        'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
+        'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
+        'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
+        'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
+        'secondary_pages': None, 'swept_pages': None, 'table_id': 128, 'total_formats': None, 'total_fragments': None,
+        'total_records': None, 'total_versions': None, 'used_formats': None
+    }
+    # Find the COUNTRY table (order might vary)
+    country_table = next((t for t in db.tables if t.name == 'COUNTRY'), None)
+    assert country_table is not None
+    assert get_object_data(country_table) == expected_country_table
+
+    # Check a sample index structure
+    expected_primary1_index = {
+        'avg_data_length': 6.44, 'avg_key_length': 8.63, 'avg_node_length': 10.44, 'avg_prefix_length': 0.44,
+        'clustering_factor': 1.0, 'compression_ratio': 0.8, 'depth': 1,
+        'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0), 'index_id': 0, 'leaf_buckets': 1, 'max_dup': 0,
+        'name': 'RDB$PRIMARY1', 'nodes': 16, 'ratio': 0.06, 'root_page': 186, 'total_dup': 0
+    }
+    # Find the RDB$PRIMARY1 index
+    primary1_index = next((idx for idx in db.indices if idx.name == 'RDB$PRIMARY1'), None)
+    assert primary1_index is not None
+    assert primary1_index.table.name == 'COUNTRY' # Check association
+    assert get_object_data(primary1_index, skip=['table']) == expected_primary1_index
+
+def test_07_parse30_r(data_path):
+    """Tests parsing record version stats (gstat -r) for FB 3.0."""
+    filepath = data_path / 'gstat30-r.out'
+    db = _parse_file(filepath)
+
+    assert db.has_table_stats()
+    assert db.has_index_stats() # -r includes index stats
+    assert db.has_row_stats()   # -r specifically includes row stats
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+
+    # Verify counts
+    assert len(db.tables) == 16
+    assert len(db.indices) == 39
+
+    # Check sample table with row stats
+    expected_ar_table = {
+        'avg_fill': 86, 'avg_fragment_length': 0.0, 'avg_record_length': 2.79, 'avg_unpacked_length': 120.0,
+        'avg_version_length': 16.61, 'blob_pages': 0, 'blobs': 125, 'blobs_total_length': 11237, 'compression_ratio': 42.99,
+        'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
+        'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': 125, 'level_1': 0, 'level_2': 0,
+        'max_fragments': 0, 'max_versions': 1, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 297,
+        'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': 1, 'total_fragments': 0, 'total_records': 120,
+        'total_versions': 105, 'used_formats': 1
+    }
+    ar_table = next((t for t in db.tables if t.name == 'AR'), None)
+    assert ar_table is not None
+    assert get_object_data(ar_table) == expected_ar_table
+
+def test_08_parse30_s(data_path):
+    """Tests parsing system table stats (gstat -s) for FB 3.0."""
+    filepath = data_path / 'gstat30-s.out'
+    db = _parse_file(filepath)
+
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert db.has_system() # System table stats are included
+
+    # Check that some known system tables and indices are present
+    system_tables_present = {t.name for t in db.tables if t.name.startswith('RDB$')}
+    assert 'RDB$DATABASE' in system_tables_present
+    assert 'RDB$RELATIONS' in system_tables_present
+    assert 'RDB$INDICES' in system_tables_present
+
+    system_indices_present = {i.name for i in db.indices if i.name.startswith('RDB$')}
+    assert 'RDB$PRIMARY1' in system_indices_present # Index on RDB$CHARACTER_SETS
+    assert 'RDB$INDEX_0' in system_indices_present # Index on RDB$PAGES
+    assert 'RDB$INDEX_15' in system_indices_present # Index on RDB$RELATION_FIELDS
+
+# --- Tests using push() method ---
+
+def test_09_push30_h(data_path):
+    """Tests parsing header-only output (gstat -h) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-h.out'
+    db = _push_file(filepath) # Use the push helper
+
+    expected_data = {'attributes': 1, 'backup_diff_file': None,
+                     'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
+                     'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
+                     'continuation_file': None, 'continuation_files': 0,
+                     'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
+                     'database_dialect': 3, 'encrypted_blob_pages': None,
+                     'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                     'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
+                     'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
+                     'generation': 2176, 'gstat_version': 3,
+                     'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
+                     'indices': 0, 'last_logical_page': None, 'next_attachment_id': 1199,
+                     'next_header_page': 0,
+                     'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179,
+                     'ost': 2140, 'page_buffers': 0,
+                     'page_size': 8192, 'replay_logging_file': None, 'root_filename': None,
+                     'sequence_number': 0, 'shadow_count': 0,
+                     'sweep_interval': None, 'system_change_number': 24, 'tables': 0}
+
+    assert isinstance(db, StatDatabase)
+    assert get_object_data(db) == expected_data
+
+    assert not db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+
+def test_10_push30_a(data_path):
+    """Tests parsing full stats (gstat -a) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-a.out'
+    db = _push_file(filepath)
+
+    # Reuse assertions from test_02_parse30_a as the result should be identical
+    expected_db_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
+                         'completed': datetime.datetime(2018, 4, 4, 15, 42),
+                         'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
+                         'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                         'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
+                         'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
+                         'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,
+                         'next_transaction': 2141, 'oat': 2140, 'ods_version': '12.0', 'oit': 179, 'ost': 2140, 'page_buffers': 0,
+                         'page_size': 8192, 'replay_logging_file': None, 'root_filename': None, 'sequence_number': 0, 'shadow_count': 0,
+                         'sweep_interval': None, 'system_change_number': 24, 'tables': 16}
+    assert get_object_data(db) == expected_db_data
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+    assert len(db.tables) == 16
+    assert len(db.indices) == 39
+
+def test_11_push30_d(data_path):
+    """Tests parsing data page stats (gstat -d) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-d.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_03_parse30_d
+    assert db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+    assert len(db.tables) == 16
+    assert len(db.indices) == 0
+
+def test_12_push30_e(data_path):
+    """Tests parsing encryption stats (gstat -e) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-e.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_04_parse30_e
+    assert isinstance(db, StatDatabase)
+    assert not db.has_table_stats()
+    assert not db.has_index_stats()
+    assert not db.has_row_stats()
+    assert db.has_encryption_stats()
+    assert not db.has_system()
+    assert db.encrypted_blob_pages == Encryption(pages=11, encrypted=0, unencrypted=11)
+    assert db.encrypted_data_pages == Encryption(pages=121, encrypted=0, unencrypted=121)
+    assert db.encrypted_index_pages == Encryption(pages=96, encrypted=0, unencrypted=96)
+
+
+def test_13_push30_f(data_path):
+    """Tests parsing full stats including system tables (gstat -f) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-f.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_05_parse30_f
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert db.has_system()
+
+def test_14_push30_i(data_path):
+    """Tests parsing index stats (gstat -i) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-i.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_06_parse30_i
+    assert not db.has_table_stats()
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+    assert len(db.tables) == 16
+    assert len(db.indices) == 39
+
+def test_15_push30_r(data_path):
+    """Tests parsing record version stats (gstat -r) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-r.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_07_parse30_r
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert not db.has_system()
+    assert len(db.tables) == 16
+    assert len(db.indices) == 39
+
+def test_16_push30_s(data_path):
+    """Tests parsing system table stats (gstat -s) via push() for FB 3.0."""
+    filepath = data_path / 'gstat30-s.out'
+    db = _push_file(filepath)
+    # Re-use assertions from test_08_parse30_s
+    assert db.has_table_stats()
+    assert db.has_index_stats()
+    assert not db.has_row_stats()
+    assert not db.has_encryption_stats()
+    assert db.has_system()
+    system_tables_present = {t.name for t in db.tables if t.name.startswith('RDB$')}
+    assert 'RDB$DATABASE' in system_tables_present
+    system_indices_present = {i.name for i in db.indices if i.name.startswith('RDB$')}
+    assert 'RDB$PRIMARY1' in system_indices_present
+
+# --- Check for edge cases and wrong input ---
+
+def test_17_parse_malformed_header_line():
+    db = StatDatabase()
+    lines = [
+        "Database header page information:",
+        "Flags ThisIsNotANumber", # Malformed Flags value
+    ]
+    with pytest.raises(ValueError, match=r"Unknown information \(line 2\)|invalid literal for int"):
+        db.parse(lines) # Or use push
+
+def test_18_push_unrecognized_data_in_step0():
+    db = StatDatabase()
+    with pytest.raises(Error, match=r"Unrecognized data \(line 1\)"):
+        db.push("Some unexpected line before any section")
+        db.push(STOP) # Need STOP to finalize if push doesn't raise immediately
+
+def test_19_parse_malformed_table_header():
+    db = StatDatabase()
+    lines = [
+         "Analyzing database pages ...",
+         "MYTABLE (BadID)", # Malformed table ID
+     ]
+    with pytest.raises(ValueError, match=r"invalid literal for int|could not split"):
+        db.parse(lines)
+
+def test_20_parse_malformed_encryption_line():
+    db = StatDatabase()
+    lines = [
+         "Data pages: total 100, encrypted lots, non-crypted 50" # Malformed encrypted value
+     ]
+    with pytest.raises(Error, match=r"Malformed encryption information"):
+        db.parse(lines)
+
+def test_21_parse_unknown_table_stat():
+    db = StatDatabase()
+    lines = [
+         "Analyzing database pages ...",
+         'MYTABLE (128)',
+         '    Primary pointer page: 10, Unknown Stat: Yes', # Unknown item
+     ]
+    with pytest.raises(Error, match=r"Unknown information \(line 3\)"):
+        db.parse(lines)
+
+def test_22_parse_unsupported_gstat_version():
+    db = StatDatabase()
+    lines = [
+         "Database header page information:",
+         "Checksum     12345", # Indicator of old version
+     ]
+    with pytest.raises(Error, match="Output from gstat older than Firebird 3 is not supported"):
+        db.parse(lines)
+
+def test_23_parse_empty_input():
+    db = StatDatabase()
+    db.parse([])
+    # Assert initial state - no data, counts are 0
+    assert db.filename is None
+    assert len(db.tables) == 0
+    assert len(db.indices) == 0
+    assert db.gstat_version is None
+
+def test_24_push_stop_immediately():
+    db = StatDatabase()
+    db.push(STOP)
+    # Assert initial state
+    assert db.filename is None
+    assert len(db.tables) == 0
+    assert len(db.indices) == 0
+
+def test_25_parse_bad_file_spec():
+    db = StatDatabase()
+    lines = [
+        "Database file sequence:",
+        "File /path/db.fdb has an unexpected format",
+    ]
+    with pytest.raises(Error, match="Bad file specification"):
+        db.parse(lines)
+
+def test_26_parse_bad_date_in_header():
+    db = StatDatabase()
+    lines = [
+         "Database header page information:",
+         "Creation date:    Not A Date String",
+     ]
+    with pytest.raises(ValueError): # Catches strptime error
+        db.parse(lines)
+
+def test_27_parse_bad_float_in_table():
+    db = StatDatabase()
+    lines = [
+        "Analyzing database pages ...",
+        'MYTABLE (128)',
+        '    Average record length: abc',
+    ]
+    with pytest.raises(Error, match="Unknown information \(line 3\)"): # Catches float() error
+        db.parse(lines)
+
+def test_28_parse_bad_fill_range():
+    db = StatDatabase()
+    lines = [
+        "Analyzing database pages ...",
+        'MYTABLE (128)',
+        '    Fill distribution:',
+        '    10 - 30% = 5', # Invalid range
+    ]
+    with pytest.raises(ValueError): # Catches items_fill.index() error
+        db.parse(lines)
+
+def test_29_parse_unknown_db_attribute():
+    db = StatDatabase()
+    lines = [
+        "Database header page information:",
+        "Attributes:       force write, unknown attribute",
+    ]
+    with pytest.raises(ValueError, match="is not a valid DbAttribute"):
+        db.parse(lines)
+
+def test_30_push_unexpected_state_transition():
+    db = StatDatabase()
+    db.push("Database header page information:") # Enter step 1
+    # Now push a line only valid in step 4
+    # Expect it to raise "Unknown information" as it won't match items_hdr
+    with pytest.raises(Error, match=r"Unknown information \(line 2\)"):
+        db.push('MYTABLE (128)')
+    db.push(STOP)

@@ -26,7 +26,7 @@ classifiers = [
     "Operating System :: MacOS",
     "Topic :: Software Development",
     "Topic :: Database",
-]
+    ]
 dependencies = [
   "firebird-base~=2.0",
   "firebird-driver~=2.0",
@@ -55,6 +55,9 @@ allow-direct-references = true
 dependencies = [
 ]
 
+[tool.hatch.envs.hatch-test]
+extra-args = ["--host=localhost"]
+
 [tool.hatch.envs.test]
 dependencies = [
   "coverage[toml]>=6.5",
@@ -74,7 +77,7 @@ cov = [
 version = "python --version"
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11"]
+python = ["3.11", "3.12", "3.13"]
 
 [tool.hatch.envs.doc]
 detached = false
@@ -135,6 +138,11 @@ ban-relative-imports = "all"
 [tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+"trace.py" = ["PLR5501", "PLR2004", "ARG002", "E501"]
+"schema.py" = ["ARG002", "S608", "ISC002", "PLR2004", "UP031", "E501"]
+"monitor.py" = ["E501"]
+"logmsgs.py" = ["E501"]
+"gstat.py" = ["PLR2004"]
 
 [tool.coverage.run]
 source_pkgs = ["firebird.lib", "tests"]

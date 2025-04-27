@@ -32,19 +32,24 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________.
-# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, C0301
 
-"""Saturnin microservices - Firebird log messages for Firebird log parser microservice
+"""firebird.lib.logmsgs - Definitions for known Firebird log messages.
+
+This module provides structured descriptions (`MsgDesc`) for messages found
+in the Firebird server log (`firebird.log`), including their severity,
+facility, and format patterns. It's used by the `LogParser` in `firebird.lib.log`
+to identify specific log events and extract parameters.
 """
 
 from __future__ import annotations
-from typing import Optional, List, Tuple, Dict, Any
+
 from dataclasses import dataclass
 from enum import IntEnum
+from typing import Any
+
 
 class Severity(IntEnum):
-    """Firebird Log Message severity.
-    """
+    """Standard severity levels for Firebird log messages."""
     UNKNOWN = 0
     INFO = 1
     WARNING = 2
@@ -52,8 +57,7 @@ class Severity(IntEnum):
     CRITICAL = 4
 
 class Facility(IntEnum):
-    """Firebird Log Server facility.
-    """
+    """Identifies the Firebird server facility originating a log message."""
     UNKNOWN = 0
     SYSTEM = 1
     CONFIG = 2
@@ -69,21 +73,26 @@ class Facility(IntEnum):
 
 @dataclass(order=True, frozen=True)
 class MsgDesc:
-    """Firebird log message descriptor.
-    """
+    """Describes the structure and metadata of a known Firebird log message type."""
     #: Message ID
     msg_id: int
     #: Message severity level
     severity: Severity
     #: Firebird facility
     facility: Facility
-    #: Message format description
-    msg_format: List[str]
-    def get_pattern(self, without_optional: bool) -> str:
-        """Returns message pattern.
+    #: A list defining the message structure. Contains literal string parts
+    #: and placeholder strings like '{type:name}' (e.g., '{s:syscall}', '{d:error_code}').
+    #: The special string 'OPTIONAL' marks the beginning of an optional suffix.
+    msg_format: list[str]
+    def get_pattern(self, *, without_optional: bool) -> str:
+        """Returns a `str.format()`-style pattern for the message.
 
         Arguments:
-            without_optional: When True, the pattern does not include optional part.
+            without_optional: If True, the returned pattern excludes any parts
+                              following an 'OPTIONAL' marker in `msg_format`.
+
+        Returns:
+            A string pattern like "Operating system call {syscall} failed. Error code {error_code}".
         """
         result = ''
         for part in self.msg_format:
@@ -96,7 +105,7 @@ class MsgDesc:
                 result += part
         return result
 
-#: List of Firebird server log message descriptors
+#: list of Firebird server log message descriptors
 messages = [
   # firebird/src/common/fb_exception.cpp:240
   MsgDesc(msg_id=1, severity=Severity.ERROR, facility=Facility.SYSTEM,
@@ -961,7 +970,10 @@ messages = [
           msg_format=['Database: ', '{s:database}', '\n', '{s:err_msg}']),
 ]
 
+# Pre-processed lists for faster message identification:
+#: Messages starting with a variable placeholder.
 _r_msgs = []
+#: Messages grouped by their fixed starting word for quick filtering.
 _h_msgs = {}
 
 for _msg in messages:
@@ -971,18 +983,24 @@ for _msg in messages:
         _parts = _msg.msg_format[0].split()
         _h_msgs.setdefault(_parts[0], []).append(_msg)
 
+#: Internal sentinel object used during parsing in identify_msg.
 _END_CHUNK = object()
 
-def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
-    """Identify Firebird log message.
+def identify_msg(msg: str) -> tuple[MsgDesc, dict[str, Any], bool] | None:
+    """Attempts to identify a log message string against known message descriptors.
 
     Arguments:
-        msg: Firebird log entry with message to be identified.
+        msg: The textual content of a Firebird log entry (excluding timestamp/origin).
 
     Returns:
-        Tuple with matched `.MsgDesc` instance, dictionary with extracted message
-        parameters, and boolean flag indicating whether message has optional content. Returns
-        `None` if message was not matched against any message descriptor.
+        A tuple containing:
+        - The matched `.MsgDesc` instance.
+        - A dictionary mapping parameter names (from placeholders like `{s:name}`)
+          to their extracted values (as strings or integers).
+        - A boolean flag: `True` if the optional part of the message format
+          (following 'OPTIONAL') was *not* present in the input `msg`,
+          `False` otherwise.
+        Returns `None` if the `msg` does not match any known `.MsgDesc` pattern.
     """
     parts = msg.split()
     if parts[0] in _h_msgs:
@@ -1042,12 +1060,11 @@ def identify_msg(msg: str) -> Optional[Tuple[MsgDesc, Dict[str, Any], bool]]:
                     without_optional = True
                     break
                 i += 1
+            elif data.startswith(chunk):
+                data = data[len(chunk):]
+                i += 1
             else:
-                if data.startswith(chunk):
-                    data = data[len(chunk):]
-                    i += 1
-                else:
-                    break
+                break
         #
         if data == '':
             return (candidate, params, without_optional)

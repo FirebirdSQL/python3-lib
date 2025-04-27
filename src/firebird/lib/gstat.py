@@ -4,7 +4,7 @@
 #
 # PROGRAM/MODULE: firebird-lib
 # FILE:           firebird/lib/gstat.py
-# DESCRIPTION:    Module for work with Firebird gstat output
+# DESCRIPTION:    Module for parsing and representing Firebird gstat output.
 # CREATED:        6.10.2020
 #
 # The contents of this file are subject to the MIT License
@@ -32,24 +32,31 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
-# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903
 
-"""firebird.lib.gstat - Module for work with Firebird gstat output
+"""firebird.lib.gstat - Module for parsing and representing Firebird gstat output.
 
+This module provides classes and functions to parse the text output generated
+by the Firebird gstat utility and represent the statistics in a structured
+object model. The main class is `StatDatabase`.
 """
 
 from __future__ import annotations
-from typing import List, Tuple, Iterable, Union, Optional
-import weakref
-from dataclasses import dataclass
+
 import datetime
+import weakref
+from collections.abc import Iterable
+from dataclasses import dataclass
 from enum import Enum
+
 from firebird.base.collections import DataList
-from firebird.base.types import Error, STOP, Sentinel
+from firebird.base.types import STOP, Error
 
 GSTAT_30 = 3
 
-TLogItemSpec = List[Tuple[str, str, Optional[str]]]
+# Defines the structure for mapping gstat output lines to object attributes.
+# Each tuple contains: (gstat_label, value_type_code, attribute_name_override | None)
+# value_type_code: 'i'=int, 's'=str, 'd'=datetime, 'l'=list, 'f'=float, 'p'=%
+TLogItemSpec = list[tuple[str, str, str | None]]
 
 items_hdr: TLogItemSpec = [
     ('Flags', 'i', None),
@@ -129,7 +136,7 @@ items_idx3: TLogItemSpec = [
     ('Clustering factor:', 'f', None),
     ('ratio:', 'f', None)]
 
-items_fill: List[str] = ['0 - 19%', '20 - 39%', '40 - 59%', '60 - 79%', '80 - 99%']
+items_fill: list[str] = ['0 - 19%', '20 - 39%', '40 - 59%', '60 - 79%', '80 - 99%']
 
 class DbAttribute(Enum):
     """Database attributes stored in header page clumplets.
@@ -148,12 +155,19 @@ class DbAttribute(Enum):
 
 @dataclass(frozen=True)
 class FillDistribution:
-    """Data/Index page fill distribution.
+    """Data/Index page fill distribution statistics.
+
+    Stores the count of pages falling into specific fill percentage ranges.
     """
+    #: Count of pages filled 0 - 19%
     d20: int
+    #: Count of pages filled 20 - 39%
     d40: int
+    #: Count of pages filled 40 - 59%
     d60: int
+    #: Count of pages filled 60 - 79%
     d80: int
+    #: Count of pages filled 80 - 99%
     d100: int
 
 @dataclass(frozen=True)
@@ -166,11 +180,17 @@ class Encryption:
 
 @dataclass
 class _ParserState:
+    #: Current line number being processed.
     line_no: int = 0
-    table: StatTable = None
-    index: StatIndex = None
+    #: Reference to the StatTable currently being parsed.
+    table: StatTable | None = None
+    #: Reference to the StatIndex currently being parsed.
+    index: StatIndex | None = None
+    #: Flag indicating if the next line starts a new table/index block.
     new_block: bool = True
+    #: Flag indicating if the parser is currently processing table data (vs. index data).
     in_table: bool = False
+    #: Current parsing step/section (0=Header/Seek, 1=Header, 2=Variable, 3=Files, 4=Data/Indices).
     step: int = 0
 
 def empty_str(value: str) -> bool:
@@ -179,130 +199,141 @@ def empty_str(value: str) -> bool:
     return True if value is None else value.strip() == ''
 
 class StatTable:
-    """Statisctics for single database table.
+    """Statistics for a single database table, populated from gstat output.
+
+    Attributes are populated by the `StatDatabase` parser. Default values are
+    `None` or 0 until parsed from the input.
     """
     def __init__(self):
         #: Table name
-        self.name: str = None
+        self.name: str | None = None
         #: Table ID
-        self.table_id: int = None
+        self.table_id: int | None = None
         #: Primary Pointer Page for table
-        self.primary_pointer_page: int = None
+        self.primary_pointer_page: int | None = None
         #: Index Root Page for table
-        self.index_root_page: int = None
+        self.index_root_page: int | None = None
         #: Average record length
-        self.avg_record_length: float = None
+        self.avg_record_length: float | None = None
         #: Total number of record in table
-        self.total_records: int = None
+        self.total_records: int | None = None
         #: Average record version length
-        self.avg_version_length: float = None
+        self.avg_version_length: float | None = None
         #: Total number of record versions
-        self.total_versions: int = None
+        self.total_versions: int | None = None
         #: Max number of versions for single record
-        self.max_versions: int = None
+        self.max_versions: int | None = None
         #: Number of data pages for table
-        self.data_pages: int = None
+        self.data_pages: int | None = None
         #: Number of data page slots for table
-        self.data_page_slots: int = None
+        self.data_page_slots: int | None = None
         #: Average data page fill ratio
-        self.avg_fill: float = None
-        #: Data page fill distribution statistics
-        self.distribution: FillDistribution = None
-        #: Indices belonging to table
+        self.avg_fill: float | None = None
+        #: Data page fill distribution statistics. Final type is `FillDistribution`.
+        self.distribution: FillDistribution | None = None
+        #: Indices belonging to table. Items are `weakref.proxy` to `StatIndex`.
         self.indices: DataList[StatIndex] = DataList(type_spec=StatIndex, key_expr='item.name')
         #: Number of Pointer Pages
-        self.pointer_pages: int = None
+        self.pointer_pages: int | None = None
         #: Number of record formats
-        self.total_formats: int = None
+        self.total_formats: int | None = None
         #: Number of actually used record formats
-        self.used_formats: int = None
+        self.used_formats: int | None = None
         #: Average length of record fragments
-        self.avg_fragment_length: float = None
+        self.avg_fragment_length: float | None = None
         #: Total number of record fragments
-        self.total_fragments: int = None
+        self.total_fragments: int | None = None
         #: Max number of fragments for single record
-        self.max_fragments: int = None
+        self.max_fragments: int | None = None
         #: Average length of unpacked record
-        self.avg_unpacked_length: float = None
+        self.avg_unpacked_length: float | None = None
         #: Record compression ratio
-        self.compression_ratio: float = None
+        self.compression_ratio: float | None = None
         #: Number of Primary Data Pages
-        self.primary_pages: int = None
+        self.primary_pages: int | None = None
         #: Number of Secondary Data Pages
-        self.secondary_pages: int = None
+        self.secondary_pages: int | None = None
         #: Number of swept data pages
-        self.swept_pages: int = None
+        self.swept_pages: int | None = None
         #: Number of empty data pages
-        self.empty_pages: int = None
+        self.empty_pages: int | None = None
         #: Number of full data pages
-        self.full_pages: int = None
+        self.full_pages: int | None = None
         #: Number of BLOB values
-        self.blobs: int = None
+        self.blobs: int | None = None
         #: Total length of BLOB values (bytes)
-        self.blobs_total_length: int = None
+        self.blobs_total_length: int | None = None
         #: Number of BLOB pages
-        self.blob_pages: int = None
+        self.blob_pages: int | None = None
         #: Number of Level 0 BLOB values
-        self.level_0: int = None
+        self.level_0: int | None = None
         #: Number of Level 1 BLOB values
-        self.level_1: int = None
+        self.level_1: int | None = None
         #: Number of Level 2 BLOB values
-        self.level_2: int = None
+        self.level_2: int | None = None
 
 class StatIndex:
-    """Statisctics for single database index.
+    """Statistics for a single database index, populated from gstat output.
+
+    Instances are linked to their parent `StatTable` via a weak reference.
+    Attributes are populated by the `StatDatabase` parser.
     """
     def __init__(self, table):
         #: wekref.proxy: Proxy to parent `.StatTable`
         self.table: weakref.ProxyType = weakref.proxy(table)
         table.indices.append(weakref.proxy(self))
         #: Index name
-        self.name: str = None
+        self.name: str | None = None
         #: Index ID
-        self.index_id: int = None
+        self.index_id: int | None = None
         #: Depth of index tree
-        self.depth: int = None
+        self.depth: int | None = None
         #: Number of leaft index tree buckets
-        self.leaf_buckets: int = None
+        self.leaf_buckets: int | None = None
         #: Number of index tree nodes
-        self.nodes: int = None
+        self.nodes: int | None = None
         #: Average data length
-        self.avg_data_length: float = None
+        self.avg_data_length: float | None = None
         #: Total number of duplicate keys
-        self.total_dup: int = None
+        self.total_dup: int | None = None
         #: Max number of occurences for single duplicate key
-        self.max_dup: int = None
+        self.max_dup: int | None = None
         #: Index page fill distribution statistics
-        self.distribution: FillDistribution = None
+        self.distribution: FillDistribution | None = None
         #: Index Root page
-        self.root_page: int = None
+        self.root_page: int | None = None
         #: Average node length
-        self.avg_node_length: float = None
+        self.avg_node_length: float | None = None
         #: Average key length
-        self.avg_key_length: float = None
+        self.avg_key_length: float | None = None
         #: Index key compression ratio
-        self.compression_ratio: float = None
+        self.compression_ratio: float | None = None
         #: Average key prefix length
-        self.avg_prefix_length: float = None
+        self.avg_prefix_length: float | None = None
         #: Index clustering factor
-        self.clustering_factor: float = None
+        self.clustering_factor: float | None = None
         #: Ratio
-        self.ratio: float = None
+        self.ratio: float | None = None
 
 class StatDatabase:
-    """Firebird database statistics (produced by gstat).
+    """Parses and holds Firebird database statistics produced by the gstat utility.
+
+    This is the main class for interacting with gstat output. Instantiate it
+    and use the `parse()` or `push()` methods to feed it gstat output lines.
+    Parsed statistics are stored in the instance's attributes and the `tables`
+    and `indices` collections.
     """
     def __init__(self):
         #: GSTAT version
-        self.gstat_version: int = None
+        self.gstat_version: int | None = None
         #: System change number
-        self.system_change_number: int = None
+        self.system_change_number: int | None = None
         #: GSTAT execution timestamp
-        self.executed: datetime.datetime = None
+        self.executed: datetime.datetime | None = None
         #: GSTAT completion timestamp
-        self.completed: datetime.datetime = None
+        self.completed: datetime.datetime | None = None
         #: Database filename
-        self.filename: str = None
+        self.filename: str | None = None
         #: Database flags
         self.flags: int = 0
         #: Database header generation
@@ -320,7 +351,7 @@ class StatDatabase:
         #: Next attachment ID
         self.next_attachment_id: int = 0
         #: Implementation
-        self.implementation: str = None
+        self.implementation: str | None = None
         #: Number of shadows
         self.shadow_count: int = 0
         #: Number of page buffers
@@ -330,36 +361,36 @@ class StatDatabase:
         #: SQL Dialect
         self.database_dialect: int = 0
         #: Database creation timestamp
-        self.creation_date: datetime.datetime = None
+        self.creation_date: datetime.datetime | None = None
         #: Database attributes
-        self.attributes: List[DbAttribute] = []
+        self.attributes: list[DbAttribute] = []
         # Variable data
         #: Sweep interval
-        self.sweep_interval: int = None
+        self.sweep_interval: int | None = None
         #: Continuation file
-        self.continuation_file: str = None
+        self.continuation_file: str | None = None
         #: Last logical page
-        self.last_logical_page: int = None
+        self.last_logical_page: int | None = None
         #: Backup GUID
-        self.backup_guid: str = None
+        self.backup_guid: str | None = None
         #: Root file name
-        self.root_filename: str = None
+        self.root_filename: str | None = None
         #: Replay logging file
-        self.replay_logging_file: str = None
+        self.replay_logging_file: str | None = None
         #: Backup difference file
-        self.backup_diff_file: str = None
-        #: Stats for encrypted data pages
-        self.encrypted_data_pages: int = None
-        #: Stats for encrypted index pages
-        self.encrypted_index_pages: int = None
-        #: Stats for encrypted blob pages
-        self.encrypted_blob_pages: int = None
+        self.backup_diff_file: str | None = None
+        #: Encryption statistics for data pages.
+        self.encrypted_data_pages: int | None = None
+        #: Encryption statistics for index pages.
+        self.encrypted_index_pages: int | None = None
+        #: Encryption statistics for blob pages.
+        self.encrypted_blob_pages: int | None = None
         #: Database file names
-        self.continuation_files: List[str] = []
+        self.continuation_files: list[str] = []
         #
         self.__line_no: int = 0
-        self.__table: StatTable = None
-        self.__index: StatIndex = None
+        self.__table: StatTable | None = None
+        self.__index: StatIndex | None = None
         self.__new_block: bool = True
         self.__in_table: bool = False
         self.__step: int = 0
@@ -422,7 +453,7 @@ class StatDatabase:
                 elif valtype == 's':  # string
                     pass
                 elif valtype == 'd':  # date time
-                    value = datetime.datetime.strptime(value, '%b %d, %Y %H:%M:%S')
+                    value = datetime.datetime.strptime(value, '%b %d, %Y %H:%M:%S') # noqa:DTZ007
                 elif valtype == 'l':  # list
                     if value == '':
                         value = []
@@ -432,7 +463,7 @@ class StatDatabase:
                 else:
                     raise Error(f"Unknown value type {valtype}")
                 if name is None:
-                    name = key.lower().replace(' ', '_')
+                    name = key.lower().replace(' ', '_') # noqa: PLW2901
                 setattr(self, name, value)
                 return
         raise Error(f'Unknown information (line {self.__line_no})')
@@ -448,11 +479,11 @@ class StatDatabase:
                 elif valtype == 's':  # string
                     pass
                 elif valtype == 'd':  # date time
-                    value = datetime.datetime.strptime(value, '%b %d, %Y %H:%M:%S')
+                    value = datetime.datetime.strptime(value, '%b %d, %Y %H:%M:%S') # noqa: DTZ007
                 else:
                     raise Error(f"Unknown value type {valtype}")
                 if name is None:
-                    name = key.lower().strip(':').replace(' ', '_')
+                    name = key.lower().strip(':').replace(' ', '_') # noqa: PLW2901
                 setattr(self, name, value)
                 return
         raise Error(f'Unknown information (line {self.__line_no})')
@@ -475,41 +506,39 @@ class StatDatabase:
             tname, tid = line.split(' (')
             self.__table.name = tname.strip(' "')
             self.__table.table_id = int(tid.strip('()'))
-        else:
-            if ',' in line:  # Data values
-                for item in line.split(','):
-                    item = item.strip()
-                    found = False
-                    items = items_tbl3
-                    for key, valtype, name in items:
-                        if item.startswith(key):
-                            value: str = item[len(key):].strip()
-                            if valtype == 'i':  # integer
-                                value = int(value)
-                            elif valtype == 'f':  # float
-                                value = float(value)
-                            elif valtype == 'p':  # %
-                                value = int(value.strip('%'))
-                            else:
-                                raise Error(f"Unknown value type {valtype}")
-                            if name is None:
-                                name = key.lower().strip(':').replace(' ', '_')
-                            setattr(self.__table, name, value)
-                            found = True
-                            break
-                    if not found:
-                        raise Error(f'Unknown information (line {self.__line_no})')
-            else:  # Fill distribution
-                if '=' in line:
-                    fill_range, fill_value = line.split('=')
-                    i = items_fill.index(fill_range.strip())
-                    if self.__table.distribution is None:
-                        self.__table.distribution = [0, 0, 0, 0, 0]
-                    self.__table.distribution[i] = int(fill_value.strip())
-                elif line.startswith('Fill distribution:'):
-                    pass
-                else:
+        elif ',' in line:  # Data values
+            for item in line.split(','):
+                item = item.strip() # noqa: PLW2901
+                found = False
+                items = items_tbl3
+                for key, valtype, name in items:
+                    if item.startswith(key):
+                        value: str = item[len(key):].strip()
+                        if valtype == 'i':  # integer
+                            value = int(value)
+                        elif valtype == 'f':  # float
+                            value = float(value)
+                        elif valtype == 'p':  # %
+                            value = int(value.strip('%'))
+                        else:
+                            raise Error(f"Unknown value type {valtype}")
+                        if name is None:
+                            name = key.lower().strip(':').replace(' ', '_') # noqa: PLW2901
+                        setattr(self.__table, name, value)
+                        found = True
+                        break
+                if not found:
                     raise Error(f'Unknown information (line {self.__line_no})')
+        elif '=' in line:
+            fill_range, fill_value = line.split('=')
+            i = items_fill.index(fill_range.strip())
+            if self.__table.distribution is None:
+                self.__table.distribution = [0, 0, 0, 0, 0]
+            self.__table.distribution[i] = int(fill_value.strip())
+        elif line.startswith('Fill distribution:'):
+            pass
+        else:
+            raise Error(f'Unknown information (line {self.__line_no})')
     def __parse_index(self, line: str) -> None:
         "Parse line from index data"
         if self.__index.name is None: # pylint: disable=R1702
@@ -517,41 +546,39 @@ class StatDatabase:
             iname, iid = line[6:].split(' (')
             self.__index.name = iname.strip(' "')
             self.__index.index_id = int(iid.strip('()'))
-        else:
-            if ',' in line:  # Data values
-                for item in line.split(','):
-                    item = item.strip()
-                    found = False
-                    items = items_idx3
-                    for key, valtype, name in items:
-                        if item.startswith(key):
-                            value: str = item[len(key):].strip()
-                            if valtype == 'i':  # integer
-                                value = int(value)
-                            elif valtype == 'f':  # float
-                                value = float(value)
-                            elif valtype == 'p':  # %
-                                value = int(value.strip('%'))
-                            else:
-                                raise Error(f"Unknown value type {valtype}")
-                            if name is None:
-                                name = key.lower().strip(':').replace(' ', '_')
-                            setattr(self.__index, name, value)
-                            found = True
-                            break
-                    if not found:
-                        raise Error(f'Unknown information (line {self.__line_no})')
-            else:  # Fill distribution
-                if '=' in line:
-                    fill_range, fill_value = line.split('=')
-                    i = items_fill.index(fill_range.strip())
-                    if self.__index.distribution is None:
-                        self.__index.distribution = [0, 0, 0, 0, 0]
-                    self.__index.distribution[i] = int(fill_value.strip())
-                elif line.startswith('Fill distribution:'):
-                    pass
-                else:
+        elif ',' in line:  # Data values
+            for item in line.split(','):
+                item = item.strip() # noqa: PLW2901
+                found = False
+                items = items_idx3
+                for key, valtype, name in items:
+                    if item.startswith(key):
+                        value: str = item[len(key):].strip()
+                        if valtype == 'i':  # integer
+                            value = int(value)
+                        elif valtype == 'f':  # float
+                            value = float(value)
+                        elif valtype == 'p':  # %
+                            value = int(value.strip('%'))
+                        else:
+                            raise Error(f"Unknown value type {valtype}")
+                        if name is None:
+                            name = key.lower().strip(':').replace(' ', '_') # noqa: PLW2901
+                        setattr(self.__index, name, value)
+                        found = True
+                        break
+                if not found:
                     raise Error(f'Unknown information (line {self.__line_no})')
+        elif '=' in line:
+            fill_range, fill_value = line.split('=')
+            i = items_fill.index(fill_range.strip())
+            if self.__index.distribution is None:
+                self.__index.distribution = [0, 0, 0, 0, 0]
+            self.__index.distribution[i] = int(fill_value.strip())
+        elif line.startswith('Fill distribution:'):
+            pass
+        else:
+            raise Error(f'Unknown information (line {self.__line_no})')
     def __parse_encryption(self, line: str) -> None:
         "Parse line from encryption data"
         try:
@@ -603,20 +630,27 @@ class StatDatabase:
         """
         return self.tables.contains("item.name.startswith('RDB$DATABASE')")
     def parse(self, lines: Iterable[str]) -> None:
-        """Parses gstat output.
+        """Parses gstat output from an iterable source.
+
+        Processes all lines from the iterable and finalizes parsing.
 
         Arguments:
-            lines: Iterable that return lines from database analysis produced by Firebird
-                   gstat.
+            lines: Iterable that returns lines from database analysis produced
+                   by Firebird gstat (e.g., a file object or list of strings).
         """
         for line in lines:
             self.push(line)
         self.push(STOP)
-    def push(self, line: Union[str, Sentinel]) -> None:
-        """Push parser.
+    def push(self, line: str | STOP) -> None:
+        """Pushes a single line (or STOP sentinel) into the parser state machine.
+
+        This method processes one line of gstat output at a time, updating the
+        internal state and populating statistics attributes. Call with the
+        `STOP` sentinel after the last line to finalize processing (e.g.,
+        convert distributions, freeze lists).
 
         Arguments:
-            line: Single gstat output line, or `~firebird.base.types.STOP` sentinel.
+            line: Single gstat output line, or the `firebird.base.types.STOP` sentinel.
         """
         if self.__step == -1:
             self.__clear()
@@ -634,10 +668,10 @@ class StatDatabase:
             line = line.strip()
             self.__line_no += 1
             if line.startswith('Gstat completion time'):
-                self.completed = datetime.datetime.strptime(line[22:], '%a %b %d %H:%M:%S %Y')
+                self.completed = datetime.datetime.strptime(line[22:], '%a %b %d %H:%M:%S %Y') # noqa: DTZ007
             elif self.__step == 0:  # Looking for section or self name
                 if line.startswith('Gstat execution time'):
-                    self.executed = datetime.datetime.strptime(line[21:], '%a %b %d %H:%M:%S %Y')
+                    self.executed = datetime.datetime.strptime(line[21:], '%a %b %d %H:%M:%S %Y') # noqa: DTZ007
                 elif line.startswith('Database header page information:'):
                     self.__step = 1
                 elif line.startswith('Variable header data:'):
@@ -674,32 +708,28 @@ class StatDatabase:
             elif self.__step == 4:  # Tables and indices
                 if empty_str(line):  # section ends with empty line
                     self.__new_block = True
+                elif self.__new_block:
+                    self.__new_block = False
+                    if not line.startswith('Index '):
+                        # Should be table
+                        self.__table = StatTable()
+                        self.tables.append(self.__table)
+                        self.__in_table = True
+                        self.__parse_table(line)
+                    else:  # It's index
+                        self.__index = StatIndex(self.__table)
+                        self.indices.append(self.__index)
+                        self.__in_table = False
+                        self.__parse_index(line)
+                elif self.__in_table:
+                    self.__parse_table(line)
                 else:
-                    if self.__new_block:
-                        self.__new_block = False
-                        if not line.startswith('Index '):
-                            # Should be table
-                            self.__table = StatTable()
-                            self.tables.append(self.__table)
-                            self.__in_table = True
-                            self.__parse_table(line)
-                        else:  # It's index
-                            self.__index = StatIndex(self.__table)
-                            self.indices.append(self.__index)
-                            self.__in_table = False
-                            self.__parse_index(line)
-                    else:
-                        if self.__in_table:
-                            self.__parse_table(line)
-                        else:
-                            self.__parse_index(line)
+                    self.__parse_index(line)
     @property
     def tables(self) -> DataList[StatTable]:
-        """`~firebird.base.collections.DataList` of `.StatTable` instances.
-        """
+        """`~firebird.base.collections.DataList` of `.StatTable` instances."""
         return self.__tables
     @property
     def indices(self) -> DataList[StatIndex]:
-        """`~firebird.base.collections.DataList` of `StatIndex` instances.
-        """
+        """`~firebird.base.collections.DataList` of `.StatIndex` instances."""
         return self.__indices

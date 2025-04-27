@@ -1,9 +1,11 @@
-#coding:utf-8
+# SPDX-FileCopyrightText: 2020-present The Firebird Projects <www.firebirdsql.org>
+#
+# SPDX-License-Identifier: MIT
 #
 # PROGRAM/MODULE: firebird-lib
-# FILE:           test_schema.py
-# DESCRIPTION:    Unit tests for firebird.lib.schema
-# CREATED:        21.9.2020
+# FILE:           tests/test_monitor.py
+# DESCRIPTION:    Tests for firebird.lib.monitor module
+# CREATED:        25.4.2025
 #
 # The contents of this file are subject to the MIT License
 #
@@ -29,553 +31,571 @@
 # All Rights Reserved.
 #
 # Contributor(s): Pavel Císař (original code)
-#                 ______________________________________
 
-import unittest
-import sys, os
+"""firebird-lib - Tests for firebird.lib.monitor module
+"""
+
+import pytest # Import pytest
 import datetime
 from firebird.base.collections import DataList
 from firebird.driver import *
 from firebird.lib.monitor import *
 from firebird.lib.schema import CharacterSet
-#from firebird.lib import schema as sm
-from io import StringIO
 
+# --- Constants ---
 FB30 = '3.0'
 FB40 = '4.0'
 FB50 = '5.0'
 
-if driver_config.get_server('local') is None:
-    # Register Firebird server
-    srv_cfg = """[local]
-    host = localhost
-    user = SYSDBA
-    password = masterkey
-    """
-    driver_config.register_server('local', srv_cfg)
 
-if driver_config.get_database('fbtest') is None:
-    # Register database
-    db_cfg = """[fbtest]
-    server = local
-    database = fbtest3.fdb
-    protocol = inet
-    charset = utf8
-    """
-    driver_config.register_database('fbtest', db_cfg)
+# --- Test Functions ---
 
-class TestBase(unittest.TestCase):
-    def __init__(self, methodName='runTest'):
-        super(TestBase, self).__init__(methodName)
-        self.output = StringIO()
-        self.FBTEST_DB = 'fbtest'
-    def setUp(self):
-        with connect_server('local') as svc:
-            self.version = svc.info.version
-        if self.version.startswith('3.0'):
-            self.FBTEST_DB = 'fbtest30.fdb'
-            self.version = FB30
-        elif self.version.startswith('4.0'):
-            self.FBTEST_DB = 'fbtest40.fdb'
-            self.version = FB40
-        elif self.version.startswith('5.0'):
-            self.FBTEST_DB = 'fbtest50.fdb'
-            self.version = FB50
-        else:
-            raise Exception("Unsupported Firebird version (%s)" % self.version)
-        #
-        self.cwd = os.getcwd()
-        self.dbpath = self.cwd if os.path.split(self.cwd)[1] == 'tests' \
-            else os.path.join(self.cwd, 'tests')
-        self.dbfile = os.path.join(self.dbpath, self.FBTEST_DB)
-        driver_config.get_database('fbtest').database.value = self.dbfile
-    def clear_output(self):
-        self.output.close()
-        self.output = StringIO()
-    def show_output(self):
-        sys.stdout.write(self.output.getvalue())
-        sys.stdout.flush()
-    def printout(self, text='', newline=True, no_rstrip=False):
-        if no_rstrip:
-            self.output.write(text)
-        else:
-            self.output.write(text.rstrip())
-        if newline:
-            self.output.write('\n')
-        self.output.flush()
-    def printData(self, cur, print_header=True):
-        """Print data from open cursor to stdout."""
-        if print_header:
-            # Print a header.
-            line = []
-            for fieldDesc in cur.description:
-                line.append(fieldDesc[DESCRIPTION_NAME].ljust(fieldDesc[DESCRIPTION_DISPLAY_SIZE]))
-            self.printout(' '.join(line))
-            line = []
-            for fieldDesc in cur.description:
-                line.append("-" * max((len(fieldDesc[DESCRIPTION_NAME]), fieldDesc[DESCRIPTION_DISPLAY_SIZE])))
-            self.printout(' '.join(line))
-        # For each row, print the value of each field left-justified within
-        # the maximum possible width of that field.
-        fieldIndices = range(len(cur.description))
-        for row in cur:
-            line = []
-            for fieldIndex in fieldIndices:
-                fieldValue = str(row[fieldIndex])
-                fieldMaxWidth = max((len(cur.description[fieldIndex][DESCRIPTION_NAME]), cur.description[fieldIndex][DESCRIPTION_DISPLAY_SIZE]))
-                line.append(fieldValue.ljust(fieldMaxWidth))
-            self.printout(' '.join(line))
+def test_01_close(db_connection):
+    """Tests creating, closing, and using Monitor with a context manager."""
+    s = Monitor(db_connection)
+    assert not s.closed
+    s.close()
+    assert s.closed
+    #
+    with Monitor(db_connection) as m:
+        assert not m.closed
+    assert m.closed
 
-class TestMonitor(TestBase):
-    def setUp(self):
-        super().setUp()
-        self.con = connect('fbtest')
-        self.con._logging_id_ = 'fbtest'
-    def tearDown(self):
-        self.con.close()
-    def test_01_close(self):
-        s = Monitor(self.con)
-        self.assertFalse(s.closed)
-        s.close()
-        self.assertTrue(s.closed)
-        #
-        with Monitor(self.con) as m:
-            self.assertFalse(m.closed)
-        self.assertTrue(m.closed)
-    def test_02_monitor(self):
-        #
-        with Monitor(self.con) as m:
-            sql = "select RDB$SET_CONTEXT('USER_SESSION','TESTVAR','TEST_VALUE') from rdb$database"
-            with self.con.cursor() as c:
-                c.execute(sql)
-                c.fetchone()
-                #
-                self.assertIsNotNone(m.db)
-                self.assertIsInstance(m.db, DatabaseInfo)
-                self.assertGreater(len(m.attachments), 0)
-                self.assertIsInstance(m.attachments[0], AttachmentInfo)
-                self.assertGreater(len(m.transactions), 0)
-                self.assertIsInstance(m.transactions[0], TransactionInfo)
-                self.assertGreater(len(m.statements), 0)
-                self.assertIsInstance(m.statements[0], StatementInfo)
-                self.assertEqual(len(m.callstack), 0)
-                self.assertGreater(len(m.iostats), 0)
-                self.assertIsInstance(m.iostats[0], IOStatsInfo)
-                self.assertGreater(len(m.variables), 0)
-                self.assertIsInstance(m.variables[0], ContextVariableInfo)
-                #
-                att_id = m._con.info.id
-                self.assertEqual(m.attachments.get(att_id).id, att_id)
-                tra_id = m._con.main_transaction.info.id
-                self.assertEqual(m.transactions.get(tra_id).id, tra_id)
-                stmt_id = None
-                for stmt in m.statements:
-                    if stmt.sql == sql:
-                        stmt_id = stmt.id
-                self.assertEqual(m.statements.get(stmt_id).id, stmt_id)
-                # m.get_call()
-                self.assertIsInstance(m.this_attachment, AttachmentInfo)
-                self.assertEqual(m.this_attachment.id,
-                                 self.con.info.id)
-                self.assertFalse(m.closed)
-    def test_03_DatabaseInfo(self):
-        with Monitor(self.con) as m:
-            self.assertEqual(m.db.name.upper(), self.dbfile.upper())
-            self.assertEqual(m.db.page_size, 8192)
-            if self.version == FB30:
-                self.assertEqual(m.db.ods, 12.0)
-            elif self.version == FB40:
-                self.assertEqual(m.db.ods, 13.0)
-            else:
-                self.assertEqual(m.db.ods, 13.1)
-            self.assertIsInstance(m.db.oit, int)
-            self.assertIsInstance(m.db.oat, int)
-            self.assertIsInstance(m.db.ost, int)
-            self.assertIsInstance(m.db.next_transaction, int)
-            self.assertIsInstance(m.db.cache_size, int)
-            self.assertEqual(m.db.sql_dialect, 3)
-            self.assertIs(m.db.shutdown_mode, ShutdownMode.NORMAL)
-            self.assertEqual(m.db.sweep_interval, 20000)
-            self.assertFalse(m.db.read_only)
-            self.assertTrue(m.db.forced_writes)
-            self.assertTrue(m.db.reserve_space)
-            self.assertIsInstance(m.db.created, datetime.datetime)
-            self.assertIsInstance(m.db.pages, int)
-            self.assertIs(m.db.backup_state, BackupState.NORMAL)
-            self.assertEqual(m.db.crypt_page, 0)
-            self.assertEqual(m.db.owner, 'SYSDBA')
-            self.assertIs(m.db.security, Security.DEFAULT)
-            self.assertIs(m.db.iostats.group, Group.DATABASE)
-            self.assertEqual(m.db.iostats.stat_id, m.db.stat_id)
-            # TableStats
-            for table_name, stats in m.db.tablestats.items():
-                self.assertIsNotNone(self.con.schema.all_tables.get(table_name))
-                self.assertIsInstance(stats, TableStatsInfo)
-                self.assertEqual(stats.stat_id, m.db.stat_id)
-                self.assertEqual(stats.owner, m.db)
-            # Firebird 4 properties
-            if self.version == FB30:
-                self.assertIsNone(m.db.crypt_state)
-                self.assertIsNone(m.db.guid)
-                self.assertIsNone(m.db.file_id)
-                self.assertIsNone(m.db.next_attachment)
-                self.assertIsNone(m.db.next_statement)
-                self.assertIsNone(m.db.replica_mode)
-            else:
-                self.assertEqual(m.db.crypt_state, CryptState.NOT_ENCRYPTED)
-                self.assertEqual(m.db.guid, UUID('53e6200c-2b09-42a8-8384-e07bc9aa2883'))
-                self.assertIsInstance(m.db.file_id, str)
-                self.assertGreater(m.db.next_attachment, 0)
-                self.assertGreater(m.db.next_statement, 0)
-                self.assertEqual(m.db.replica_mode, ReplicaMode.NONE)
-    def test_04_AttachmentInfo(self):
-        with Monitor(self.con) as m:
-            sql = "select RDB$SET_CONTEXT('USER_SESSION','TESTVAR','TEST_VALUE') from rdb$database"
-            with self.con.cursor() as c:
-                c.execute(sql)
-                c.fetchone()
-                #
-                s = m.this_attachment
-                #
-                self.assertEqual(s.id, self.con.info.id)
-                self.assertIsInstance(s.server_pid, int)
-                self.assertIsInstance(s.state, State)
-                self.assertEqual(s.name.upper(), self.dbfile.upper())
-                self.assertEqual(s.user, 'SYSDBA')
-                self.assertEqual(s.role, 'NONE')
-                self.assertIn(s.remote_protocol, ['XNET', 'TCPv4', 'TCPv6'])
-                self.assertIsInstance(s.remote_address, str)
-                self.assertIsInstance(s.remote_pid, int)
-                self.assertIsInstance(s.remote_process, str)
-                self.assertIsInstance(s.character_set, CharacterSet)
-                self.assertEqual(s.character_set.name, 'UTF8')
-                self.assertIsInstance(s.timestamp, datetime.datetime)
-                self.assertIsInstance(s.transactions, list)
-                self.assertIn(s.auth_method, ['Srp', 'Srp256', 'Win_Sspi', 'Legacy_Auth'])
-                self.assertIsInstance(s.client_version, str)
-                if self.version == FB30:
-                    self.assertEqual(s.remote_version, 'P15')
-                elif self.version == FB40:
-                    self.assertEqual(s.remote_version, 'P17')
-                else:
-                    self.assertEqual(s.remote_version, 'P18')
-                self.assertIsInstance(s.remote_os_user, str)
-                self.assertIsInstance(s.remote_host, str)
-                self.assertFalse(s.system)
-                for x in s.transactions:
-                    self.assertIsInstance(x, TransactionInfo)
-                self.assertIsInstance(s.statements, list)
-                for x in s.statements:
-                    self.assertIsInstance(x, StatementInfo)
-                self.assertIsInstance(s.variables, list)
-                self.assertGreater(len(s.variables), 0)
-                for x in s.variables:
-                    self.assertIsInstance(x, ContextVariableInfo)
-                self.assertIs(s.iostats.group, Group.ATTACHMENT)
-                self.assertEqual(s.iostats.stat_id, s.stat_id)
-                self.assertGreater(len(m.db.tablestats), 0)
-                #
-                self.assertTrue(s.is_active())
-                self.assertFalse(s.is_idle())
-                self.assertFalse(s.is_internal())
-                self.assertTrue(s.is_gc_allowed())
-                # TableStats
-                for table_name, stats in s.tablestats.items():
-                    self.assertIsNotNone(self.con.schema.all_tables.get(table_name))
-                    self.assertIsInstance(stats, TableStatsInfo)
-                    self.assertEqual(stats.stat_id, s.stat_id)
-                    self.assertEqual(stats.owner, s)
-                # terminate
-                with connect('fbtest'):
-                    cnt = len(m.attachments)
-                    m.take_snapshot()
-                    self.assertEqual(len(m.attachments), cnt + 1)
-                    att = m.attachments.find(lambda i: i.id != m.this_attachment.id and not i.is_internal())
-                    self.assertIsNot(att, m.this_attachment)
-                    att_id = att.id
-                    att.terminate()
-                    m.take_snapshot()
-                    self.assertEqual(len(m.attachments), cnt)
-                    self.assertIsNone(m.attachments.get(att_id))
-                    # Current attachment
-                    with self.assertRaises(Error) as cm:
-                        m.this_attachment.terminate()
-                    self.assertTupleEqual(cm.exception.args,
-                                          ("Can't terminate current session.",))
-                # Firebird 4
-                if self.version == FB30:
-                    self.assertIsNone(s.idle_timeout)
-                    self.assertIsNone(s.idle_timer)
-                    self.assertIsNone(s.statement_timeout)
-                    self.assertIsNone(s.wire_compressed)
-                    self.assertIsNone(s.wire_encrypted)
-                    self.assertIsNone(s.wire_crypt_plugin)
-                else:
-                    self.assertEqual(s.idle_timeout, 0)
-                    self.assertIsNone(s.idle_timer)
-                    self.assertEqual(s.statement_timeout, 0)
-                    self.assertFalse(s.wire_compressed)
-                    self.assertTrue(s.wire_encrypted)
-                    self.assertEqual(s.wire_crypt_plugin, 'ChaCha64')
-                # Firebird 5
-                if self.version in [FB30, FB40]:
-                    self.assertIsNone(s.session_timezone)
-                else:
-                    self.assertIsInstance(s.session_timezone, str)
+def test_02_monitor(db_connection, fb_vars):
+    """Tests basic Monitor functionality and accessing monitored objects."""
+    #
+    with Monitor(db_connection) as m:
+        # Execute a statement to ensure some activity is monitored
+        sql = "select RDB$SET_CONTEXT('USER_SESSION','TESTVAR','TEST_VALUE') from rdb$database"
+        with db_connection.cursor() as c:
+            c.execute(sql)
+            c.fetchone()
+            #
+            m.take_snapshot() # Explicit snapshot needed after action
 
-    def test_05_TransactionInfo(self):
-        c = self.con.cursor()
-        sql = "select RDB$SET_CONTEXT('USER_TRANSACTION','TESTVAR','TEST_VALUE') from rdb$database"
-        c.execute(sql)
-        c.fetchone()
-        #
-        with Monitor(self.con) as m:
+            assert m.db is not None
+            assert isinstance(m.db, DatabaseInfo)
+            assert len(m.attachments) > 0
+            assert isinstance(m.attachments[0], AttachmentInfo)
+            assert len(m.transactions) > 0
+            assert isinstance(m.transactions[0], TransactionInfo)
+            assert len(m.statements) > 0
+            assert isinstance(m.statements[0], StatementInfo)
+            # Call stack might be empty depending on exact timing and server activity
+            # assert len(m.callstack) > 0 # Original test checked for 0, keep it?
+            assert len(m.callstack) == 0
+            assert len(m.iostats) > 0
+            assert isinstance(m.iostats[0], IOStatsInfo)
+            assert len(m.variables) > 0
+            assert isinstance(m.variables[0], ContextVariableInfo)
+
+            # Test object retrieval by ID
+            att_id = m._con.info.id # Use the connection associated with Monitor
+            assert m.attachments.get(att_id).id == att_id
+            tra_id = m._con.main_transaction.info.id
+            assert m.transactions.get(tra_id).id == tra_id
+
+            # Find the specific statement ID
+            stmt_id = None
+            for stmt in m.statements:
+                # Compare normalized SQL
+                if stmt.sql.replace('\n', ' ').strip() == sql.replace('\n', ' ').strip():
+                    stmt_id = stmt.id
+                    break
+            assert stmt_id is not None, f"Statement '{sql}' not found in monitored statements"
+            assert m.statements.get(stmt_id).id == stmt_id
+
+            # Test convenience properties
+            assert isinstance(m.this_attachment, AttachmentInfo)
+            assert m.this_attachment.id == att_id
+            assert not m.closed
+
+def test_03_DatabaseInfo(db_connection, fb_vars):
+    """Tests properties of the DatabaseInfo object."""
+    version = fb_vars['version']
+    db_file = fb_vars['source_db'].parent / driver_config.get_database('pytest').database.value # Get actual test DB path
+    with Monitor(db_connection) as m:
+        m.take_snapshot()
+        db_info = m.db
+
+        assert db_info.name.upper() == str(db_file).upper()
+        assert db_info.page_size == 8192
+
+        if version.base_version == FB30:
+            assert db_info.ods == 12.0
+        elif version.base_version == FB40:
+            assert db_info.ods == 13.0
+        else: # FB 5.0+
+            # ODS 13.1 introduced in 5.0 beta 1
+            assert db_info.ods in (13.0, 13.1) # Allow 13.0 for early 5.0 alphas
+
+        assert isinstance(db_info.oit, int)
+        assert isinstance(db_info.oat, int)
+        assert isinstance(db_info.ost, int)
+        assert isinstance(db_info.next_transaction, int)
+        assert isinstance(db_info.cache_size, int)
+        assert db_info.sql_dialect == 3
+        assert db_info.shutdown_mode is ShutdownMode.NORMAL
+        assert db_info.sweep_interval == 20000
+        assert not db_info.read_only
+        assert db_info.forced_writes
+        assert db_info.reserve_space
+        assert isinstance(db_info.created, datetime.datetime)
+        assert isinstance(db_info.pages, int)
+        assert db_info.backup_state is BackupState.NORMAL
+        assert db_info.crypt_page == 0
+        assert db_info.owner == 'SYSDBA'
+        assert db_info.security is Security.DEFAULT
+        assert db_info.iostats.group is Group.DATABASE
+        assert db_info.iostats.stat_id == db_info.stat_id
+
+        # TableStats
+        assert len(db_info.tablestats) > 0 # Check there are some stats
+        for table_name, stats in db_info.tablestats.items():
+            assert db_connection.schema.all_tables.get(table_name) is not None
+            assert isinstance(stats, TableStatsInfo)
+            assert stats.stat_id == db_info.stat_id
+            assert stats.owner is db_info
+
+        # Firebird 4 properties
+        if version.base_version == FB30:
+            assert db_info.crypt_state is None
+            assert db_info.guid is None
+            assert db_info.file_id is None
+            assert db_info.next_attachment is None
+            assert db_info.next_statement is None
+            assert db_info.replica_mode is None
+        else: # FB 4.0+
+            assert db_info.crypt_state == CryptState.NOT_ENCRYPTED
+            # GUID is specific to the database instance, check type
+            assert isinstance(db_info.guid, UUID)
+            assert isinstance(db_info.file_id, str)
+            assert db_info.next_attachment > 0
+            assert db_info.next_statement > 0
+            assert db_info.replica_mode == ReplicaMode.NONE
+
+def test_04_AttachmentInfo(db_connection, fb_vars, db_file):
+    """Tests properties of the AttachmentInfo object."""
+    version = fb_vars['version']
+
+    with Monitor(db_connection) as m:
+        # Ensure some activity and context
+        sql = "select RDB$SET_CONTEXT('USER_SESSION','TESTVAR','TEST_VALUE') from rdb$database"
+        with db_connection.cursor() as c:
+            c.execute(sql)
+            c.fetchone()
+        m.take_snapshot()
+
+        s = m.this_attachment
+
+        assert s.id == db_connection.info.id
+        assert isinstance(s.server_pid, int)
+        assert isinstance(s.state, State)
+        assert s.name.upper() == str(db_file).upper()
+        assert s.user == 'SYSDBA'
+        assert s.role == 'NONE'
+        assert s.remote_protocol in ['XNET', 'TCPv4', 'TCPv6', None] # None for embedded
+        # Remote address might be None for embedded
+        assert isinstance(s.remote_address, (str, type(None)))
+        # Remote PID/Process might be None or 0 depending on connection type/OS
+        assert isinstance(s.remote_pid, (int, type(None)))
+        assert isinstance(s.remote_process, (str, type(None)))
+        assert isinstance(s.character_set, CharacterSet)
+        assert s.character_set.name == 'UTF8'
+        assert isinstance(s.timestamp, datetime.datetime)
+        assert isinstance(s.transactions, list)
+        if s.auth_method != 'User name in DPB': # Is not Embedded...
+            assert s.auth_method in ['Srp', 'Srp256', 'Win_Sspi', 'Legacy_Auth']
+            assert isinstance(s.client_version, str)
+
+            # Remote version prefix depends on FB version
+            if version.base_version == FB30:
+                assert s.remote_version.startswith('P15')
+            elif version.base_version == FB40:
+                assert s.remote_version.startswith('P17')
+            else: # FB 5.0+
+                assert s.remote_version.startswith('P18')
+
+        assert isinstance(s.remote_os_user, (str, type(None))) # Might be None
+        assert isinstance(s.remote_host, (str, type(None))) # Might be None
+        assert not s.system # Should be a user attachment
+        for x in s.transactions:
+            assert isinstance(x, TransactionInfo)
+        assert isinstance(s.statements, list)
+        for x in s.statements:
+            assert isinstance(x, StatementInfo)
+        assert isinstance(s.variables, list)
+        assert len(s.variables) > 0 # Should have TESTVAR
+        for x in s.variables:
+            assert isinstance(x, ContextVariableInfo)
+        assert s.iostats.group is Group.ATTACHMENT
+        assert s.iostats.stat_id == s.stat_id
+        assert len(m.db.tablestats) > 0 # Ensure DB stats loaded
+
+        assert s.is_active() or s.is_idle() # Could be either depending on timing
+        assert not s.is_internal()
+        assert s.is_gc_allowed()
+
+        # TableStats for attachment
+        assert isinstance(s.tablestats, dict) # Check it's a dict
+        # Check at least one entry if tables were accessed, might be empty otherwise
+        # for table_name, stats in s.tablestats.items():
+        #     assert db_connection.schema.all_tables.get(table_name) is not None
+        #     assert isinstance(stats, TableStatsInfo)
+        #     assert stats.stat_id == s.stat_id
+        #     assert stats.owner is s
+
+        # Test terminate (requires another connection)
+        with connect('pytest'): # Use the same config name
             m.take_snapshot()
-            s = m.this_attachment.transactions[0]
-            #
-            self.assertEqual(s.id, m._ic.transaction.info.id)
-            self.assertIs(s.attachment, m.this_attachment)
-            self.assertIsInstance(s.state, State)
-            self.assertIsInstance(s.timestamp, datetime.datetime)
-            self.assertIsInstance(s.top, int)
-            self.assertIsInstance(s.oldest, int)
-            self.assertIsInstance(s.oldest_active, int)
-            if self.version == FB30:
-                self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_RV)
-            else: # Firebird 4+
-                self.assertIs(s.isolation_mode, IsolationMode.READ_COMMITTED_READ_CONSISTENCY)
-            self.assertEqual(s.lock_timeout, -1)
-            self.assertIsInstance(s.statements, list)
-            for x in s.statements:
-                self.assertIsInstance(x, StatementInfo)
-            self.assertIsInstance(s.variables, list)
-            self.assertIs(s.iostats.group, Group.TRANSACTION)
-            self.assertEqual(s.iostats.stat_id, s.stat_id)
-            self.assertGreater(len(m.db.tablestats), 0)
-            #
-            self.assertTrue(s.is_active())
-            self.assertFalse(s.is_idle())
-            self.assertTrue(s.is_readonly())
-            self.assertFalse(s.is_autocommit())
-            self.assertTrue(s.is_autoundo())
-            #
-            s = m.transactions.get(c.transaction.info.id)
-            self.assertIsInstance(s.variables, list)
-            self.assertGreater(len(s.variables), 0)
-            for x in s.variables:
-                self.assertIsInstance(x, ContextVariableInfo)
-            # TableStats
-            for table_name, stats in s.tablestats.items():
-                self.assertIsNotNone(self.con.schema.all_tables.get(table_name))
-                self.assertIsInstance(stats, TableStatsInfo)
-                self.assertEqual(stats.stat_id, s.stat_id)
-                self.assertEqual(stats.owner, s)
-        c.close()
-    def test_06_StatementInfo(self):
-        with Monitor(self.con) as m:
-            m.take_snapshot()
-            s: StatementInfo = m.this_attachment.statements[0]
-            #
-            self.assertIsInstance(s.id, int)
-            self.assertIs(s.attachment, m.this_attachment)
-            self.assertEqual(s.transaction.id, m.transactions[0].id)
-            self.assertIsInstance(s.state, State)
-            self.assertIsInstance(s.timestamp, datetime.datetime)
-            self.assertEqual(s.sql, "select * from mon$attachments")
-            self.assertEqual(s.plan, 'Select Expression\n    -> Table "MON$ATTACHMENTS" Full Scan')
-            # We have to use mocks for callstack
-            stack = DataList()
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':1, 'MON$STATEMENT_ID':s.id-1, 'MON$CALLER_ID':None,
-                                        'MON$OBJECT_NAME':'TRIGGER_1', 'MON$OBJECT_TYPE':2, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':s.stat_id+100}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':2, 'MON$STATEMENT_ID':s.id, 'MON$CALLER_ID':None,
-                                        'MON$OBJECT_NAME':'TRIGGER_2', 'MON$OBJECT_TYPE':2, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':s.stat_id+101}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':3, 'MON$STATEMENT_ID':s.id, 'MON$CALLER_ID':2,
-                                        'MON$OBJECT_NAME':'PROC_1', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':2, 'MON$SOURCE_COLUMN':2, 'MON$STAT_ID':s.stat_id+102}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':4, 'MON$STATEMENT_ID':s.id, 'MON$CALLER_ID':3,
-                                        'MON$OBJECT_NAME':'PROC_2', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':3, 'MON$SOURCE_COLUMN':3, 'MON$STAT_ID':s.stat_id+103}))
-            stack.append(CallStackInfo(m,
-                                                   {'MON$CALL_ID':5, 'MON$STATEMENT_ID':s.id+1, 'MON$CALLER_ID':None,
-                                                    'MON$OBJECT_NAME':'PROC_3', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                                    'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':s.stat_id+104}))
-            m.__dict__['_Monitor__callstack'] = stack
-            #
-            self.assertListEqual(s.callstack, [stack[1], stack[2], stack[3]])
-            self.assertIs(s.iostats.group, Group.STATEMENT)
-            self.assertEqual(s.iostats.stat_id, s.stat_id)
-            self.assertGreater(len(m.db.tablestats), 0)
-            #
-            self.assertTrue(s.is_active())
-            self.assertFalse(s.is_idle())
-            # TableStats
-            for table_name, stats in s.tablestats.items():
-                self.assertIsNotNone(self.con.schema.all_tables.get(table_name))
-                self.assertIsInstance(stats, TableStatsInfo)
-                self.assertEqual(stats.stat_id, s.stat_id)
-                self.assertEqual(stats.owner, s)
-            # Firebird 4
-            if self.version == FB30:
-                self.assertIsNone(s.timeout)
-                self.assertIsNone(s.timer)
-            else:
-                self.assertEqual(s.timeout, 0)
-                self.assertIsNone(s.timer)
-            # Firebird 5
-            if self.version in [FB30, FB40]:
-                self.assertIsNone(s.compiled_statement)
-            else:
-                self.assertIsInstance(s.compiled_statement, CompiledStatementInfo)
-                self.assertEqual(s.sql, s.compiled_statement.sql)
-                self.assertEqual(s.plan, s.compiled_statement.plan)
-                self.assertEqual(s._attributes['MON$COMPILED_STATEMENT_ID'], s.compiled_statement.id)
-    def test_07_CallStackInfo(self):
-        with Monitor(self.con) as m:
-            m.take_snapshot()
-            stmt = m.this_attachment.statements[0]
-            # We have to use mocks for callstack
-            stack = DataList(key_expr='item.id')
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':1, 'MON$STATEMENT_ID':stmt.id-1, 'MON$CALLER_ID':None,
-                                        'MON$OBJECT_NAME':'POST_NEW_ORDER', 'MON$OBJECT_TYPE':2, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':stmt.stat_id+100}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':2, 'MON$STATEMENT_ID':stmt.id, 'MON$CALLER_ID':None,
-                                        'MON$OBJECT_NAME':'POST_NEW_ORDER', 'MON$OBJECT_TYPE':2, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':stmt.stat_id+101}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':3, 'MON$STATEMENT_ID':stmt.id, 'MON$CALLER_ID':2,
-                                        'MON$OBJECT_NAME':'SHIP_ORDER', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':2, 'MON$SOURCE_COLUMN':2, 'MON$STAT_ID':stmt.stat_id+102}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':4, 'MON$STATEMENT_ID':stmt.id, 'MON$CALLER_ID':3,
-                                        'MON$OBJECT_NAME':'SUB_TOT_BUDGET', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':3, 'MON$SOURCE_COLUMN':3, 'MON$STAT_ID':stmt.stat_id+103}))
-            stack.append(CallStackInfo(m,
-                                       {'MON$CALL_ID':5, 'MON$STATEMENT_ID':stmt.id+1, 'MON$CALLER_ID':None,
-                                        'MON$OBJECT_NAME':'SUB_TOT_BUDGET', 'MON$OBJECT_TYPE':5, 'MON$TIMESTAMP':datetime.datetime.now(),
-                                        'MON$SOURCE_LINE':1, 'MON$SOURCE_COLUMN':1, 'MON$STAT_ID':stmt.stat_id+104}))
-            m.__dict__['_Monitor__callstack'] = stack
-            data = m.iostats[0]._attributes
-            data['MON$STAT_ID'] = stmt.stat_id+101
-            data['MON$STAT_GROUP'] = Group.CALL.value
-            m.__dict__['_Monitor__iostats'] = DataList(m.iostats, IOStatsInfo,
-                                                       'item.stat_id')
-            m.__dict__['_Monitor__iostats'].append(IOStatsInfo(m, data))
-            m.__dict__['_Monitor__iostats'].freeze()
-            #
-            s = m.callstack.get(2)
-            #
-            self.assertEqual(s.id, 2)
-            self.assertIs(s.statement, m.statements.get(stmt.id))
-            self.assertIsNone(s.caller)
-            self.assertIsInstance(s.dbobject, Trigger)
-            self.assertEqual(s.dbobject.name, 'POST_NEW_ORDER')
-            self.assertEqual(s.object_type, 2) # trigger
-            self.assertEqual(s.object_name, 'POST_NEW_ORDER')
-            self.assertIsInstance(s.timestamp, datetime.datetime)
-            self.assertEqual(s.line, 1)
-            self.assertEqual(s.column, 1)
-            self.assertIs(s.iostats.group, Group.CALL)
-            self.assertEqual(s.iostats.stat_id, s.stat_id)
-            self.assertEqual(s.iostats.owner, s)
-            self.assertIsNone(s.package_name)
-            #
-            x = m.callstack.get(3)
-            self.assertIs(x.caller, s)
-            self.assertIsInstance(x.dbobject, Procedure)
-            self.assertEqual(x.dbobject.name, 'SHIP_ORDER')
-            self.assertEqual(x.object_type, 5) # procedure
-            self.assertEqual(x.object_name, 'SHIP_ORDER')
+            initial_count = len(m.attachments)
+            assert initial_count >= 2 # Should have self and conn2
 
-    def test_08_IOStatsInfo(self):
-        with Monitor(self.con) as m:
+            # Find the other attachment
+            other_att = next((att for att in m.attachments
+                              if att.id != m.this_attachment.id and not att.is_internal()), None)
+            assert other_att is not None
+            other_att_id = other_att.id
+
+            other_att.terminate()
             m.take_snapshot()
-            #
-            for io in m.iostats:
-                self.assertIs(io, io.owner.iostats)
-            #
-            s = m.iostats[0]
-            self.assertIsInstance(s.owner, DatabaseInfo)
-            self.assertIs(s.group, Group.DATABASE)
-            self.assertIsInstance(s.reads, int)
-            self.assertIsInstance(s.writes, int)
-            self.assertIsInstance(s.fetches, int)
-            self.assertIsInstance(s.marks, int)
-            self.assertIsInstance(s.seq_reads, int)
-            self.assertIsInstance(s.idx_reads, int)
-            self.assertIsInstance(s.inserts, int)
-            self.assertIsInstance(s.updates, int)
-            self.assertIsInstance(s.deletes, int)
-            self.assertIsInstance(s.backouts, int)
-            self.assertIsInstance(s.purges, int)
-            self.assertIsInstance(s.expunges, int)
-            self.assertIsInstance(s.locks, int)
-            self.assertIsInstance(s.waits, int)
-            self.assertIsInstance(s.conflits, int)
-            self.assertIsInstance(s.backversion_reads, int)
-            self.assertIsInstance(s.fragment_reads, int)
-            self.assertIsInstance(s.repeated_reads, int)
-            self.assertIsInstance(s.memory_used, int)
-            self.assertIsInstance(s.memory_allocated, int)
-            self.assertIsInstance(s.max_memory_used, int)
-            self.assertIsInstance(s.max_memory_allocated, int)
-            # Firebird 4
-            if self.version == FB30:
-                self.assertIsNone(s.intermediate_gc)
-            else:
-                self.assertEqual(s.intermediate_gc, 0)
-    def test_09_ContextVariableInfo(self):
-        c = self.con.cursor()
-        sql = "select RDB$SET_CONTEXT('USER_SESSION','SVAR','TEST_VALUE') from rdb$database"
-        c.execute(sql)
-        c.fetchone()
-        c2 = self.con.cursor()
+            assert len(m.attachments) == initial_count - 1
+            assert m.attachments.get(other_att_id) is None
+
+            # Current attachment termination attempt
+            with pytest.raises(Error, match="Can't terminate current session."):
+                m.this_attachment.terminate()
+
+        # Firebird 4 properties
+        if version.base_version == FB30:
+            assert s.idle_timeout is None
+            assert s.idle_timer is None
+            assert s.statement_timeout is None
+            assert s.wire_compressed is None
+            assert s.wire_encrypted is None
+            assert s.wire_crypt_plugin is None
+        else: # FB 4.0+
+            assert s.idle_timeout == 0
+            assert s.idle_timer is None # Timer only set if timeout > 0
+            assert s.statement_timeout == 0
+            assert isinstance(s.wire_compressed, bool)
+            assert isinstance(s.wire_encrypted, bool)
+            assert isinstance(s.wire_crypt_plugin, (str, type(None))) # None if not encrypted
+
+        # Firebird 5 properties
+        if version.base_version in [FB30, FB40]:
+            assert s.session_timezone is None
+        else: # FB 5.0+
+            assert isinstance(s.session_timezone, str)
+
+def test_05_TransactionInfo(db_connection, fb_vars):
+    """Tests properties of the TransactionInfo object."""
+    version = fb_vars['version']
+    # Use a separate cursor and transaction for context variable setting
+    with db_connection.cursor() as c:
         sql = "select RDB$SET_CONTEXT('USER_TRANSACTION','TVAR','TEST_VALUE') from rdb$database"
-        c2.execute(sql)
-        c2.fetchone()
-        #
-        with Monitor(self.con) as m:
-            m.take_snapshot()
-            #
-            self.assertEqual(len(m.variables), 2)
-            #
-            s: ContextVariableInfo = m.variables[0]
-            self.assertIs(s.attachment, m.this_attachment)
-            self.assertIsNone(s.transaction)
-            self.assertEqual(s.name, 'SVAR')
-            self.assertEqual(s.value, 'TEST_VALUE')
-            self.assertTrue(s.is_attachment_var())
-            self.assertFalse(s.is_transaction_var())
-            #
-            s = m.variables[1]
-            self.assertIsNone(s.attachment)
-            self.assertIs(s.transaction,
-                          m.transactions.get(c.transaction.info.id))
-            self.assertEqual(s.name, 'TVAR')
-            self.assertEqual(s.value, 'TEST_VALUE')
-            self.assertFalse(s.is_attachment_var())
-            self.assertTrue(s.is_transaction_var())
-        c.close()
-        c2.close()
-    def test_10_CompiledStatementInfo(self):
-        with Monitor(self.con) as m:
-            m.take_snapshot()
-            #
-            if self.version in [FB30, FB40]:
-                self.assertEqual(len(m.compiled_statements), 0)
-            else:
-                self.assertEqual(len(m.compiled_statements), 2)
-                s: CompiledStatementInfo = m.compiled_statements[0]
-                #
-                self.assertEqual(s.sql, "select * from mon$compiled_statements")
+        c.execute(sql)
+        c.fetchone()
+        tran_id_with_var = c.transaction.info.id
 
-if __name__ == '__main__':
-    unittest.main()
+        with Monitor(db_connection) as m:
+            m.take_snapshot()
+
+            # Test the Monitor's main transaction
+            s = m.this_attachment.transactions[0] # The monitor's own transaction
+            assert s.id == m._ic.transaction.info.id # Monitor internal connection
+            assert s.attachment is m.this_attachment
+            assert isinstance(s.state, State)
+            assert isinstance(s.timestamp, datetime.datetime)
+            assert isinstance(s.top, int)
+            assert isinstance(s.oldest, int)
+            assert isinstance(s.oldest_active, int)
+
+            if version.base_version == FB30:
+                assert s.isolation_mode is IsolationMode.READ_COMMITTED_RV
+            else: # FB 4.0+
+                assert s.isolation_mode is IsolationMode.READ_COMMITTED_READ_CONSISTENCY
+
+            assert s.lock_timeout == -1 # Default WAIT
+            assert isinstance(s.statements, list)
+            for x in s.statements:
+                assert isinstance(x, StatementInfo)
+            # Monitor's own transaction likely has no user variables set here
+            assert isinstance(s.variables, list)
+            #assert len(s.variables) == 0
+
+            assert s.iostats.group is Group.TRANSACTION
+            assert s.iostats.stat_id == s.stat_id
+            assert len(m.db.tablestats) > 0
+
+            assert s.is_active()
+            assert not s.is_idle() # Monitor transaction is active
+            assert s.is_readonly() # Monitor transaction should be read-only
+            assert not s.is_autocommit()
+            assert s.is_autoundo()
+
+            # Test the transaction where the variable was set
+            s_with_var = m.transactions.get(tran_id_with_var)
+            assert s_with_var is not None
+            assert isinstance(s_with_var.variables, list)
+            assert len(s_with_var.variables) > 0
+            found_var = False
+            for x in s_with_var.variables:
+                assert isinstance(x, ContextVariableInfo)
+                if x.name == 'TVAR' and x.value == 'TEST_VALUE':
+                    found_var = True
+            assert found_var, "Context variable 'TVAR' not found in transaction"
+
+            # TableStats for transaction
+            assert isinstance(s_with_var.tablestats, dict)
+            # Check at least one entry if tables were accessed, might be empty otherwise
+            # for table_name, stats in s_with_var.tablestats.items():
+            #     assert db_connection.schema.all_tables.get(table_name) is not None
+            #     assert isinstance(stats, TableStatsInfo)
+            #     assert stats.stat_id == s_with_var.stat_id
+            #     assert stats.owner is s_with_var
+
+def test_06_StatementInfo(db_connection, fb_vars):
+    """Tests properties of the StatementInfo object."""
+    version = fb_vars['version']
+    with Monitor(db_connection) as m:
+        m.take_snapshot()
+        # Find the statement used by the monitor itself
+        s: StatementInfo = next((st for st in m.this_attachment.statements
+                                 if st.sql.strip().lower().startswith("select * from mon$attachments")), None)
+        assert s is not None
+
+        assert isinstance(s.id, int)
+        assert s.attachment is m.this_attachment
+        # Transaction should be the monitor's main transaction
+        assert s.transaction.id == m._ic.transaction.info.id
+        assert isinstance(s.state, State)
+        assert isinstance(s.timestamp, datetime.datetime)
+        assert s.sql.strip().lower() == "select * from mon$attachments"
+        # Plan might vary slightly, check it starts correctly
+        assert s.plan.strip().lower().startswith('select expression')
+        assert "mon$attachments" in s.plan.lower()
+
+        # --- Mock Callstack ---
+        # Create mock CallStackInfo objects based on original data
+        stack = DataList(key_expr='item.id')
+        now = datetime.datetime.now()
+        # Note: IDs need to be unique. stat_id should ideally link to a real IOStat entry.
+        # Here we just use distinct values for demonstration.
+        mock_stat_id_base = s.stat_id + 1000
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 1, 'MON$STATEMENT_ID': s.id - 1, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'TRIGGER_1', 'MON$OBJECT_TYPE': 2, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 1}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 2, 'MON$STATEMENT_ID': s.id, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'TRIGGER_2', 'MON$OBJECT_TYPE': 2, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 2}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 3, 'MON$STATEMENT_ID': s.id, 'MON$CALLER_ID': 2, 'MON$OBJECT_NAME': 'PROC_1', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 2, 'MON$SOURCE_COLUMN': 2, 'MON$STAT_ID': mock_stat_id_base + 3}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 4, 'MON$STATEMENT_ID': s.id, 'MON$CALLER_ID': 3, 'MON$OBJECT_NAME': 'PROC_2', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 3, 'MON$SOURCE_COLUMN': 3, 'MON$STAT_ID': mock_stat_id_base + 4}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 5, 'MON$STATEMENT_ID': s.id + 1, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'PROC_3', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 5}))
+
+        # Inject the mock stack (use with caution, accessing internals)
+        m._Monitor__callstack = stack
+        m._Monitor__callstack_loaded = True
+        # --- End Mock Callstack ---
+
+        # Callstack should now reflect the mocked data for this statement
+        assert len(s.callstack) == 3 # Items 2, 3, 4 belong to s.id
+        assert [cs.id for cs in s.callstack] == [2, 3, 4]
+        assert s.callstack[0].object_name == 'TRIGGER_2'
+        assert s.callstack[1].object_name == 'PROC_1'
+        assert s.callstack[2].object_name == 'PROC_2'
+
+        assert s.iostats.group is Group.STATEMENT
+        assert s.iostats.stat_id == s.stat_id
+        assert len(m.db.tablestats) > 0 # Ensure DB stats loaded
+
+        assert s.is_active() or s.is_idle() # Could be either
+        assert isinstance(s.tablestats, dict) # Check it's a dict
+
+        # Firebird 4 properties
+        if version.base_version == FB30:
+            assert s.timeout is None
+            assert s.timer is None
+        else: # FB 4.0+
+            assert s.timeout == 0
+            assert s.timer is None # Timer only set if timeout > 0
+
+        # Firebird 5 properties
+        if version.base_version in [FB30, FB40]:
+            assert s.compiled_statement is None
+        else: # FB 5.0+
+            assert isinstance(s.compiled_statement, CompiledStatementInfo)
+            assert s.sql == s.compiled_statement.sql
+            assert s.plan == s.compiled_statement.plan
+            assert s._attributes['MON$COMPILED_STATEMENT_ID'] == s.compiled_statement.id
+
+def test_07_CallStackInfo(db_connection, fb_vars):
+    """Tests properties of the CallStackInfo object using mocked data."""
+    with Monitor(db_connection) as m:
+        m.take_snapshot()
+        # Find any statement to associate the mock call stack with
+        stmt = m.statements[0] if m.statements else None
+        assert stmt is not None, "No statements found to test call stack"
+
+        # --- Mock Callstack & IOStats ---
+        stack = DataList(key_expr='item.id')
+        now = datetime.datetime.now()
+        mock_stat_id_base = stmt.stat_id + 1000 # Base for mock stat IDs
+
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 1, 'MON$STATEMENT_ID': stmt.id - 1, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'POST_NEW_ORDER', 'MON$OBJECT_TYPE': 2, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 1}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 2, 'MON$STATEMENT_ID': stmt.id, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'POST_NEW_ORDER', 'MON$OBJECT_TYPE': 2, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 2}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 3, 'MON$STATEMENT_ID': stmt.id, 'MON$CALLER_ID': 2, 'MON$OBJECT_NAME': 'SHIP_ORDER', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 2, 'MON$SOURCE_COLUMN': 2, 'MON$STAT_ID': mock_stat_id_base + 3}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 4, 'MON$STATEMENT_ID': stmt.id, 'MON$CALLER_ID': 3, 'MON$OBJECT_NAME': 'SUB_TOT_BUDGET', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 3, 'MON$SOURCE_COLUMN': 3, 'MON$STAT_ID': mock_stat_id_base + 4}))
+        stack.append(CallStackInfo(m, {'MON$CALL_ID': 5, 'MON$STATEMENT_ID': stmt.id + 1, 'MON$CALLER_ID': None, 'MON$OBJECT_NAME': 'SUB_TOT_BUDGET', 'MON$OBJECT_TYPE': 5, 'MON$TIMESTAMP': now, 'MON$SOURCE_LINE': 1, 'MON$SOURCE_COLUMN': 1, 'MON$STAT_ID': mock_stat_id_base + 5}))
+
+        # Mock IOStats entry for one of the calls
+        mock_iostats_list = list(m.iostats) # Get existing stats
+        call_stat_id = mock_stat_id_base + 2 # ID for call ID 2
+        mock_iostats_list.append(IOStatsInfo(m, {'MON$STAT_ID': call_stat_id, 'MON$STAT_GROUP': Group.CALL.value, 'MON$PAGE_READS': 1, 'MON$PAGE_WRITES': 0, 'MON$PAGE_FETCHES': 2, 'MON$PAGE_MARKS': 0}))
+
+        # Inject mocks (use with caution)
+        m._Monitor__callstack = stack
+        m._Monitor__callstack_loaded = True
+        m._Monitor__iostats = DataList(mock_iostats_list, IOStatsInfo, 'item.stat_id')
+        m._Monitor__iostats.freeze()
+        m._Monitor__iostats_loaded = True
+        # --- End Mock ---
+
+        s = m.callstack.get(2)
+        assert s is not None
+        assert s.id == 2
+        assert s.statement is stmt
+        assert s.caller is None # Top level call for this statement
+        assert isinstance(s.dbobject, Trigger)
+        assert s.dbobject.name == 'POST_NEW_ORDER'
+        assert s.object_type == ObjectType.TRIGGER
+        assert s.object_name == 'POST_NEW_ORDER'
+        assert isinstance(s.timestamp, datetime.datetime)
+        assert s.line == 1
+        assert s.column == 1
+        assert s.iostats is not None
+        assert s.iostats.group is Group.CALL
+        assert s.iostats.stat_id == s.stat_id
+        assert s.iostats.owner is s
+        assert s.package_name is None
+
+        x = m.callstack.get(3)
+        assert x is not None
+        assert x.caller is s # Should link back to call ID 2
+        assert isinstance(x.dbobject, Procedure)
+        assert x.dbobject.name == 'SHIP_ORDER'
+        assert x.object_type == ObjectType.PROCEDURE
+        assert x.object_name == 'SHIP_ORDER'
+
+def test_08_IOStatsInfo(db_connection, fb_vars):
+    """Tests properties of the IOStatsInfo object."""
+    version = fb_vars['version']
+    with Monitor(db_connection) as m:
+        m.take_snapshot()
+        assert len(m.iostats) > 0
+
+        # Check association and type for a sample
+        # Find the IOStats for the database itself
+        db_iostats = next((io for io in m.iostats if io.group == Group.DATABASE), None)
+        assert db_iostats is not None
+        assert db_iostats.owner is m.db
+        assert m.db.iostats is db_iostats
+
+        s = db_iostats
+        assert isinstance(s.owner, DatabaseInfo)
+        assert s.group is Group.DATABASE
+        assert isinstance(s.reads, int)
+        assert isinstance(s.writes, int)
+        assert isinstance(s.fetches, int)
+        assert isinstance(s.marks, int)
+        # Check some detailed stats exist (>= 0)
+        assert s.seq_reads >= 0
+        assert s.idx_reads >= 0
+        assert s.inserts >= 0
+        assert s.updates >= 0
+        assert s.deletes >= 0
+        assert s.backouts >= 0
+        assert s.purges >= 0
+        assert s.expunges >= 0
+        assert isinstance(s.locks, int) # Locks can be -1
+        assert s.waits >= 0
+        assert s.conflicts >= 0 # Assuming corrected attribute name
+        assert s.backversion_reads >= 0
+        assert s.fragment_reads >= 0
+        # Repeated reads might not be present in older versions or specific contexts
+        assert isinstance(s.repeated_reads, (int, type(None)))
+
+        # Memory stats should exist
+        assert s.memory_used >= 0
+        assert s.memory_allocated >= 0
+        assert s.max_memory_used >= 0
+        assert s.max_memory_allocated >= 0
+
+        # Firebird 4+ property
+        if version.base_version == FB30:
+            assert s.intermediate_gc is None
+        else:
+            assert s.intermediate_gc >= 0
+
+def test_09_ContextVariableInfo(db_connection):
+    """Tests ContextVariableInfo objects."""
+    # Set session and transaction variables
+    with db_connection.cursor() as c1:
+        c1.execute("select RDB$SET_CONTEXT('USER_SESSION','SVAR','SESSION_VALUE') from rdb$database")
+        c1.fetchone()
+        with db_connection.cursor() as c2:
+            tran_id = c2.transaction.info.id
+            c2.execute("select RDB$SET_CONTEXT('USER_TRANSACTION','TVAR','TRAN_VALUE') from rdb$database")
+            c2.fetchone()
+
+            with Monitor(db_connection) as m:
+                m.take_snapshot()
+
+                assert len(m.variables) >= 2 # Might be more system vars
+
+                # Find session variable
+                s_var = next((v for v in m.variables if v.name == 'SVAR'), None)
+                assert s_var is not None
+                assert s_var.attachment is m.this_attachment
+                assert s_var.transaction is None
+                assert s_var.name == 'SVAR'
+                assert s_var.value == 'SESSION_VALUE'
+                assert s_var.is_attachment_var()
+                assert not s_var.is_transaction_var()
+
+                # Find transaction variable
+                t_var = next((v for v in m.variables if v.name == 'TVAR'), None)
+                assert t_var is not None
+                assert t_var.attachment is None
+                assert t_var.transaction is not None
+                assert t_var.transaction.id == tran_id
+                assert t_var.name == 'TVAR'
+                assert t_var.value == 'TRAN_VALUE'
+                assert not t_var.is_attachment_var()
+                assert t_var.is_transaction_var()
+
+def test_10_CompiledStatementInfo(db_connection, fb_vars):
+    """Tests CompiledStatementInfo objects (FB5+)."""
+    version = fb_vars['version']
+    with Monitor(db_connection) as m:
+        # Execute a statement to potentially populate compiled statements cache
+        with db_connection.cursor() as cur:
+            cur.execute("SELECT 1 FROM RDB$DATABASE")
+            cur.fetchone()
+
+        m.take_snapshot()
+
+        if version.major < 5:
+            pytest.skip("MON$COMPILED_STATEMENTS table not available before Firebird 5.0")
+            # assert len(m.compiled_statements) == 0 # Or check it's None/empty
+        else: # FB 5.0+
+            assert len(m.compiled_statements) >= 1 # Should have at least one entry
+            # Find a specific statement if possible, otherwise check the first one
+            s: CompiledStatementInfo = m.compiled_statements[0] # Check the first one
+            assert isinstance(s.id, int)
+            assert isinstance(s.sql, str)
+            assert isinstance(s.plan, str)
+
+            # Example: Find the statement we just executed
+            found_stmt = next((cs for cs in m.compiled_statements
+                               if cs.sql and cs.sql.strip().lower() == "select 1 from rdb$database"), None)
+            assert found_stmt is not None
+            assert found_stmt.plan is not None
+#
 

@@ -20,7 +20,7 @@ from firebird.lib.__about__ import __version__
 # -- Project information -----------------------------------------------------
 
 project = 'firebird-lib'
-copyright = '2020-2023, The Firebird Project'
+copyright = '2020-2025, The Firebird Project'
 author = 'Pavel Císař'
 
 # The short X.Y version

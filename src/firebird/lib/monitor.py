@@ -32,26 +32,47 @@
 #
 # Contributor(s): Pavel Císař (original code)
 #                 ______________________________________
-# pylint: disable=C0302, W0212, R0902, R0912,R0913, R0914, R0915, R0904, R0903, C0103, C0301
 
-"""firebird.lib.monitor - Module for work with Firebird monitoring tables
+"""firebird.lib.monitor - Access Firebird Monitoring Tables (`MON$*`).
 
+This module provides the `Monitor` class, which acts as the main entry point
+for querying Firebird's monitoring tables (`MON$DATABASE`, `MON$ATTACHMENTS`, etc.).
+It retrieves data in snapshots and presents it through structured info objects
+(like `DatabaseInfo`, `AttachmentInfo`, `StatementInfo`, etc.) linked together.
 
+Usage typically involves creating a `Monitor` instance from a `Connection`,
+optionally calling `take_snapshot()`, and then accessing various properties
+like `monitor.db`, `monitor.attachments`, `monitor.statements`, etc.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Any, Union
+
 import datetime
 import weakref
-from uuid import UUID
+from collections.abc import Iterator
 from enum import Enum, IntEnum
+from typing import Any, Self
+from uuid import UUID
+
 from firebird.base.collections import DataList
-from firebird.driver import (tpb, Connection, Cursor, Statement, Isolation, Error,
-                             TraAccessMode, ReplicaMode, ShutdownMode)
-from .schema import ObjectType, CharacterSet, Procedure, Trigger, Function, ObjectType
+from firebird.driver import (
+    Connection,
+    Cursor,
+    Error,
+    Isolation,
+    ReplicaMode,
+    ShutdownMode,
+    Statement,
+    TraAccessMode,
+    tpb,
+)
+
+from .schema import CharacterSet, Function, ObjectType, Procedure, Trigger
 
 FLAG_NOT_SET = 0
 FLAG_SET = 1
+
+ODS_13 = 13.0
 
 # Enums
 class BackupState(IntEnum):
@@ -104,49 +125,65 @@ class CryptState(IntEnum):
     DECRYPTION_IN_PROGRESS = 2
     ENCRYPTION_IN_PROGRESS = 3
 
-
 # Classes
 class Monitor:
-    """Class for access to Firebird monitoring tables.
+    """Provides access to Firebird monitoring table snapshots.
+
+    This class uses an internal, read-committed transaction to query the
+    `MON$` tables. Data is fetched lazily when properties are first accessed
+    after instantiation or after calling `clear()` or `take_snapshot()`.
+    It holds references to the underlying `Connection` and fetched data.
+
+    It's recommended to use this class as a context manager (`with Monitor(conn) as mon:`)
+    to ensure resources are properly released.
+
+    Arguments:
+        connection: The `firebird.driver.Connection` instance used to query
+                    monitoring tables.
     """
     def __init__(self, connection: Connection):
         """
         Arguments:
             connection: Connection that should be used to access monitoring tables.
         """
-        self._con: Connection = connection
-        self._ic: Cursor = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
-                                                             access_mode=TraAccessMode.READ)).cursor()
+        #: The underlying driver Connection. Becomes None after close().
+        self._con: Connection | None = connection
+        #: Internal cursor using a separate read-committed transaction for MON$ queries.
+        self._ic: Cursor | None = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
+                                                                    access_mode=TraAccessMode.READ)).cursor()
         self._ic._logging_id_ = 'monitor.internal_cursor'
-        self.__internal: bool = False # pylint: disable=W0238
+        self.__internal: bool = False
+        #: ID of the connection this Monitor instance is primarily associated with.
         self._con_id: int = connection.info.id
         #
-        self.__database = None
-        self.__attachments = None
-        self.__transactions = None
-        self.__statements = None
-        self.__callstack = None
-        self.__iostats = None
-        self.__variables = None
-        self.__tablestats = None
-        self.__compiled_statements = None
+        self.__database: DatabaseInfo | None = None
+        self.__attachments: DataList[AttachmentInfo] | None = None
+        self.__transactions: DataList[TransactionInfo] | None = None
+        self.__statements: DataList[StatementInfo] | None = None
+        self.__callstack: DataList[CallStackInfo] | None = None
+        self.__iostats: DataList[IOStatsInfo] | None = None
+        self.__variables: DataList[ContextVariableInfo] | None = None
+        self.__tablestats: DataList[TableStatsInfo] | None = None
+        self.__compiled_statements: DataList[CompiledStatementInfo] | None = None
     def __del__(self):
         if not self.closed:
             self.close()
-    def __enter__(self) -> Monitor:
+    def __enter__(self) -> Self:
         return self
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.close()
-    def _select_row(self, cmd: Union[Statement, str], params: List=None) -> Dict[str, Any]:
+    def _select_row(self, cmd: Statement | str, params: list | None=None) -> dict[str, Any] | None:
+        """Executes SQL and fetches a single row as a dictionary, or None."""
         self._ic.execute(cmd, params)
         row = self._ic.fetchone()
         return {self._ic.description[i][0]: row[i] for i in range(len(row))}
-    def _select(self, cmd: str, params: List=None) -> Dict[str, Any]:
+    def _select(self, cmd: str, params: list | None=None) -> Iterator[dict[str, Any]]:
+        """Executes SQL and returns an iterator yielding rows as dictionaries."""
         self._ic.execute(cmd, params)
         desc = self._ic.description
         return ({desc[i][0]: row[i] for i in range(len(row))} for row in self._ic)
-    def _set_internal(self, value: bool) -> None:
-        self.__internal = value # pylint: disable=W0238
+    def _set_internal(self, value: bool) -> None: # noqa: FBT001
+        self.__internal = value
     def clear(self):
         """Clear all data fetched from monitoring tables.
 
@@ -191,7 +228,7 @@ class Monitor:
         return self.__database
     @property
     def attachments(self) -> DataList[AttachmentInfo]:
-        """List of all attachments.
+        """list of all attachments.
         """
         if self.__attachments is None:
             self.__attachments = DataList((AttachmentInfo(self, row) for row
@@ -205,7 +242,7 @@ class Monitor:
         return self.attachments.get(self._con_id)
     @property
     def transactions(self) -> DataList[TransactionInfo]:
-        """List of all transactions.
+        """list of all transactions.
         """
         if self.__transactions is None:
             self.__transactions = DataList((TransactionInfo(self, row) for row
@@ -214,7 +251,7 @@ class Monitor:
         return self.__transactions
     @property
     def statements(self) -> DataList[StatementInfo]:
-        """List of all statements.
+        """list of all statements.
         """
         if self.__statements is None:
             self.__statements = DataList((StatementInfo(self, row) for row
@@ -223,7 +260,7 @@ class Monitor:
         return self.__statements
     @property
     def callstack(self) -> DataList[CallStackInfo]:
-        """List with complete call stack.
+        """list with complete call stack.
         """
         if self.__callstack is None:
             self.__callstack = DataList((CallStackInfo(self, row) for row
@@ -232,10 +269,10 @@ class Monitor:
         return self.__callstack
     @property
     def iostats(self) -> DataList[IOStatsInfo]:
-        """List of all I/O statistics.
+        """list of all I/O statistics.
         """
         if self.__iostats is None:
-            ext = '' if self.db.ods < 13.0 else  ', r.MON$RECORD_IMGC'
+            ext = '' if self.db.ods < ODS_13 else  ', r.MON$RECORD_IMGC'
             cmd = f"""SELECT r.MON$STAT_ID, r.MON$STAT_GROUP,
 r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,
 r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,
@@ -253,7 +290,7 @@ FROM MON$RECORD_STATS r join MON$IO_STATS io
         return self.__iostats
     @property
     def variables(self) -> DataList[ContextVariableInfo]:
-        """List of all context variables.
+        """list of all context variables.
         """
         if self.__variables is None:
             self.__variables = DataList((ContextVariableInfo(self, row) for row
@@ -262,10 +299,10 @@ FROM MON$RECORD_STATS r join MON$IO_STATS io
         return self.__variables
     @property
     def tablestats(self) -> DataList[TableStatsInfo]:
-        """List of all table record I/O statistics.
+        """list of all table record I/O statistics.
         """
         if self.__tablestats is None:
-            ext = '' if self.db.ods < 13.0 else  ', r.MON$RECORD_IMGC'
+            ext = '' if self.db.ods < ODS_13 else  ', r.MON$RECORD_IMGC'
             cmd = f"""SELECT ts.MON$STAT_ID, ts.MON$STAT_GROUP, ts.MON$TABLE_NAME,
 ts.MON$RECORD_STAT_ID, r.MON$RECORD_SEQ_READS, r.MON$RECORD_IDX_READS, r.MON$RECORD_INSERTS,
 r.MON$RECORD_UPDATES, r.MON$RECORD_DELETES, r.MON$RECORD_BACKOUTS,
@@ -279,7 +316,7 @@ FROM MON$TABLE_STATS ts join MON$RECORD_STATS r
         return self.__tablestats
     @property
     def compiled_statements(self) -> DataList[CompiledStatementInfo]:
-        """List of all compiled statements.
+        """list of all compiled statements.
 
         .. versionadded:: 1.4.0
         """
@@ -290,53 +327,56 @@ FROM MON$TABLE_STATS ts join MON$RECORD_STATS r
         return self.__compiled_statements
 
 class InfoItem:
-    """Base class for all database monitoring objects.
+    """Base class for objects representing data from monitoring tables.
+
+    Provides common structure like a weak reference to the parent `Monitor`
+    and access to the raw attribute dictionary.
+
+    Arguments:
+        monitor: The parent `Monitor` instance.
+        attributes: Dictionary containing raw column names (e.g., 'MON$...')
+                    and values fetched from the corresponding MON$ table row.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
-        #: Weak reference to parent `.Monitor` instance.
-        self.monitor: Monitor = monitor if isinstance(monitor, weakref.ProxyType) else weakref.proxy(monitor)
-        self._attributes: Dict[str, Any] = attributes
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
+        #: Weak reference proxy to the parent `.Monitor` instance.
+        self.monitor: weakref.ProxyType[Monitor] = monitor if isinstance(monitor, weakref.ProxyType) else weakref.proxy(monitor)
+        #: Raw attributes fetched from the monitoring table row.
+        self._attributes: dict[str, Any] = attributes
     def _strip_attribute(self, attr: str) -> None:
         if self._attributes.get(attr):
             self._attributes[attr] = self._attributes[attr].strip()
     @property
-    def stat_id(self) -> Group:
-        """Internal ID.
-        """
+    def stat_id(self) -> Group | None:
+        """The statistic ID (`MON$STAT_ID`) for this monitored item."""
         return self._attributes.get('MON$STAT_ID')
 
 class DatabaseInfo(InfoItem):
     """Information about attached database.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$DATABASE_NAME')
         self._strip_attribute('MON$OWNER')
         self._strip_attribute('MON$SEC_DATABASE')
     @property
     def name(self) -> str:
-        """Database filename or alias.
-        """
+        """Database filename or alias."""
         return self._attributes['MON$DATABASE_NAME']
     @property
     def page_size(self) -> int:
-        """Size of database page in bytes.
-        """
+        """Size of database page in bytes."""
         return self._attributes['MON$PAGE_SIZE']
     @property
     def ods(self) -> float:
-        """On-Disk Structure (ODS) version number.
-        """
+        """On-Disk Structure (ODS) version number."""
         return float(f"{self._attributes['MON$ODS_MAJOR']}.{self._attributes['MON$ODS_MINOR']}")
     @property
     def oit(self) -> int:
-        """Transaction ID of the oldest [interesting] transaction.
-        """
+        """Transaction ID of the oldest [interesting] transaction."""
         return self._attributes['MON$OLDEST_TRANSACTION']
     @property
     def oat(self) -> int:
-        """Transaction ID of the oldest active transaction.
-        """
+        """Transaction ID of the oldest active transaction."""
         return self._attributes['MON$OLDEST_ACTIVE']
     @property
     def ost(self) -> int:
@@ -346,23 +386,19 @@ class DatabaseInfo(InfoItem):
         return self._attributes['MON$OLDEST_SNAPSHOT']
     @property
     def next_transaction(self) -> int:
-        """Transaction ID of the next transaction that will be started.
-        """
+        """Transaction ID of the next transaction that will be started."""
         return self._attributes['MON$NEXT_TRANSACTION']
     @property
     def cache_size(self) -> int:
-        """Number of pages allocated in the page cache.
-        """
+        """Number of pages allocated in the page cache."""
         return self._attributes['MON$PAGE_BUFFERS']
     @property
     def sql_dialect(self) -> int:
-        """SQL dialect of the database.
-        """
+        """SQL dialect of the database."""
         return self._attributes['MON$SQL_DIALECT']
     @property
     def shutdown_mode(self) -> ShutdownMode:
-        """Current shutdown mode.
-        """
+        """Current shutdown mode."""
         return ShutdownMode(self._attributes['MON$SHUTDOWN_MODE'])
     @property
     def sweep_interval(self) -> int:
@@ -372,64 +408,53 @@ class DatabaseInfo(InfoItem):
         return self._attributes['MON$SWEEP_INTERVAL']
     @property
     def read_only(self) -> bool:
-        """True if database is Read Only.
-        """
+        """True if database is Read Only."""
         return bool(self._attributes['MON$READ_ONLY'])
     @property
     def forced_writes(self) -> bool:
-        """True if database uses synchronous writes.
-        """
+        """True if database uses synchronous writes."""
         return bool(self._attributes['MON$FORCED_WRITES'])
     @property
     def reserve_space(self) -> bool:
-        """True if database reserves space on data pages.
-        """
+        """True if database reserves space on data pages."""
         return bool(self._attributes['MON$RESERVE_SPACE'])
     @property
     def created(self) -> datetime.datetime:
-        """Creation date and time, i.e., when the database was created or last restored.
-        """
+        """Creation date and time, i.e., when the database was created or last restored."""
         return self._attributes['MON$CREATION_DATE']
     @property
     def pages(self) -> int:
-        """Number of pages allocated on disk.
-        """
+        """Number of pages allocated on disk."""
         return self._attributes['MON$PAGES']
     @property
     def backup_state(self) -> BackupState:
-        """Current state of database with respect to nbackup physical backup.
-        """
+        """Current state of database with respect to nbackup physical backup."""
         return BackupState(self._attributes['MON$BACKUP_STATE'])
     @property
-    def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
-        """
+    def iostats(self) -> IOStatsInfo | None:
+        """`.IOStatsInfo` for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.DATABASE))
     @property
-    def crypt_page(self) -> int:
-        """Number of page being encrypted.
-        """
+    def crypt_page(self) -> int | None:
+        """Number of page being encrypted."""
         return self._attributes.get('MON$CRYPT_PAGE')
     @property
-    def owner(self) -> str:
-        """User name of database owner.
-        """
+    def owner(self) -> str | None:
+        """User name of database owner."""
         return self._attributes.get('MON$OWNER')
     @property
-    def security(self) -> Security:
-        """Type of security database (Default, Self or Other).
-        """
+    def security(self) -> Security | None:
+        """Type of security database (Default, Self or Other)."""
         return Security(self._attributes.get('MON$SEC_DATABASE'))
     @property
-    def tablestats(self) -> Dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object.
-        """
+    def tablestats(self) -> dict[str, TableStatsInfo]:
+        """Dictionary of `.TableStatsInfo` instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.DATABASE)}
     # Firebird 4
     @property
-    def crypt_state(self) -> Optional[CryptState]:
+    def crypt_state(self) -> CryptState | None:
         """Current state of database encryption.
 
         .. versionadded:: 1.4.0
@@ -437,7 +462,7 @@ class DatabaseInfo(InfoItem):
         value = self._attributes.get('MON$CRYPT_STATE')
         return None if value is None else CryptState(value)
     @property
-    def guid(self) -> Optional[UUID]:
+    def guid(self) -> UUID | None:
         """Database GUID (persistent until restore / fixup).
 
         .. versionadded:: 1.4.0
@@ -445,28 +470,28 @@ class DatabaseInfo(InfoItem):
         value = self._attributes.get('MON$GUID')
         return None if value is None else UUID(value)
     @property
-    def file_id(self) -> Optional[str]:
+    def file_id(self) -> str | None:
         """Unique ID of the database file at the filesystem level.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$FILE_ID')
     @property
-    def next_attachment(self) -> Optional[int]:
+    def next_attachment(self) -> int | None:
         """Current value of the next attachment ID counter.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$NEXT_ATTACHMENT')
     @property
-    def next_statement(self) -> Optional[int]:
+    def next_statement(self) -> int | None:
         """Current value of the next statement ID counter.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$NEXT_STATEMENT')
     @property
-    def replica_mode(self) -> Optional[ReplicaMode]:
+    def replica_mode(self) -> ReplicaMode | None:
         """Database replica mode.
 
         .. versionadded:: 1.4.0
@@ -477,7 +502,7 @@ class DatabaseInfo(InfoItem):
 class AttachmentInfo(InfoItem):
     """Information about attachment (connection) to database.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$ATTACHMENT_NAME')
         self._strip_attribute('MON$USER')
@@ -518,162 +543,139 @@ class AttachmentInfo(InfoItem):
                                  (self.id,))
     @property
     def id(self) -> int:
-        """Attachment ID.
-        """
+        """Attachment ID."""
         return self._attributes['MON$ATTACHMENT_ID']
     @property
     def server_pid(self) -> int:
-        """Server process ID.
-        """
+        """Server process ID."""
         return self._attributes['MON$SERVER_PID']
     @property
     def state(self) -> State:
-        """Attachment state (idle/active).
-        """
+        """Attachment state (idle/active)."""
         return State(self._attributes['MON$STATE'])
     @property
     def name(self) -> str:
-        """Database filename or alias.
-        """
+        """Database filename or alias."""
         return self._attributes['MON$ATTACHMENT_NAME']
     @property
     def user(self) -> str:
-        """User name.
-        """
+        """User name."""
         return self._attributes['MON$USER']
     @property
-    def role(self) -> Optional[str]:
-        """Role name.
-        """
+    def role(self) -> str | None:
+        """Role name."""
         return self._attributes['MON$ROLE']
     @property
-    def remote_protocol(self) -> Optional[str]:
-        """Remote protocol name.
-        """
+    def remote_protocol(self) -> str | None:
+        """Remote protocol name."""
         return self._attributes['MON$REMOTE_PROTOCOL']
     @property
-    def remote_address(self) -> Optional[str]:
-        """Remote address.
-        """
+    def remote_address(self) -> str | None:
+        """Remote address."""
         return self._attributes['MON$REMOTE_ADDRESS']
     @property
-    def remote_pid(self) -> Optional[int]:
-        """Remote client process ID.
-        """
+    def remote_pid(self) -> int | None:
+        """Remote client process ID."""
         return self._attributes['MON$REMOTE_PID']
     @property
-    def remote_process(self) -> Optional[str]:
-        """Remote client process pathname.
-        """
+    def remote_process(self) -> str | None:
+        """Remote client process pathname."""
         return self._attributes['MON$REMOTE_PROCESS']
     @property
     def character_set(self) -> CharacterSet:
-        """Character set name for this attachment.
-        """
+        """Character set name for this attachment."""
         return self.monitor._con.schema.get_charset_by_id(self._attributes['MON$CHARACTER_SET_ID'])
     @property
     def timestamp(self) -> datetime.datetime:
-        """Attachment date/time.
-        """
+        """Attachment date/time."""
         return self._attributes['MON$TIMESTAMP']
     @property
     def transactions(self) -> DataList[TransactionInfo]:
-        """List of transactions associated with attachment.
-        """
+        """list of transactions associated with attachment."""
         return self.monitor.transactions.extract(lambda s: s._attributes['MON$ATTACHMENT_ID'] == self.id,
                                                  copy=True)
     @property
     def statements(self) -> DataList[StatementInfo]:
-        """List of statements associated with attachment.
-        """
+        """list of statements associated with attachment."""
         return self.monitor.statements.extract(lambda s: s._attributes['MON$ATTACHMENT_ID'] == self.id,
                                                copy=True)
     @property
     def variables(self) -> DataList[ContextVariableInfo]:
-        """List of variables associated with attachment.
-        """
+        """list of variables associated with attachment."""
         return self.monitor.variables.extract(lambda s: s._attributes['MON$ATTACHMENT_ID'] == self.id,
                                               copy=True)
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
-        """
+        """`.IOStatsInfo` for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.ATTACHMENT))
     @property
     def auth_method(self) -> str:
-        """Authentication method.
-        """
+        """Authentication method."""
         return self._attributes.get('MON$AUTH_METHOD')
     @property
     def client_version(self) -> str:
-        """Client library version.
-        """
+        """Client library version."""
         return self._attributes.get('MON$CLIENT_VERSION')
     @property
     def remote_version(self) -> str:
-        """Remote protocol version.
-        """
+        """Remote protocol version."""
         return self._attributes.get('MON$REMOTE_VERSION')
     @property
     def remote_os_user(self) -> str:
-        """OS user name of client process.
-        """
+        """OS user name of client process."""
         return self._attributes.get('MON$REMOTE_OS_USER')
     @property
     def remote_host(self) -> str:
-        """Name of remote host.
-        """
+        """Name of remote host."""
         return self._attributes.get('MON$REMOTE_HOST')
     @property
     def system(self) -> bool:
-        """True for system attachments.
-        """
+        """True for system attachments."""
         return bool(self._attributes.get('MON$SYSTEM_FLAG'))
     @property
-    def tablestats(self) -> Dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object.
-        """
+    def tablestats(self) -> dict[str, TableStatsInfo]:
+        """Dictionary of `.TableStatsInfo` instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.ATTACHMENT)}
     # Firebird 4
     @property
-    def idle_timeout(self) -> Optional[int]:
+    def idle_timeout(self) -> int | None:
         """Connection level idle timeout.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$IDLE_TIMEOUT')
     @property
-    def idle_timer(self) -> Optional[datetime]:
+    def idle_timer(self) -> datetime.datetime | None:
         """Idle timer expiration time.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$IDLE_TIMER')
     @property
-    def statement_timeout(self) -> Optional[int]:
+    def statement_timeout(self) -> int | None:
         """Connection level statement timeout.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$STATEMENT_TIMEOUT')
     @property
-    def wire_compressed(self) -> Optional[bool]:
+    def wire_compressed(self) -> bool | None:
         """Wire compression.
 
         .. versionadded:: 1.4.0
         """
         return bool(self._attributes.get('MON$WIRE_COMPRESSED'))
     @property
-    def wire_encrypted(self) -> Optional[bool]:
+    def wire_encrypted(self) -> bool | None:
         """Wire encryption.
 
         .. versionadded:: 1.4.0
         """
         return bool(self._attributes.get('MON$WIRE_ENCRYPTED'))
     @property
-    def wire_crypt_plugin(self) -> Optional[str]:
+    def wire_crypt_plugin(self) -> str | None:
         """Name of the wire encryption plugin used by client.
 
         .. versionadded:: 1.4.0
@@ -681,7 +683,7 @@ class AttachmentInfo(InfoItem):
         return self._attributes.get('MON$WIRE_CRYPT_PLUGIN')
     # Firebird 5
     @property
-    def session_timezone(self) -> Optional[str]:
+    def session_timezone(self) -> str | None:
         """Actual timezone of the session.
 
         .. versionadded:: 1.4.0
@@ -713,78 +715,65 @@ class TransactionInfo(InfoItem):
         return self._attributes['MON$AUTO_UNDO'] == FLAG_SET
     @property
     def id(self) -> int:
-        """Transaction ID.
-        """
+        """Transaction ID."""
         return self._attributes['MON$TRANSACTION_ID']
     @property
     def attachment(self) -> AttachmentInfo:
-        """`.AttachmentInfo` instance to which this transaction belongs.
-        """
+        """`.AttachmentInfo` instance to which this transaction belongs."""
         return self.monitor.attachments.get(self._attributes['MON$ATTACHMENT_ID'])
     @property
     def state(self) -> State:
-        """Transaction state (idle/active).
-        """
+        """Transaction state (idle/active)."""
         return State(self._attributes['MON$STATE'])
     @property
     def timestamp(self) -> datetime.datetime:
-        """Transaction start datetime.
-        """
+        """Transaction start datetime."""
         return self._attributes['MON$TIMESTAMP']
     @property
     def top(self) -> int:
-        """Top transaction.
-        """
+        """Top transaction."""
         return self._attributes['MON$TOP_TRANSACTION']
     @property
     def oldest(self) -> int:
-        """Oldest transaction (local OIT).
-        """
+        """Oldest transaction (local OIT)."""
         return self._attributes['MON$OLDEST_TRANSACTION']
     @property
     def oldest_active(self) -> int:
-        """Oldest active transaction (local OAT).
-        """
+        """Oldest active transaction (local OAT)."""
         return self._attributes['MON$OLDEST_ACTIVE']
     @property
     def isolation_mode(self) -> IsolationMode:
-        """Transaction isolation mode code.
-        """
+        """Transaction isolation mode code."""
         return IsolationMode(self._attributes['MON$ISOLATION_MODE'])
     @property
     def lock_timeout(self) -> int:
-        """Lock timeout.
-        """
+        """Lock timeout."""
         return self._attributes['MON$LOCK_TIMEOUT']
     @property
     def statements(self) -> DataList[StatementInfo]:
-        """List of statements associated with transaction.
-        """
+        """list of statements associated with transaction."""
         return self.monitor.statements.extract(lambda s: s._attributes['MON$TRANSACTION_ID'] == self.id,
                                                copy=True)
     @property
     def variables(self) -> DataList[ContextVariableInfo]:
-        """List of variables associated with transaction.
-        """
+        """list of variables associated with transaction."""
         return self.monitor.variables.extract(lambda s: s._attributes['MON$TRANSACTION_ID'] == self.id,
                                               copy=True)
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
-        """
+        """`.IOStatsInfo` for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.TRANSACTION))
     @property
-    def tablestats(self) -> Dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object.
-        """
+    def tablestats(self) -> dict[str, TableStatsInfo]:
+        """Dictionary of `.TableStatsInfo` instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.TRANSACTION)}
 
 class StatementInfo(InfoItem):
     """Information about executed SQL statement.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$SQL_TEXT')
         self._strip_attribute('MON$EXPLAINED_PLAN')
@@ -841,7 +830,7 @@ class StatementInfo(InfoItem):
         return self._attributes.get('MON$EXPLAINED_PLAN')
     @property
     def callstack(self) -> DataList[CallStackInfo]:
-        """List with call stack for statement.
+        """list with call stack for statement.
         """
         callstack = self.monitor.callstack.extract(lambda x: ((x._attributes['MON$STATEMENT_ID'] == self.id) and
                                                              (x._attributes['MON$CALLER_ID'] is None)), copy=True)
@@ -863,21 +852,21 @@ class StatementInfo(InfoItem):
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.STATEMENT))
     @property
-    def tablestats(self) -> Dict[str, TableStatsInfo]:
+    def tablestats(self) -> dict[str, TableStatsInfo]:
         """Dictionary of `.TableStatsInfo` instances for this object.
         """
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.STATEMENT)}
     # Firebird 4
     @property
-    def timeout(self) -> Optional[int]:
+    def timeout(self) -> int | None:
         """Connection level statement timeout.
 
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$STATEMENT_TIMEOUT')
     @property
-    def timer(self) -> Optional[datetime]:
+    def timer(self) -> datetime.datetime | None:
         """Statement timer expiration time.
 
         .. versionadded:: 1.4.0
@@ -885,7 +874,7 @@ class StatementInfo(InfoItem):
         return self._attributes.get('MON$STATEMENT_TIMER')
     # Firebird 5
     @property
-    def compiled_statement(self) -> Optional[CompiledStatementInfo]:
+    def compiled_statement(self) -> CompiledStatementInfo | None:
         """`.CompiledStatementInfo` instance to which this statement relates.
 
         .. versionadded:: 1.4.0
@@ -895,7 +884,7 @@ class StatementInfo(InfoItem):
 class CallStackInfo(InfoItem):
     """Information about PSQL call (stack frame).
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$OBJECT_NAME')
         self._strip_attribute('MON$PACKAGE_NAME')
@@ -915,7 +904,7 @@ class CallStackInfo(InfoItem):
         """
         return self.monitor.callstack.get(self._attributes['MON$CALLER_ID'])
     @property
-    def dbobject(self) -> Union[Procedure, Trigger, Function]:
+    def dbobject(self) -> Procedure | Trigger | Function:
         """Database object.
         """
         obj_type = self.object_type
@@ -965,7 +954,7 @@ class CallStackInfo(InfoItem):
                                          and (io.group is Group.CALL))
     # Firebird 5
     @property
-    def compiled_statement(self) -> Optional[CompiledStatementInfo]:
+    def compiled_statement(self) -> CompiledStatementInfo | None:
         """`.CompiledStatementInfo` instance to which this statement relates.
 
         .. versionadded:: 1.4.0
@@ -976,8 +965,7 @@ class IOStatsInfo(InfoItem):
     """Information about page and row level I/O operations, and about memory consumption.
     """
     @property
-    def owner(self) -> Union[DatabaseInfo, AttachmentInfo, TransactionInfo,
-                             StatementInfo, CallStackInfo]:
+    def owner(self) -> DatabaseInfo | AttachmentInfo | TransactionInfo | StatementInfo | CallStackInfo:
         """Object that owns this IOStats instance.
         """
         obj_type = self.group
@@ -1091,7 +1079,7 @@ class IOStatsInfo(InfoItem):
         """
         return self._attributes.get('MON$RECORD_WAITS')
     @property
-    def conflits(self) -> int:
+    def conflicts(self) -> int:
         """Number of record conflits.
         """
         return self._attributes.get('MON$RECORD_CONFLICTS')
@@ -1112,7 +1100,7 @@ class IOStatsInfo(InfoItem):
         return self._attributes.get('MON$RECORD_RPT_READS')
     # Firebird 4
     @property
-    def intermediate_gc(self) -> Optional[int]:
+    def intermediate_gc(self) -> int | None:
         """Number of records processed by the intermediate garbage collection.
 
         .. versionadded:: 1.4.0
@@ -1123,14 +1111,12 @@ class IOStatsInfo(InfoItem):
 class TableStatsInfo(InfoItem):
     """Information about row level I/O operations on single table.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$TABLE_NAME')
     @property
-    def owner(self) -> Union[DatabaseInfo, AttachmentInfo, TransactionInfo,
-                             StatementInfo, CallStackInfo]:
-        """Object that owns this TableStatsInfo instance.
-        """
+    def owner(self) -> DatabaseInfo | AttachmentInfo | TransactionInfo | StatementInfo | CallStackInfo:
+        """Object that owns this TableStatsInfo instance."""
         obj_type = self.group
         if obj_type is Group.DATABASE:
             return self.monitor.db
@@ -1145,43 +1131,35 @@ class TableStatsInfo(InfoItem):
         raise Error(f"Unrecognized stat group '{obj_type}'")
     @property
     def row_stat_id(self) -> int:
-        """Internal ID.
-        """
+        """Internal ID."""
         return self._attributes['MON$RECORD_STAT_ID']
     @property
     def table_name(self) -> str:
-        """Table name.
-        """
+        """Table name."""
         return self._attributes['MON$TABLE_NAME']
     @property
     def group(self) -> Group:
-        """Object group code.
-        """
+        """Object group code."""
         return Group(self._attributes['MON$STAT_GROUP'])
     @property
     def seq_reads(self) -> int:
-        """Number of records read sequentially.
-        """
+        """Number of records read sequentially."""
         return self._attributes['MON$RECORD_SEQ_READS']
     @property
     def idx_reads(self) -> int:
-        """Number of records read via an index.
-        """
+        """Number of records read via an index."""
         return self._attributes['MON$RECORD_IDX_READS']
     @property
     def inserts(self) -> int:
-        """Number of inserted records.
-        """
+        """Number of inserted records."""
         return self._attributes['MON$RECORD_INSERTS']
     @property
     def updates(self) -> int:
-        """Number of updated records.
-        """
+        """Number of updated records."""
         return self._attributes['MON$RECORD_UPDATES']
     @property
     def deletes(self) -> int:
-        """Number of deleted records.
-        """
+        """Number of deleted records."""
         return self._attributes['MON$RECORD_DELETES']
     @property
     def backouts(self) -> int:
@@ -1203,8 +1181,7 @@ class TableStatsInfo(InfoItem):
         return self._attributes['MON$RECORD_EXPUNGES']
     @property
     def locks(self) -> int:
-        """Number of record locks.
-        """
+        """Number of record locks."""
         return self._attributes['MON$RECORD_LOCKS']
     @property
     def waits(self) -> int:
@@ -1212,30 +1189,26 @@ class TableStatsInfo(InfoItem):
         """
         return self._attributes['MON$RECORD_WAITS']
     @property
-    def conflits(self) -> int:
-        """Number of record conflits.
-        """
+    def conflicts(self) -> int:
+        """Number of record conflicts."""
         return self._attributes['MON$RECORD_CONFLICTS']
     @property
     def backversion_reads(self) -> int:
-        """Number of record backversion reads.
-        """
+        """Number of record backversion reads."""
         return self._attributes['MON$BACKVERSION_READS']
     @property
     def fragment_reads(self) -> int:
-        """Number of record fragment reads.
-        """
+        """Number of record fragment reads."""
         return self._attributes['MON$FRAGMENT_READS']
     @property
     def repeated_reads(self) -> int:
-        """Number of repeated record reads.
-        """
+        """Number of repeated record reads."""
         return self._attributes['MON$RECORD_RPT_READS']
 
 class ContextVariableInfo(InfoItem):
     """Information about context variable.
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$VARIABLE_NAME')
         self._strip_attribute('MON$VARIABLE_VALUE')
@@ -1275,7 +1248,7 @@ class CompiledStatementInfo(InfoItem):
 
     .. versionadded:: 1.4.0
     """
-    def __init__(self, monitor: Monitor, attributes: Dict[str, Any]):
+    def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
         self._strip_attribute('MON$OBJECT_NAME')
         self._strip_attribute('MON$PACKAGE_NAME')
@@ -1287,28 +1260,28 @@ class CompiledStatementInfo(InfoItem):
         """
         return self._attributes['MON$COMPILED_STATEMENT_ID']
     @property
-    def sql(self) -> Optional[str]:
+    def sql(self) -> str | None:
         """Text of the SQL query.
         """
         return self._attributes['MON$SQL_TEXT']
     @property
-    def plan(self) -> Optional[str]:
+    def plan(self) -> str | None:
         """Plan (in the explained form) of the SQL query.
         """
         return self._attributes.get('MON$EXPLAINED_PLAN')
     @property
-    def object_name(self) -> Optional[str]:
+    def object_name(self) -> str | None:
         """PSQL object name.
         """
         return self._attributes.get('MON$OBJECT_NAME')
     @property
-    def object_type(self) -> Optional[ObjectType]:
+    def object_type(self) -> ObjectType | None:
         """PSQL object type.
         """
         value = self._attributes.get('MON$OBJECT_TYPE')
         return value if value is None else ObjectType(value)
     @property
-    def package_name(self) -> Optional[str]:
+    def package_name(self) -> str | None:
         """Package name of the PSQL object.
         """
         return self._attributes.get('MON$PACKAGE_NAME')

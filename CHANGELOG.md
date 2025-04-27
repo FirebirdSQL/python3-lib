@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.0] - Unreleased
+
+### Changed
+
+* Test changed from `unittest` to `pytest`, more tests for greater coverage.
+* Minimal Python version raised to 3.11
+* Improved documentation
+* Parameter `any_` in `firebird.lib.schema.FunctionArgument.is_by_descriptor` was replaced
+  by `any_desc` keyword-only argument.
+* Parameter `without_optional` in `firebrid.lib.logmsg.MsgDesc` was changed to keyword-only.
+* `firebird.lib.schema.CharacterSet.default_colate` was renamed to `default_colation`.
+
+### Added
+
+* Added `firebird.lib.schema.Privilege.is_usage` method.
+
 ## [1.5.1] - 2025-04-25
 
 ### Fixed

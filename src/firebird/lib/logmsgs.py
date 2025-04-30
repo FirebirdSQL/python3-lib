@@ -994,12 +994,14 @@ def identify_msg(msg: str) -> tuple[MsgDesc, dict[str, Any], bool] | None:
 
     Returns:
         A tuple containing:
+
         - The matched `.MsgDesc` instance.
         - A dictionary mapping parameter names (from placeholders like `{s:name}`)
           to their extracted values (as strings or integers).
         - A boolean flag: `True` if the optional part of the message format
           (following 'OPTIONAL') was *not* present in the input `msg`,
           `False` otherwise.
+
         Returns `None` if the `msg` does not match any known `.MsgDesc` pattern.
     """
     parts = msg.split()

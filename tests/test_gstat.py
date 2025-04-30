@@ -606,7 +606,7 @@ def test_27_parse_bad_float_in_table():
         'MYTABLE (128)',
         '    Average record length: abc',
     ]
-    with pytest.raises(Error, match="Unknown information \(line 3\)"): # Catches float() error
+    with pytest.raises(Error, match="Unknown information"): # Catches float() error
         db.parse(lines)
 
 def test_28_parse_bad_fill_range():

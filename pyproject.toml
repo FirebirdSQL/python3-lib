@@ -58,24 +58,6 @@ dependencies = [
 [tool.hatch.envs.hatch-test]
 extra-args = ["--host=localhost"]
 
-[tool.hatch.envs.test]
-dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest",
-]
-[tool.hatch.envs.test.scripts]
-test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = [
-  "- coverage combine",
-  "coverage report",
-]
-cov = [
-  "test-cov",
-  "cov-report",
-]
-version = "python --version"
-
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.11", "3.12", "3.13"]
 

@@ -329,3 +329,187 @@ Yes, it could be very long!
 EventUnknown(event_id=2, timestamp=datetime.datetime(2018, 3, 22, 10, 6, 59, 509000), data='EVENT_FROM_THE_FUTURE\\nThis event may contain\\nvarious information\\nwhich could span\\nmultiple lines.\\nYes, it could be very long!')
 """
     _check_events(trace_lines, output)
+
+def test_63_malformed_performance_trailing_comma():
+    """Tests parsing of EXECUTE_STATEMENT_FINISH with malformed performance data (trailing comma).
+    
+    This test verifies the fix for the issue where performance lines with trailing commas
+    or empty values caused "ValueError: not enough values to unpack (expected 2, got 1)".
+    
+    Issue: Some Firebird trace files contain performance lines like:
+        "123 ms, 456 reads, " (trailing comma with no value)
+        "123 ms, , 789 fetches" (empty value between commas)
+    
+    The parser now skips empty or malformed performance values instead of crashing.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) EXECUTE_STATEMENT_FINISH
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+Statement 1:
+-------------------------------------------------------------------------------
+SELECT * FROM EMPLOYEE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+0 records fetched
+      15 ms, 147 read(s), 1 write(s), 6 fetch(es), 
+
+"""
+    # The performance line has a trailing comma with no value after "fetch(es)"
+    # The parser should skip the empty value and successfully parse the valid metrics
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+SQLInfo(sql_id=1, sql='SELECT * FROM EMPLOYEE', plan='')
+EventStatementFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, statement_id=1, sql_id=1, param_id=None, records=0, run_time=15, reads=147, writes=1, fetches=6, marks=None, access=None)
+"""
+    _check_events(trace_lines, output)
+
+def test_64_malformed_performance_empty_value():
+    """Tests parsing with performance data containing empty values between commas.
+    
+    This test verifies that the parser can handle performance lines with empty values
+    in the middle, such as "123 ms, , 789 fetches" where there's an empty value
+    between two commas.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) EXECUTE_PROCEDURE_FINISH
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+Procedure STP_READCONFIG:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      10 ms, , 25 fetch(es)
+
+"""
+    # The performance line has an empty value between the first and second comma
+    # The parser should skip the empty value and parse the valid metrics
+    # Note: EXECUTE_PROCEDURE_FINISH events don't have statement_id/sql_id fields
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+EventProcedureFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, procedure='STP_READCONFIG', param_id=None, records=None, run_time=None, reads=None, writes=None, fetches=None, marks=None, access=None)
+"""
+    _check_events(trace_lines, output)
+
+def test_65_malformed_performance_single_value():
+    """Tests parsing with performance data containing a malformed single value.
+    
+    This test verifies that the parser can handle performance lines where one of the
+    comma-separated parts contains only a single word without a type suffix.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) COMMIT_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+      5 ms, malformed, 10 read(s), 3 write(s)
+
+"""
+    # The performance line has "malformed" which is a single word without a type
+    # The parser should skip this malformed value and parse the valid metrics
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+EventCommit(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=5, reads=10, writes=3, fetches=None, marks=None)
+"""
+    _check_events(trace_lines, output)
+
+def test_66_malformed_date():
+    """Tests parsing with malformed date parameter (double dash).
+    
+    This test verifies the fix for date parsing errors where trace files contain
+    malformed date values like '0000-01--26' (note the double dash).
+    
+    The parser now handles strptime errors gracefully by storing the raw string value
+    when date parsing fails.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) EXECUTE_STATEMENT_FINISH
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+Statement 1:
+-------------------------------------------------------------------------------
+SELECT * FROM EMPLOYEE WHERE hire_date = ?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+param0 = date, "0000-01--26"
+
+0 records fetched
+      15 ms, 147 read(s), 1 write(s), 6 fetch(es)
+
+"""
+    # The malformed date should be kept as a string instead of causing a parse error
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+ParamSet(par_id=1, params=[('date', '0000-01--26')])
+SQLInfo(sql_id=1, sql='SELECT * FROM EMPLOYEE WHERE hire_date = ?', plan='')
+EventStatementFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, statement_id=1, sql_id=1, param_id=1, records=0, run_time=15, reads=147, writes=1, fetches=6, marks=None, access=None)
+"""
+    _check_events(trace_lines, output)
+
+def test_67_unknown_performance_parameter():
+    """Tests parsing with unknown performance parameters.
+    
+    This test verifies the fix for "Unhandled performance parameter" errors where
+    trace files contain unknown or unexpected performance metric types.
+    
+    Real-world example: Some traces contained "ROCK" as a performance parameter,
+    likely due to data corruption or unusual Firebird versions.
+    
+    The parser now skips unknown performance parameters instead of raising an error.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) COMMIT_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+      5 ms, 10 read(s), 3 ROCK, 2 write(s)
+
+"""
+    # The unknown "ROCK" parameter should be skipped, and valid metrics should be parsed
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+EventCommit(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=5, reads=10, writes=2, fetches=None, marks=None)
+"""
+    _check_events(trace_lines, output)

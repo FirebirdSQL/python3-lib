@@ -1253,7 +1253,15 @@ class TraceParser:
         self.__event_values['marks'] = None
         if self.__current_block:
             for value in self.__current_block.popleft().split(','):
-                value, val_type = value.split() # noqa: PLW2901
+                value = value.strip()
+                if not value:
+                    # Skip empty values from trailing/leading commas
+                    continue
+                parts = value.split()
+                if len(parts) != 2:
+                    # Skip malformed performance values
+                    continue
+                value, val_type = parts # noqa: PLW2901
                 if 'ms' in val_type:
                     self.__event_values['run_time'] = int(value)
                 elif 'read' in val_type:
@@ -1264,8 +1272,6 @@ class TraceParser:
                     self.__event_values['fetches'] = int(value)
                 elif 'mark' in val_type:
                     self.__event_values['marks'] = int(value)
-                else:
-                    raise Error(f"Unhandled performance parameter {val_type}")
     def _parse_attachment_and_transaction(self) -> None:
         # Attachment
         att_values = {}
@@ -1353,11 +1359,23 @@ class TraceParser:
         elif param_type in ('smallint', 'integer', 'bigint'):
             param_value = int(param_value)
         elif param_type == 'timestamp':
-            param_value = datetime.datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%f') # noqa: DTZ007
+            try:
+                param_value = datetime.datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%f') # noqa: DTZ007
+            except ValueError:
+                # Handle malformed timestamps
+                pass
         elif param_type == 'date':
-            param_value = datetime.datetime.strptime(param_value, '%Y-%m-%d') # noqa: DTZ007
+            try:
+                param_value = datetime.datetime.strptime(param_value, '%Y-%m-%d') # noqa: DTZ007
+            except ValueError:
+                # Handle malformed dates
+                pass
         elif param_type == 'time':
-            param_value = datetime.datetime.strptime(param_value, '%H:%M:%S.%f') # noqa: DTZ007
+            try:
+                param_value = datetime.datetime.strptime(param_value, '%H:%M:%S.%f') # noqa: DTZ007
+            except ValueError:
+                # Handle malformed times
+                pass
         elif param_type in ('float', 'double precision'):
             param_value = decimal.Decimal(param_value)
         return (param_type, param_value,)
@@ -1399,10 +1417,18 @@ class TraceParser:
             self.__event_values['records'] = int(line.split()[0])
         else:
             self.__event_values['records'] = None
-        values = self.__current_block.popleft().split(',')
+        perf_line = self.__current_block.popleft()
+        values = perf_line.split(',')
         while values:
-            next_value = values.pop()
-            value, val_type = next_value.split()
+            next_value = values.pop().strip()
+            if not next_value:
+                # Skip empty values from trailing/leading commas
+                continue
+            parts = next_value.split()
+            if len(parts) != 2:
+                # Skip malformed performance values
+                continue
+            value, val_type = parts
             if 'ms' in val_type:
                 self.__event_values['run_time'] = int(value)
             elif 'read' in val_type:
@@ -1413,25 +1439,26 @@ class TraceParser:
                 self.__event_values['fetches'] = int(value)
             elif 'mark' in val_type:
                 self.__event_values['marks'] = int(value)
-            else:
-                raise Error(f"Unhandled performance parameter {val_type}")
         if self.__current_block:
-            self.__event_values['access'] = []
-            if self.__current_block.popleft() != "Table                             Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge":
-                raise Error("Performance table header expected")
-            if self.__current_block.popleft() != "*"*111:
-                raise Error("Performance table header separator expected")
-            while self.__current_block:
-                entry = self.__current_block.popleft()
-                self.__event_values['access'].append(AccessStats(intern(entry[:32].strip()),
-                                                                 safe_int(entry[32:41].strip()),
-                                                                 safe_int(entry[41:51].strip()),
-                                                                 safe_int(entry[51:61].strip()),
-                                                                 safe_int(entry[61:71].strip()),
-                                                                 safe_int(entry[71:81].strip()),
-                                                                 safe_int(entry[81:91].strip()),
-                                                                 safe_int(entry[91:101].strip()),
-                                                                 safe_int(entry[101:111].strip())))
+            # Check if this is actually a table header before trying to parse it
+            next_line = self.__current_block[0]
+            if "Table" in next_line and "Natural" in next_line:
+                self.__event_values['access'] = []
+                if self.__current_block.popleft() != "Table                             Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge":
+                    raise Error("Performance table header expected")
+                if self.__current_block.popleft() != "*"*111:
+                    raise Error("Performance table header separator expected")
+                while self.__current_block:
+                    entry = self.__current_block.popleft()
+                    self.__event_values['access'].append(AccessStats(intern(entry[:32].strip()),
+                                                                     safe_int(entry[32:41].strip()),
+                                                                     safe_int(entry[41:51].strip()),
+                                                                     safe_int(entry[51:61].strip()),
+                                                                     safe_int(entry[61:71].strip()),
+                                                                     safe_int(entry[71:81].strip()),
+                                                                     safe_int(entry[81:91].strip()),
+                                                                     safe_int(entry[91:101].strip()),
+                                                                     safe_int(entry[101:111].strip())))
     def _parse_sql_info(self) -> None:
         plan = self.__event_values['plan']
         sql = self.__event_values['sql']

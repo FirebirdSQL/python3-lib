@@ -337,124 +337,124 @@ messages = [
           msg_format=['Database: ', '{s:database}', '\nValidation finished: ', '{d:errors}', ' errors, ', '{d:warnings}', ' warnings, ', '{d:fixed}', ' fixed']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=77, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Page ', '{d:page_num}', ' wrong type (expected ', '{d:expected}', ' encountered ', '{d:found}', ')', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Page ', '{d:page_num}', ' wrong type (expected ', '{d:expected}', ' encountered ', '{d:found}', ')', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=78, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Checksum error on page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Checksum error on page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=79, severity=Severity.ERROR, facility=Facility.VALIDATION,
           msg_format=['Database: ', '{s:database}', '\nError: Page ', '{d:page_num}', ' doubly allocated']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=80, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Page ', '{d:page_num}', ' is used but marked free', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Page ', '{d:page_num}', ' is used but marked free', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=81, severity=Severity.WARNING, facility=Facility.VALIDATION,
           msg_format=['Database: ', '{s:database}', '\nWarning: Page ', '{d:page_num}', ' is an orphan']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=82, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Blob ', '{s:blob_id}', ' appears inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Blob ', '{s:blob_id}', ' appears inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=83, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' is corrupt', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' is corrupt', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=84, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' is truncated', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' is truncated', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=85, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Chain for record ', '{s:record_id}', ' is broken', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Chain for record ', '{s:record_id}', ' is broken', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=86, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} is confused', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} is confused', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=87, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '}, line ', '{d:line}', ' is bad', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '}, line ', '{d:line}', ' is bad', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=88, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_no}', ' is corrupt on page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', '. File: ', '{s:filename}', ', line: ', '{d:line}', '\n', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_no}', ' is corrupt on page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', '. File: ', '{s:filename}', ', line: ', '{d:line}', '\n', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=89, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Pointer page {sequence ', '{d:sequence}', '} lost', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Pointer page {sequence ', '{d:sequence}', '} lost', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=90, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Pointer page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Pointer page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=91, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' is marked as damaged', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' is marked as damaged', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=92, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' has bad transaction ', '{s:tras_id}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' has bad transaction ', '{s:tras_id}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=93, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Fragmented record ', '{s:record_id}', ' is corrupt', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Fragmented record ', '{s:record_id}', ' is corrupt', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=94, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' is wrong length', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Record ', '{s:record_id}', ' is wrong length', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=95, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Missing index root page', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Missing index root page', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=96, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory pages lost', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory pages lost', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=97, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory page lost, sequence ', '{d:sequence}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory page lost, sequence ', '{d:sequence}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=98, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory pages confused, sequence ', '{d:sequence}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Transaction inventory pages confused, sequence ', '{d:sequence}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=99, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Relation has ', '{d:number}', ' orphan backversions {', '{d:in_use}', ' in use}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Relation has ', '{d:number}', ' orphan backversions {', '{d:in_use}', ' in use}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=100, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_id}', ' is corrupt {missing entries for record ', '{d:record_id}', '}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_id}', ' is corrupt {missing entries for record ', '{d:record_id}', '}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=101, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' has orphan child page at page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' has orphan child page at page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=102, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_id}', ' has a circular reference at page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Index ', '{d:index_id}', ' has a circular reference at page ', '{d:page_num}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=103, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', "\nError: SCN's page ", '{d:page_num}', ' {sequence ', '{d:sequence}', '} inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', "\nError: SCN's page ", '{d:page_num}', ' {sequence ', '{d:sequence}', '} inconsistent', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=104, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Page ', '{d:page_num}', ' has SCN ', '{d:scn}', " while at SCN's page it is ", '{d:scn_2}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Page ', '{d:page_num}', ' has SCN ', '{d:scn}', " while at SCN's page it is ", '{d:scn_2}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=105, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' has unknown level ', '{d:level}', ' instead of {0, 1, 2}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Blob ', '{s:blob_id}', ' has unknown level ', '{d:level}', ' instead of {0, 1, 2}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=106, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' has inconsistent left sibling pointer, page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' has inconsistent left sibling pointer, page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=107, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' misses node on page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Index ', '{d:index_id}', ' misses node on page ', '{d:page_num}', ' level ', '{d:level}', ' at offset ', '{d:offset}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=108, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_min (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_min (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=109, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_extent (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_extent (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=110, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_used (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: PIP ', '{d:pip_num}', ' (seq ', '{d:sequence}', ') have wrong pip_used (', '{d:pip_wrong}', '). Correct is ', '{d:pip_correct}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=111, severity=Severity.WARNING, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nWarning: Pointer page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} bits {0x', '{s:bits}', ' ', '{s:value}', '} are not consistent with data page ', '{d:page_num2}', ' {sequence ', '{d:sequence2}', '} state {0x', '{s:bits2}', ' ', '{s:value2}', '}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nWarning: Pointer page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} bits {0x', '{s:bits}', ' ', '{s:value}', '} are not consistent with data page ', '{d:page_num2}', ' {sequence ', '{d:sequence2}', '} state {0x', '{s:bits2}', ' ', '{s:value2}', '}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=112, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' marked as free in PIP (', '{d:value_1}', ':', '{d:value_2}', ')', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' marked as free in PIP (', '{d:value_1}', ':', '{d:value_2}', ')', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=113, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' is not in PP (', '{d:pp}', '). Slot (', '{d:slot}', ') is not found', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' is not in PP (', '{d:pp}', '). Slot (', '{d:slot}', ') is not found', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=114, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' is not in PP (', '{d:pp}', '). Slot (', '{d:slot}', ') has value ', '{d:value}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' is not in PP (', '{d:pp}', '). Slot (', '{d:slot}', ') has value ', '{d:value}', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=115, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Pointer page is not found for data page ', '{d:page_num}', '. dpg_sequence (', '{d:sequence}', ') is invalid', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Pointer page is not found for data page ', '{d:page_num}', '. dpg_sequence (', '{d:sequence}', ') is invalid', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:1162
   MsgDesc(msg_id=116, severity=Severity.ERROR, facility=Facility.VALIDATION,
-          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} marked as secondary but contains primary record versions', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:reletion_id}', ')']),
+          msg_format=['Database: ', '{s:database}', '\nError: Data page ', '{d:page_num}', ' {sequence ', '{d:sequence}', '} marked as secondary but contains primary record versions', 'OPTIONAL', ' in table ', '{s:table}', ' (', '{d:relation_id}', ')']),
   # firebird/src/jrd/validation.cpp:3110
   MsgDesc(msg_id=117, severity=Severity.ERROR, facility=Facility.VALIDATION,
           msg_format=['bugcheck during scan of table ', '{d:relation_id}', 'OPTIONAL', ' (', '{s:table_name}', ')']),

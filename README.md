@@ -7,6 +7,7 @@
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/firebird-lib)](https://pypi.org/project/firebird-lib)
 [![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/pypi/firebird-lib)](https://libraries.io/pypi/firebird-lib)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/FirebirdSQL/python3-lib)
 
 This package provides optional extensions for [firebird-driver](https://pypi.org/project/firebird-driver/).
 

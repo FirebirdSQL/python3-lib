@@ -214,7 +214,7 @@ def test_04_AttachmentInfo(db_connection, fb_vars, db_file):
             elif version.base_version == FB40:
                 assert s.remote_version.startswith('P17')
             else: # FB 5.0+
-                assert s.remote_version.startswith('P18')
+                assert s.remote_version.startswith('P18') or s.remote_version.startswith('P19')
 
         assert isinstance(s.remote_os_user, (str, type(None))) # Might be None
         assert isinstance(s.remote_host, (str, type(None))) # Might be None

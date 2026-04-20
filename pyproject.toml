@@ -59,7 +59,7 @@ dependencies = [
 extra-args = ["--host=localhost"]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.11", "3.12", "3.13"]
+python = ["3.11", "3.12", "3.13", "3.14"]
 
 [tool.hatch.envs.doc]
 detached = false

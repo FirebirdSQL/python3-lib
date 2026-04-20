@@ -88,7 +88,9 @@ items_var: TLogItemSpec = [
     ('Database backup GUID:', 's', 'backup_guid'),
     ('Root file name:', 's', 'root_filename'),
     ('Replay logging file:', 's', None),
-    ('Backup difference file:', 's', 'backup_diff_file')]
+    ('Backup difference file:', 's', 'backup_diff_file'),
+    ('Database GUID:', 's', None)
+]
 
 items_tbl3: TLogItemSpec = [
     ('Primary pointer page:', 'i', None),
@@ -119,7 +121,8 @@ items_tbl3: TLogItemSpec = [
     ('blob pages:', 'i', None),
     ('Level 0:', 'i', None),
     ('Level 1:', 'i', None),
-    ('Level 2:', 'i', None)]
+    ('Level 2:', 'i', None), 
+]
 
 items_idx3: TLogItemSpec = [
     ('Root page:', 'i', None),
@@ -271,6 +274,8 @@ class StatTable:
         self.level_1: int | None = None
         #: Number of Level 2 BLOB values
         self.level_2: int | None = None
+        #: Table size
+        self.table_size: int | None = None
 
 class StatIndex:
     """Statistics for a single database index, populated from gstat output.
@@ -387,6 +392,8 @@ class StatDatabase:
         self.encrypted_blob_pages: int | None = None
         #: Database file names
         self.continuation_files: list[str] = []
+        #: Database GUID
+        self.database_guid: str | None = None
         #
         self.__line_no: int = 0
         self.__table: StatTable | None = None
@@ -537,6 +544,8 @@ class StatDatabase:
             self.__table.distribution[i] = int(fill_value.strip())
         elif line.startswith('Fill distribution:'):
             pass
+        elif line.startswith('Table size:'):
+            self.__table.table_size = int(line[12:-6]) # Extract value from 'Table size: <VALUE> bytes'
         else:
             raise Error(f'Unknown information (line {self.__line_no})')
     def __parse_index(self, line: str) -> None:

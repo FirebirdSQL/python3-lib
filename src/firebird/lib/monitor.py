@@ -87,6 +87,7 @@ class State(IntEnum):
     """
     IDLE = 0
     ACTIVE = 1
+    STALLED = 2
 
 class IsolationMode(IntEnum):
     """Transaction solation mode.
@@ -346,7 +347,7 @@ class InfoItem:
         if self._attributes.get(attr):
             self._attributes[attr] = self._attributes[attr].strip()
     @property
-    def stat_id(self) -> Group | None:
+    def stat_id(self) -> int | None:
         """The statistic ID (`MON$STAT_ID`) for this monitored item."""
         return self._attributes.get('MON$STAT_ID')
 
@@ -689,6 +690,14 @@ class AttachmentInfo(InfoItem):
         .. versionadded:: 1.4.0
         """
         return self._attributes.get('MON$SESSION_TIMEZONE')
+    @property
+    def parallel_workers(self) -> str | None:
+        """Maximum number of parallel workers for this connection, 1 means no parallel workers.
+        “Garbage Collector” and “Cache Writer” connections may report 0.
+
+        .. versionadded:: 2.0.1
+        """
+        return self._attributes.get('MON$PARALLEL_WORKERS')
 
 class TransactionInfo(InfoItem):
     """Information about transaction.
@@ -1204,6 +1213,14 @@ class TableStatsInfo(InfoItem):
     def repeated_reads(self) -> int:
         """Number of repeated record reads."""
         return self._attributes['MON$RECORD_RPT_READS']
+    # Firebird 4
+    @property
+    def intermediate_gc(self) -> int | None:
+        """Number of records processed by the intermediate garbage collection.
+
+        .. versionadded:: 2.0.1
+        """
+        return self._attributes.get('MON$RECORD_IMGC')
 
 class ContextVariableInfo(InfoItem):
     """Information about context variable.

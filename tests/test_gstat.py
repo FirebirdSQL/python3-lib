@@ -114,7 +114,7 @@ def test_01_parse30_h(data_path):
                      'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
                      'continuation_file': None, 'continuation_files': 0,
                      'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                     'database_dialect': 3, 'encrypted_blob_pages': None,
+                     'database_dialect': 3, 'database_guid': None, 'encrypted_blob_pages': None,
                      'encrypted_data_pages': None, 'encrypted_index_pages': None,
                      'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
                      'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
@@ -146,7 +146,7 @@ def test_02_parse30_a(data_path):
     expected_db_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
                          'completed': datetime.datetime(2018, 4, 4, 15, 42),
                          'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                         'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                         'database_dialect': 3, 'database_guid': None, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
                          'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
                          'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
                          'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,
@@ -169,14 +169,14 @@ def test_02_parse30_a(data_path):
          'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
          'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
          'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-         'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
+         'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'table_size': None, 'total_formats': None,
          'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
         {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
          'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
          'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
          'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
          'max_fragments': None, 'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': 1, 'primary_pages': 1,
-         'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'total_formats': None,
+         'primary_pointer_page': 182, 'secondary_pages': 0, 'swept_pages': 0, 'table_id': 128, 'table_size': None, 'total_formats': None,
          'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
         # ... Add more table data checks if needed ...
     ]
@@ -223,7 +223,7 @@ def test_03_parse30_d(data_path):
         'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
         'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
         'max_fragments': None, 'max_versions': None, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1,
-        'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': None,
+        'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'table_size': None, 'total_formats': None,
         'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None
     }
     assert get_object_data(db.tables[0]) == expected_ar_table # Assuming AR is the first table
@@ -237,7 +237,7 @@ def test_04_parse30_e(data_path):
     expected_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
                      'completed': datetime.datetime(2018, 4, 4, 15, 45, 6),
                      'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                     'database_dialect': 3,
+                     'database_dialect': 3, 'database_guid': None,
                      # Compare Encryption objects directly or their attributes
                      'encrypted_blob_pages': Encryption(pages=11, encrypted=0, unencrypted=11),
                      'encrypted_data_pages': Encryption(pages=121, encrypted=0, unencrypted=121),
@@ -298,7 +298,7 @@ def test_06_parse30_i(data_path):
         'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
         'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
         'max_versions': None, 'name': 'COUNTRY', 'pointer_pages': None, 'primary_pages': None, 'primary_pointer_page': None,
-        'secondary_pages': None, 'swept_pages': None, 'table_id': 128, 'total_formats': None, 'total_fragments': None,
+        'secondary_pages': None, 'swept_pages': None, 'table_id': 128, 'table_size': None, 'total_formats': None, 'total_fragments': None,
         'total_records': None, 'total_versions': None, 'used_formats': None
     }
     # Find the COUNTRY table (order might vary)
@@ -341,7 +341,7 @@ def test_07_parse30_r(data_path):
         'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
         'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': 125, 'level_1': 0, 'level_2': 0,
         'max_fragments': 0, 'max_versions': 1, 'name': 'AR', 'pointer_pages': 1, 'primary_pages': 1, 'primary_pointer_page': 297,
-        'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'total_formats': 1, 'total_fragments': 0, 'total_records': 120,
+        'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'table_size': None, 'total_formats': 1, 'total_fragments': 0, 'total_records': 120,
         'total_versions': 105, 'used_formats': 1
     }
     ar_table = next((t for t in db.tables if t.name == 'AR'), None)
@@ -382,7 +382,7 @@ def test_09_push30_h(data_path):
                      'completed': datetime.datetime(2018, 4, 4, 15, 41, 34),
                      'continuation_file': None, 'continuation_files': 0,
                      'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                     'database_dialect': 3, 'encrypted_blob_pages': None,
+                     'database_dialect': 3, 'database_guid': None, 'encrypted_blob_pages': None,
                      'encrypted_data_pages': None, 'encrypted_index_pages': None,
                      'executed': datetime.datetime(2018, 4, 4, 15, 41, 34),
                      'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
@@ -414,7 +414,7 @@ def test_10_push30_a(data_path):
     expected_db_data = {'attributes': 1, 'backup_diff_file': None, 'backup_guid': '{F978F787-7023-4C4A-F79D-8D86645B0487}',
                          'completed': datetime.datetime(2018, 4, 4, 15, 42),
                          'continuation_file': None, 'continuation_files': 0, 'creation_date': datetime.datetime(2015, 11, 27, 11, 19, 39),
-                         'database_dialect': 3, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
+                         'database_dialect': 3, 'database_guid': None, 'encrypted_blob_pages': None, 'encrypted_data_pages': None, 'encrypted_index_pages': None,
                          'executed': datetime.datetime(2018, 4, 4, 15, 42), 'filename': '/home/fdb/test/FBTEST30.FDB', 'flags': 0,
                          'generation': 2176, 'gstat_version': 3, 'implementation': 'HW=AMD/Intel/x64 little-endian OS=Linux CC=gcc',
                          'indices': 39, 'last_logical_page': None, 'next_attachment_id': 1199, 'next_header_page': 0,

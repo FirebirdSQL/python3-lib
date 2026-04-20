@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.1] - 2026-04-20
+
+### Added
+
+- Missing Firebird 5 items `database_guid` and `table_size` items in `gstat` module.
+- Missing Firebird 5 items `parallel_workers` and `intermediate_gc` in `monitor` module.
+
 ## [2.0.0] - 2025-04-30
 
 ### Changed

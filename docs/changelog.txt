@@ -2,6 +2,13 @@
 Changelog
 #########
 
+
+Version 2.0.1
+=============
+
+- Added missing Firebird 5 items `database_guid` and `table_size` items in `gstat` module.
+- Added missing Firebird 5 items `parallel_workers` and `intermediate_gc` in `monitor` module.
+
 Version 2.0.0
 =============
 

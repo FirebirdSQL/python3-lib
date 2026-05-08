@@ -1383,7 +1383,7 @@ class TraceParser:
         parameters = []
         while self.__current_block and self.__current_block[0].startswith('param'):
             line = self.__current_block.popleft()
-            _, param_def = line.split(' = ')
+            _, param_def = line.split(' = ', maxsplit=1)
             parameters.append(self._parse_value_spec(param_def))
         return parameters
     def _parse_parameters(self, *, for_procedure: bool=False) -> None:

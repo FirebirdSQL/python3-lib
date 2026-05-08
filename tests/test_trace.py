@@ -513,3 +513,48 @@ EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0
 EventCommit(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'], run_time=5, reads=10, writes=2, fetches=None, marks=None)
 """
     _check_events(trace_lines, output)
+
+def test_68_param_value_containing_equals():
+    """Tests parsing of a parameter whose value contains the ' = ' substring.
+
+    Without ``maxsplit=1`` on ``line.split(' = ')`` in
+    ``_parse_parameters_block``, a parameter value that itself contains
+    ``' = '`` causes ``ValueError: too many values to unpack (expected 2,
+    got 3)`` and the enclosing trace block is dropped silently. Such
+    values are entirely legal -- a varchar column can carry arbitrary
+    text, including key=value-shaped strings.
+    """
+    trace_lines = """2014-05-23T11:00:28.5840 (3720:0000000000EFD9E8) ATTACH_DATABASE
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+
+2014-05-23T11:00:28.6160 (3720:0000000000EFD9E8) START_TRANSACTION
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+2014-05-23T11:00:30.4350 (3720:0000000000EFD9E8) EXECUTE_STATEMENT_FINISH
+	/home/employee.fdb (ATT_8, SYSDBA:NONE, ISO88591, TCPv4:192.168.1.5)
+	/opt/firebird/bin/isql:8723
+		(TRA_1568, READ_COMMITTED | REC_VERSION | WAIT | READ_WRITE)
+
+Statement 1:
+-------------------------------------------------------------------------------
+UPDATE NOTES SET BODY = ? WHERE ID = ?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+param0 = varchar(80), "alpha = 1; beta = 2"
+param1 = integer, "42"
+
+0 records fetched
+      15 ms, 147 read(s), 1 write(s), 6 fetch(es)
+
+"""
+    # Parameter value 'alpha = 1; beta = 2' contains ' = ' twice.
+    # The block must parse cleanly and the value must be preserved verbatim.
+    output = """EventAttach(event_id=1, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 584000), status=<Status.OK: ' '>, attachment_id=8, database='/home/employee.fdb', charset='ISO88591', protocol='TCPv4', address='192.168.1.5', user='SYSDBA', role='NONE', remote_process='/opt/firebird/bin/isql', remote_pid=8723)
+EventTransactionStart(event_id=2, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 28, 616000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, options=['READ_COMMITTED', 'REC_VERSION', 'WAIT', 'READ_WRITE'])
+ParamSet(par_id=1, params=[('varchar(80)', 'alpha = 1; beta = 2'), ('integer', 42)])
+SQLInfo(sql_id=1, sql='UPDATE NOTES SET BODY = ? WHERE ID = ?', plan='')
+EventStatementFinish(event_id=3, timestamp=datetime.datetime(2014, 5, 23, 11, 0, 30, 435000), status=<Status.OK: ' '>, attachment_id=8, transaction_id=1568, statement_id=1, sql_id=1, param_id=1, records=0, run_time=15, reads=147, writes=1, fetches=6, marks=None, access=None)
+"""
+    _check_events(trace_lines, output)

@@ -111,7 +111,6 @@ class FieldSubType(IntEnum):
 
 # --- Lists and disctionary maps ---
 
-#: Mapping from FieldType codes to SQL type names (approximations).
 COLUMN_TYPES = {None: 'UNKNOWN', FieldType.SHORT: 'SMALLINT',
                 FieldType.LONG: 'INTEGER', FieldType.QUAD: 'QUAD',
                 FieldType.FLOAT: 'FLOAT', FieldType.TEXT: 'CHAR',
@@ -121,8 +120,9 @@ COLUMN_TYPES = {None: 'UNKNOWN', FieldType.SHORT: 'SMALLINT',
                 FieldType.TIME: 'TIME', FieldType.DATE: 'DATE',
                 FieldType.TIMESTAMP: 'TIMESTAMP', FieldType.INT64: 'BIGINT',
                 FieldType.BOOLEAN: 'BOOLEAN'}
-#: Mapping for FieldSubType codes used with integral types.
+"""Mapping from FieldType codes to SQL type names (approximations)."""
 INTEGRAL_SUBTYPES = ('UNKNOWN', 'NUMERIC', 'DECIMAL')
+"""Mapping for FieldSubType codes used with integral types."""
 
 class IndexType(Enum):
     """Index ordering."""
@@ -132,7 +132,7 @@ class IndexType(Enum):
 class ObjectType(IntEnum):
     """Dependent type codes.
 
-    .. versionchanged:: 1.4.0 - `PACKAGE` renamed to `PACKAGE_HEADER`, added values 20-37
+    **Changed in version 1.4.0:** `PACKAGE` renamed to `PACKAGE_HEADER`, added values 20-37
     """
     TABLE = 0
     VIEW = 1
@@ -355,7 +355,7 @@ class ConstraintType(Enum):
     UNIQUE = 'UNIQUE'
 
 class Section(Enum):
-    """DDL script sections. Used by `.Schema.get_metadata_ddl()`."""
+    """DDL script sections. Used by [`Schema.get_metadata_ddl()`][firebird.lib.schema.Schema.get_metadata_ddl]."""
     COLLATIONS = auto()
     CHARACTER_SETS = auto()
     UDFS = auto()
@@ -442,7 +442,6 @@ class CollationFlag(IntFlag):
     CASE_INSENSITIVE = 2
     ACCENT_INSENSITIVE = 4
 
-#: Default order of sections for DDL script generation via `get_metadata_ddl()`.
 SCRIPT_DEFAULT_ORDER = [Section.COLLATIONS, Section.CHARACTER_SETS,
                         Section.UDFS, Section.GENERATORS,
                         Section.EXCEPTIONS, Section.DOMAINS,
@@ -457,6 +456,7 @@ SCRIPT_DEFAULT_ORDER = [Section.COLLATIONS, Section.CHARACTER_SETS,
                         Section.FUNCTION_BODIES, Section.TRIGGERS,
                         Section.GRANTS, Section.ROLES, Section.COMMENTS,
                         Section.SHADOWS, Section.SET_GENERATORS]
+"""Default order of sections for DDL script generation via `get_metadata_ddl()`."""
 
 
 def get_grants(privileges: list[Privilege], grantors: list[str] | None=None) -> list[str]:
@@ -464,7 +464,7 @@ def get_grants(privileges: list[Privilege], grantors: list[str] | None=None) -> 
     specified privileges.
 
     Arguments:
-        privileges: list of :class:`Privilege` instances.
+        privileges: list of [`Privilege`][firebird.lib.schema.Privilege] instances.
 
     Keyword Args:
         grantors: list of standard grantor names. Generates GRANTED BY
@@ -548,7 +548,7 @@ class Visitable:
         this `SchemaItem` instance (`self`) as the argument.
 
         Arguments:
-            visitor: An object implementing the `.Visitor` interface.
+            visitor: An object implementing the [`Visitor`][firebird.lib.schema.Visitor] interface.
         """
         visitor.visit(self)
 
@@ -556,10 +556,10 @@ class Visitor:
     """Base class for Visitor Pattern visitors.
 
     Descendants may implement methods to handle individual object types that follow naming
-    pattern `visit_[class_name]`. Calls `.default_action()` if appropriate special method is
+    pattern `visit_[class_name]`. Calls [`default_action()`][firebird.lib.schema.Visitor.default_action] if appropriate special method is
     not defined.
 
-    .. important::
+    !!! important
 
        This implementation uses Python Method Resolution Order (__mro__) to find special
        handling method, so special method for given class is used also for its decendants.
@@ -601,7 +601,7 @@ class Visitor:
 
         First traverses the `obj.__mro__` to try find method with name following
         `visit_<lower_class_name>` pattern and calls it with `obj`. Otherwise it calls
-        `.default_action()`.
+        [`default_action()`][firebird.lib.schema.Visitor.default_action].
         """
         meth = None
         for cls in obj.__class__.__mro__:
@@ -636,13 +636,13 @@ class Schema(Visitable):
         (e.g., `schema.tables`, `schema.procedures`) is first accessed after
         binding or clearing the cache.
     *   **Object Representation:** Schema elements are represented by instances
-        of `.SchemaItem` subclasses (e.g., `.Table`, `.Procedure`, `.Domain`),
+        of [`SchemaItem`][firebird.lib.schema.SchemaItem] subclasses (e.g., [`Table`][firebird.lib.schema.Table], [`Procedure`][firebird.lib.schema.Procedure], [`Domain`][firebird.lib.schema.Domain]),
         offering properties to access details and methods like `get_sql_for()`
         to generate DDL.
     *   **Caching:** Fetched metadata is cached internally. Use `clear()` or
         `reload()` to refresh the cache.
     *   **Binding & Lifecycle:** An instance must be bound to a live
-        `~firebird.driver.Connection` using the `bind()` method (this is
+        `Connection` using the `bind()` method (this is
         done automatically when accessed via `Connection.schema`). It should
         be closed using `close()` (or via a `with` statement) to release
         resources when no longer needed.
@@ -651,79 +651,79 @@ class Schema(Visitable):
     Internal maps are populated during binding to translate system codes (e.g.,
     for object types, field types) into meaningful enums or names.
     """
-    #: Configuration option: If True, always quote database object names in
-    #: generated SQL, otherwise quote only when necessary (e.g., reserved words,
-    #: non-standard characters). Defaults to False.
     opt_always_quote: bool = False
-    #: Configuration option: SQL keyword to use for generators/sequences ('SEQUENCE'
-    #: or 'GENERATOR'). Defaults to 'SEQUENCE'.
+    """Configuration option: If True, always quote database object names in
+    generated SQL, otherwise quote only when necessary (e.g., reserved words,
+    non-standard characters). Defaults to False."""
     opt_generator_keyword: str = 'SEQUENCE'
-    #: Mapping from parameter source codes (RDB$PARAMETER_MECHANISM) to descriptive strings.
+    """Configuration option: SQL keyword to use for generators/sequences ('SEQUENCE'
+    or 'GENERATOR'). Defaults to 'SEQUENCE'."""
     param_type_from: ClassVar[dict[int, str]] = {0: 'DATATYPE', 1: 'DOMAIN',
                                                  2: 'TYPE OF DOMAIN', 3: 'TYPE OF COLUMN'}
-    #: Mapping from object type codes (RDB$OBJECT_TYPE) to descriptive strings.
+    """Mapping from parameter source codes (RDB$PARAMETER_MECHANISM) to descriptive strings."""
     object_types: ClassVar[dict[int, str]] = {}
-    #: Reverse mapping from object type names to codes.
+    """Mapping from object type codes (RDB$OBJECT_TYPE) to descriptive strings."""
     object_type_codes:  ClassVar[dict[str, int]] = {}
-    #: Mapping from character set IDs (RDB$CHARACTER_SET_ID) to names.
+    """Reverse mapping from object type names to codes."""
     character_set_names: ClassVar[dict[int, str]] = {}
-    #: Mapping from field type codes (RDB$FIELD_TYPE) to SQL type names.
+    """Mapping from character set IDs (RDB$CHARACTER_SET_ID) to names."""
     field_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from field sub-type codes (RDB$FIELD_SUB_TYPE) to names.
+    """Mapping from field type codes (RDB$FIELD_TYPE) to SQL type names."""
     field_subtypes: ClassVar[dict[int, str]] = {}
-    #: Mapping from function type codes (RDB$FUNCTION_TYPE) to names.
+    """Mapping from field sub-type codes (RDB$FIELD_SUB_TYPE) to names."""
     function_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from mechanism codes (RDB$MECHANISM) to names.
+    """Mapping from function type codes (RDB$FUNCTION_TYPE) to names."""
     mechanism_types: ClassVar[dict[str, str]] = {}
-    #: Mapping from parameter mechanism codes (RDB$PARAMETER_MECHANISM) to names.
+    """Mapping from mechanism codes (RDB$MECHANISM) to names."""
     parameter_mechanism_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from procedure type codes (RDB$PROCEDURE_TYPE) to names.
+    """Mapping from parameter mechanism codes (RDB$PARAMETER_MECHANISM) to names."""
     procedure_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from relation type codes (RDB$RELATION_TYPE) to names.
+    """Mapping from procedure type codes (RDB$PROCEDURE_TYPE) to names."""
     relation_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from system flag codes (RDB$SYSTEM_FLAG) to names.
+    """Mapping from relation type codes (RDB$RELATION_TYPE) to names."""
     system_flag_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from transaction state codes (RDB$TRANSACTION_STATE) to names.
+    """Mapping from system flag codes (RDB$SYSTEM_FLAG) to names."""
     transaction_state_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from trigger type codes (RDB$TRIGGER_TYPE) to names.
+    """Mapping from transaction state codes (RDB$TRANSACTION_STATE) to names."""
     trigger_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from parameter type codes (RDB$PARAMETER_TYPE) to names.
+    """Mapping from trigger type codes (RDB$TRIGGER_TYPE) to names."""
     parameter_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from index activity codes (RDB$INDEX_INACTIVE) to names.
+    """Mapping from parameter type codes (RDB$PARAMETER_TYPE) to names."""
     index_activity_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from index uniqueness codes (RDB$UNIQUE_FLAG) to names.
+    """Mapping from index activity codes (RDB$INDEX_INACTIVE) to names."""
     index_unique_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from trigger activity codes (RDB$TRIGGER_INACTIVE) to names.
+    """Mapping from index uniqueness codes (RDB$UNIQUE_FLAG) to names."""
     trigger_activity_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from grant option codes (RDB$GRANT_OPTION) to names.
+    """Mapping from trigger activity codes (RDB$TRIGGER_INACTIVE) to names."""
     grant_options: ClassVar[dict[int, str]] = {}
-    #: Mapping from page type codes (RDB$PAGE_TYPE) to names.
+    """Mapping from grant option codes (RDB$GRANT_OPTION) to names."""
     page_types: ClassVar[dict[int, str]] = {}
-    #: Mapping from privacy flag codes (RDB$PRIVATE_FLAG) to names.
+    """Mapping from page type codes (RDB$PAGE_TYPE) to names."""
     privacy_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from legacy flag codes (RDB$LEGACY_FLAG) to names.
+    """Mapping from privacy flag codes (RDB$PRIVATE_FLAG) to names."""
     legacy_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from determinism flag codes (RDB$DETERMINISTIC_FLAG) to names.
+    """Mapping from legacy flag codes (RDB$LEGACY_FLAG) to names."""
     deterministic_flags: ClassVar[dict[int, str]] = {}
-    #: Mapping from identity type codes (RDB$IDENTITY_TYPE) to names.
+    """Mapping from determinism flag codes (RDB$DETERMINISTIC_FLAG) to names."""
     identity_type: ClassVar[dict[int, str]] = {}
+    """Mapping from identity type codes (RDB$IDENTITY_TYPE) to names."""
     def __init__(self):
-        #: The underlying driver Connection, or None if closed/unbound.
         self._con: Connection | None = None
-        #: Internal cursor using a separate read-committed transaction for RDB$ queries.
+        """The underlying driver Connection, or None if closed/unbound."""
         self._ic: Cursor | None = None
-        #: Internal flag to prevent closing/rebinding if owned by Connection.
+        """Internal cursor using a separate read-committed transaction for RDB$ queries."""
         self.__internal: bool = False
-        #: List of reserved keywords for the connected database ODS version.
+        """Internal flag to prevent closing/rebinding if owned by Connection."""
         self._reserved_: list[str] = []
-        #: ODS version of the connected database (e.g., 12.0, 13.0).
+        """List of reserved keywords for the connected database ODS version."""
         self.ods: float | None = None
-        #: Raw attributes from RDB$DATABASE fetched during bind().
+        """ODS version of the connected database (e.g., 12.0, 13.0)."""
         self.__attrs: dict[str, Any] | None = None
-        #: Default character set name for the database.
+        """Raw attributes from RDB$DATABASE fetched during bind()."""
         self._default_charset_name: str | None = None
-        #: Owner name fetched from RDB$RELATIONS for RDB$DATABASE.
+        """Default character set name for the database."""
         self.__owner: str | None = None
+        """Owner name fetched from RDB$RELATIONS for RDB$DATABASE."""
         # --- Cached Metadata Collections (Lazy Loaded) ---
         self.__tables: tuple[DataList, DataList] | None = None
         self.__views: tuple[DataList, DataList] | None = None
@@ -958,13 +958,13 @@ class Schema(Visitable):
         owner, default charset), determines reserved keywords, and populates
         internal enum/code mappings from `RDB$TYPES`.
 
-        .. note::
+        !!! note
             This method is primarily for internal use. Users typically access
             a bound Schema instance via `Connection.schema`. Calling `bind()` on
             an already bound or embedded schema may raise an `Error`.
 
         Arguments:
-            connection: The `~firebird.driver.Connection` instance to bind to.
+            connection: The `Connection` instance to bind to.
 
         Returns:
             The bound `Schema` instance (`self`).
@@ -1183,7 +1183,7 @@ class Schema(Visitable):
         This forces the specified metadata to be reloaded from the database on next access.
 
         Arguments:
-            data: A specific `.Category` enum member, an iterable of `.Category` members,
+            data: A specific [`Category`][firebird.lib.schema.Category] enum member, an iterable of [`Category`][firebird.lib.schema.Category] members,
                   or `None` to clear all categories. Defaults to `None`.
 
         Raises:
@@ -1197,13 +1197,13 @@ class Schema(Visitable):
 
         Arguments:
             name: The primary name of the database object (e.g., table name, procedure name).
-            itype: The `.ObjectType` enum value specifying the type of object to retrieve.
+            itype: The [`ObjectType`][firebird.lib.schema.ObjectType] enum value specifying the type of object to retrieve.
             subname: An optional secondary name, typically used for columns (`itype=ObjectType.COLUMN`)
                      where `name` is the table/view name and `subname` is the column name.
 
         Returns:
-            An instance of a `.SchemaItem` subclass (e.g., `.Table`, `.Procedure`),
-            a `~firebird.driver.UserInfo` instance (for `itype=ObjectType.USER`),
+            An instance of a [`SchemaItem`][firebird.lib.schema.SchemaItem] subclass (e.g., [`Table`][firebird.lib.schema.Table], [`Procedure`][firebird.lib.schema.Procedure]),
+            a `UserInfo` instance (for `itype=ObjectType.USER`),
             or `None` if the object is not found.
         """
         result = None
@@ -1247,7 +1247,7 @@ class Schema(Visitable):
         Constructs a DDL script based on the schema information cached in this instance.
 
         Arguments:
-            sections: An iterable of `.Section` enum members specifying which types of
+            sections (list[Section]): An iterable of [`Section`][firebird.lib.schema.Section] enum members specifying which types of
                       database objects to include in the DDL script and the order
                       in which their creation statements should appear. Defaults to
                       `SCRIPT_DEFAULT_ORDER`.
@@ -1424,24 +1424,24 @@ class Schema(Visitable):
         """
         return len(self.files) > 0
     def get_collation_by_id(self, charset_id: int, collation_id: int) -> Collation:
-        """Retrieves a `.Collation` object by its character set ID and collation ID.
+        """Retrieves a [`Collation`][firebird.lib.schema.Collation] object by its character set ID and collation ID.
 
         Arguments:
             charset_id: The numeric ID of the character set (`RDB$CHARACTER_SET_ID`).
             collation_id: The numeric ID of the collation within the character set (`RDB$COLLATION_ID`).
 
         Returns:
-            The matching `.Collation` instance, or `None` if not found or not loaded.
+            The matching [`Collation`][firebird.lib.schema.Collation] instance, or `None` if not found or not loaded.
         """
         return self.collations.find(lambda i: i.character_set.id == charset_id and i.id == collation_id)
     def get_charset_by_id(self, charset_id: int) -> CharacterSet:
-        """Retrieves a `.CharacterSet` object by its ID.
+        """Retrieves a [`CharacterSet`][firebird.lib.schema.CharacterSet] object by its ID.
 
         Arguments:
             charset_id: The numeric ID of the character set (`RDB$CHARACTER_SET_ID`).
 
         Returns:
-            The matching `.CharacterSet` instance, or `None` if not found or not loaded.
+            The matching [`CharacterSet`][firebird.lib.schema.CharacterSet] instance, or `None` if not found or not loaded.
         """
         return self.character_sets.find(lambda i: i.id == charset_id)
     def get_privileges_of(self, user: str | UserInfo | Table | View | Procedure | Trigger | Role,
@@ -1449,13 +1449,13 @@ class Schema(Visitable):
         """Retrieves a list of all privileges granted *to* a specific user or database object (grantee).
 
         Arguments:
-            user: The grantee, specified either as a string name, a `~firebird.driver.UserInfo` instance,
-                  or a `.SchemaItem` subclass instance (e.g., `.Role`, `.Procedure`).
-            user_type: The `.ObjectType` of the grantee. **Required if** `user` is provided
+            user: The grantee, specified either as a string name, a `UserInfo` instance,
+                  or a [`SchemaItem`][firebird.lib.schema.SchemaItem] subclass instance (e.g., [`Role`][firebird.lib.schema.Role], [`Procedure`][firebird.lib.schema.Procedure]).
+            user_type: The [`ObjectType`][firebird.lib.schema.ObjectType] of the grantee. **Required if** `user` is provided
                        as a string name. Ignored otherwise.
 
         Returns:
-            A `.DataList` containing `.Privilege` objects granted to the specified user/object.
+            A `DataList` containing [`Privilege`][firebird.lib.schema.Privilege] objects granted to the specified user/object.
             Returns an empty list if no privileges are found or privileges haven't been loaded.
 
         Raises:
@@ -1488,7 +1488,7 @@ class Schema(Visitable):
         return self.__owner
     @property
     def default_character_set(self) -> CharacterSet:
-        """Default `.CharacterSet` for database."""
+        """Default [`CharacterSet`][firebird.lib.schema.CharacterSet] for database."""
         return self.character_sets.get(self._default_charset_name)
     @property
     def security_class(self) -> str:
@@ -1496,7 +1496,7 @@ class Schema(Visitable):
         return self.__attrs['RDB$SECURITY_CLASS'].strip()
     @property
     def collations(self) -> DataList[Collation]:
-        """`.DataList` of all `.Collation` objects defined in the database. Loads lazily."""
+        """`DataList` of all [`Collation`][firebird.lib.schema.Collation] objects defined in the database. Loads lazily."""
         if self.__collations is None:
             self.__fail_if_closed()
             self.__collations = DataList((Collation(self, row) for row
@@ -1505,7 +1505,7 @@ class Schema(Visitable):
         return self.__collations
     @property
     def character_sets(self) -> DataList[CharacterSet]:
-        """`.DataList` of all `.CharacterSet` objects defined in the database. Loads lazily."""
+        """`DataList` of all [`CharacterSet`][firebird.lib.schema.CharacterSet] objects defined in the database. Loads lazily."""
         if self.__character_sets is None:
             self.__fail_if_closed()
             self.__character_sets = DataList((CharacterSet(self, row) for row
@@ -1514,7 +1514,7 @@ class Schema(Visitable):
         return self.__character_sets
     @property
     def exceptions(self) -> DataList[DatabaseException]:
-        """`.DataList` of all `.DatabaseException` objects defined in the database. Loads lazily."""
+        """`DataList` of all [`DatabaseException`][firebird.lib.schema.DatabaseException] objects defined in the database. Loads lazily."""
         if self.__exceptions is None:
             self.__fail_if_closed()
             self.__exceptions = DataList((DatabaseException(self, row) for row
@@ -1524,92 +1524,92 @@ class Schema(Visitable):
         return self.__exceptions
     @property
     def generators(self) -> DataList[Sequence]:
-        """`.DataList` of all user-defined `.Sequence` objects (generators) in the database.
+        """`DataList` of all user-defined [`Sequence`][firebird.lib.schema.Sequence] objects (generators) in the database.
         Loads lazily."""
         return self._get_all_generators()[0]
     @property
     def sys_generators(self) -> DataList[Sequence]:
-        """`.DataList` of all system `.Sequence` objects (generators) in the database. Loads lazily."""
+        """`DataList` of all system [`Sequence`][firebird.lib.schema.Sequence] objects (generators) in the database. Loads lazily."""
         return self._get_all_generators()[1]
     @property
     def all_generators(self) -> DataList[Sequence]:
-        """`.DataList` of all (user + system) `.Sequence` objects (generators) in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Sequence`][firebird.lib.schema.Sequence] objects (generators) in the database. Loads lazily."""
         return self._get_all_generators()[2]
     @property
     def domains(self) ->  DataList[Domain]:
-        """`.DataList` of all user-defined `.Domain` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Domain`][firebird.lib.schema.Domain] objects in the database. Loads lazily."""
         return self._get_all_domains()[0]
     @property
     def sys_domains(self) ->  DataList[Domain]:
-        """`.DataList` of all system `.Domain` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Domain`][firebird.lib.schema.Domain] objects in the database. Loads lazily."""
         return self._get_all_domains()[1]
     @property
     def all_domains(self) ->  DataList[Domain]:
-        """`.DataList` of all (user + system) `.Domain` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Domain`][firebird.lib.schema.Domain] objects in the database. Loads lazily."""
         return self._get_all_domains()[2]
     @property
     def indices(self) -> DataList[Index]:
-        """`.DataList` of all user-defined `.Index` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Index`][firebird.lib.schema.Index] objects in the database. Loads lazily."""
         return self._get_all_indices()[0]
     @property
     def sys_indices(self) -> DataList[Index]:
-        """`.DataList` of all system `.Index` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Index`][firebird.lib.schema.Index] objects in the database. Loads lazily."""
         return self._get_all_indices()[1]
     @property
     def all_indices(self) -> DataList[Index]:
-        """`.DataList` of all (user + system) `.Index` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Index`][firebird.lib.schema.Index] objects in the database. Loads lazily."""
         return self._get_all_indices()[2]
     @property
     def tables(self) -> DataList[Table]:
-        """`.DataList` of all user-defined `.Table` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Table`][firebird.lib.schema.Table] objects in the database. Loads lazily."""
         return self._get_all_tables()[0]
     @property
     def sys_tables(self) -> DataList[Table]:
-        """`.DataList` of all system `.Table` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Table`][firebird.lib.schema.Table] objects in the database. Loads lazily."""
         return self._get_all_tables()[1]
     @property
     def all_tables(self) -> DataList[Table]:
-        """`.DataList` of all (user + system) `.Table` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Table`][firebird.lib.schema.Table] objects in the database. Loads lazily."""
         return self._get_all_tables()[2]
     @property
     def views(self) -> DataList[View]:
-        """`.DataList` of all user-defined `.View` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`View`][firebird.lib.schema.View] objects in the database. Loads lazily."""
         return self._get_all_views()[0]
     @property
     def sys_views(self) -> DataList[View]:
-        """`.DataList` of all system `.View` objects in the database. Loads lazily."""
+        """`DataList` of all system [`View`][firebird.lib.schema.View] objects in the database. Loads lazily."""
         return self._get_all_views()[1]
     @property
     def all_views(self) -> DataList[View]:
-        """`.DataList` of all (user + system) `.View` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`View`][firebird.lib.schema.View] objects in the database. Loads lazily."""
         return self._get_all_views()[2]
     @property
     def triggers(self) -> DataList[Trigger]:
-        """`.DataList` of all user-defined `.Trigger` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Trigger`][firebird.lib.schema.Trigger] objects in the database. Loads lazily."""
         return self._get_all_triggers()[0]
     @property
     def sys_triggers(self) -> DataList[Trigger]:
-        """`.DataList` of all system `.Trigger` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Trigger`][firebird.lib.schema.Trigger] objects in the database. Loads lazily."""
         return self._get_all_triggers()[1]
     @property
     def all_triggers(self) -> DataList[Trigger]:
-        """`.DataList` of all (user + system) `.Trigger` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Trigger`][firebird.lib.schema.Trigger] objects in the database. Loads lazily."""
         return self._get_all_triggers()[2]
     @property
     def procedures(self) -> DataList[Procedure]:
-        """`.DataList` of all user-defined `.Procedure` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Procedure`][firebird.lib.schema.Procedure] objects in the database. Loads lazily."""
         return self._get_all_procedures()[0]
     @property
     def sys_procedures(self) -> DataList[Procedure]:
-        """`.DataList` of all system `.Procedure` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Procedure`][firebird.lib.schema.Procedure] objects in the database. Loads lazily."""
         return self._get_all_procedures()[1]
     @property
     def all_procedures(self) -> DataList[Procedure]:
-        """`.DataList` of all (user + system) `.Procedure` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Procedure`][firebird.lib.schema.Procedure] objects in the database. Loads lazily."""
         return self._get_all_procedures()[2]
     @property
     def constraints(self) -> DataList[Constraint]:
-        """`.DataList` of all `.Constraint` objects in the database. Loads lazily."""
+        """`DataList` of all [`Constraint`][firebird.lib.schema.Constraint] objects in the database. Loads lazily."""
         if self.__constraints is None:
             self.__fail_if_closed()
             # Dummy call to _get_all_tables() is necessary as
@@ -1641,7 +1641,7 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__constraints
     @property
     def roles(self) -> DataList[Role]:
-        """`.DataList` of all `.Role` objects in the database. Loads lazily."""
+        """`DataList` of all [`Role`][firebird.lib.schema.Role] objects in the database. Loads lazily."""
         if self.__roles is None:
             self.__fail_if_closed()
             self.__roles = DataList((Role(self, row) for row
@@ -1651,7 +1651,7 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__roles
     @property
     def dependencies(self) -> DataList[Dependency]:
-        """`.DataList` of all `.Dependency` objects in the database. Loads lazily."""
+        """`DataList` of all [`Dependency`][firebird.lib.schema.Dependency] objects in the database. Loads lazily."""
         if self.__dependencies is None:
             self.__fail_if_closed()
             self.__dependencies = DataList((Dependency(self, row) for row
@@ -1660,19 +1660,19 @@ and (c.RDB$CONSTRAINT_TYPE in ('CHECK','NOT NULL'))"""
         return self.__dependencies
     @property
     def functions(self) -> DataList[Function]:
-        """`.DataList` of all user-defined `.Function` objects in the database. Loads lazily."""
+        """`DataList` of all user-defined [`Function`][firebird.lib.schema.Function] objects in the database. Loads lazily."""
         return self._get_all_functions()[0]
     @property
     def sys_functions(self) -> DataList[Function]:
-        """`.DataList` of all system `.Function` objects in the database. Loads lazily."""
+        """`DataList` of all system [`Function`][firebird.lib.schema.Function] objects in the database. Loads lazily."""
         return self._get_all_functions()[1]
     @property
     def all_functions(self) -> DataList[Function]:
-        """`.DataList` of all (user + system) `.Function` objects in the database. Loads lazily."""
+        """`DataList` of all (user + system) [`Function`][firebird.lib.schema.Function] objects in the database. Loads lazily."""
         return self._get_all_functions()[2]
     @property
     def files(self) -> DataList[DatabaseFile]:
-        """`.DataList` of all `.DatabaseFile` objects in the database. Loads lazily."""
+        """`DataList` of all [`DatabaseFile`][firebird.lib.schema.DatabaseFile] objects in the database. Loads lazily."""
         if self.__files is None:
             self.__fail_if_closed()
             cmd = """select RDB$FILE_NAME, RDB$FILE_SEQUENCE,
@@ -1685,7 +1685,7 @@ order by RDB$FILE_SEQUENCE"""
         return self.__files
     @property
     def shadows(self) -> DataList[Shadow]:
-        """`.DataList` of all `.Shadow` objects in the database. Loads lazily."""
+        """`DataList` of all [`Shadow`][firebird.lib.schema.Shadow] objects in the database. Loads lazily."""
         if self.__shadows is None:
             self.__fail_if_closed()
             cmd = """select RDB$FILE_FLAGS, RDB$SHADOW_NUMBER
@@ -1698,7 +1698,7 @@ order by RDB$SHADOW_NUMBER"""
         return self.__shadows
     @property
     def privileges(self) -> DataList[Privilege]:
-        """`.DataList` of all `.Privilege` objects in the database. Loads lazily."""
+        """`DataList` of all [`Privilege`][firebird.lib.schema.Privilege] objects in the database. Loads lazily."""
         if self.__privileges is None:
             self.__fail_if_closed()
             cmd = """select RDB$USER, RDB$GRANTOR, RDB$PRIVILEGE,
@@ -1709,7 +1709,7 @@ FROM RDB$USER_PRIVILEGES"""
         return self.__privileges
     @property
     def backup_history(self) -> DataList[BackupHistory]:
-        """`.DataList` of all `.BackupHistory` objects in the database. Loads lazily."""
+        """`DataList` of all [`BackupHistory`][firebird.lib.schema.BackupHistory] objects in the database. Loads lazily."""
         if self.__backup_history is None:
             self.__fail_if_closed()
             cmd = """SELECT RDB$BACKUP_ID, RDB$TIMESTAMP,
@@ -1721,7 +1721,7 @@ FROM RDB$BACKUP_HISTORY"""
         return self.__backup_history
     @property
     def filters(self) -> DataList[Filter]:
-        """`.DataList` of all user-defiend `.Filter` objects in the database. Loads lazily."""
+        """`DataList` of all user-defiend [`Filter`][firebird.lib.schema.Filter] objects in the database. Loads lazily."""
         if self.__filters is None:
             self.__fail_if_closed()
             cmd = """SELECT RDB$FUNCTION_NAME, RDB$DESCRIPTION,
@@ -1733,7 +1733,7 @@ FROM RDB$FILTERS"""
         return self.__filters
     @property
     def packages(self) -> DataList[Package]:
-        """`.DataList` of all `.Package` objects in the database. Loads lazily."""
+        """`DataList` of all [`Package`][firebird.lib.schema.Package] objects in the database. Loads lazily."""
         if self.__packages is None:
             self.__fail_if_closed()
             cmd = """select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE,
@@ -1759,20 +1759,20 @@ class SchemaItem(Visitable):
 
     Key Features:
 
-    *   Access to the parent `.Schema` instance (via a weak reference).
+    *   Access to the parent [`Schema`][firebird.lib.schema.Schema] instance (via a weak reference).
     *   Storage of raw metadata attributes fetched from system tables.
     *   Methods for retrieving the object's name, description, and quoted identifier.
     *   Functionality to find dependent and depended-on objects within the schema.
-    *   A mechanism (`.get_sql_for()`) to generate DDL/DML SQL commands (like CREATE,
+    *   A mechanism ([`get_sql_for()`][firebird.lib.schema.SchemaItem.get_sql_for]) to generate DDL/DML SQL commands (like CREATE,
         ALTER, DROP, COMMENT) specific to the object type.
-    *   Support for the Visitor pattern via the `.accept()` method.
+    *   Support for the Visitor pattern via the [`accept()`][firebird.lib.schema.SchemaItem.accept] method.
 
     Subclasses typically override methods like `._get_name()` and implement
     specific `_get_<action>_sql()` methods to provide type-specific behavior.
-    Instances are usually created and managed by the parent `.Schema` object.
+    Instances are usually created and managed by the parent [`Schema`][firebird.lib.schema.Schema] object.
 
     Arguments:
-        schema: The parent `.Schema` instance this item belongs to.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance this item belongs to.
         attributes: A dictionary containing the raw column names (e.g.,
                     'RDB$RELATION_NAME', 'RDB$SYSTEM_FLAG') and their
                     corresponding values fetched from the relevant RDB$
@@ -1780,21 +1780,21 @@ class SchemaItem(Visitable):
     """
     schema: Schema | None = None
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
-        #: Weak reference proxy to the parent `.Schema` instance.
-        #: Provides access to the overall schema context without creating circular references.
         self.schema: Schema = schema if isinstance(schema, weakref.ProxyType) else weakref.proxy(schema)
-        #: Internal list storing the `.ObjectType` enum values that this
-        #: specific schema item class represents (used for dependency lookups).
-        #: Populated by subclasses.
+        """Weak reference proxy to the parent [`Schema`][firebird.lib.schema.Schema] instance.
+        Provides access to the overall schema context without creating circular references."""
         self._type_code: list[ObjectType] = []
-        #: Dictionary holding the raw attributes fetched from the monitoring table row
-        #: (keys are typically 'RDB$...'). Subclasses access this to provide
-        #: specific property values.
+        """Internal list storing the [`ObjectType`][firebird.lib.schema.ObjectType] enum values that this
+        specific schema item class represents (used for dependency lookups).
+        Populated by subclasses."""
         self._attributes: dict[str, Any] = attributes
-        #: List of action strings (lowercase, e.g., 'create', 'drop', 'alter')
-        #: supported by the `get_sql_for()` method for this specific object type.
-        #: Populated by subclasses.
+        """Dictionary holding the raw attributes fetched from the monitoring table row
+        (keys are typically 'RDB$...'). Subclasses access this to provide
+        specific property values."""
         self._actions: list[str] = []
+        """List of action strings (lowercase, e.g., 'create', 'drop', 'alter')
+        supported by the `get_sql_for()` method for this specific object type.
+        Populated by subclasses."""
     def _strip_attribute(self, attr: str) -> None:
         """Internal helper: Removes leading/trailing whitespace from a string attribute if it exists."""
         if self._attributes.get(attr):
@@ -1879,7 +1879,7 @@ class SchemaItem(Visitable):
         Queries `Schema.dependencies` based on this object's `name` and `_type_code`.
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this item is the
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this item is the
             `depended_on` object. Returns an empty list if no dependents are found
             or dependencies haven't been loaded in the parent schema.
         """
@@ -1897,7 +1897,7 @@ class SchemaItem(Visitable):
         Queries `Schema.dependencies` based on this object's `name` and `_type_code`.
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this item is the
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this item is the
             `dependent` object. Returns an empty list if this object has no
             dependencies or dependencies haven't been loaded in the parent schema.
         """
@@ -1911,7 +1911,7 @@ class SchemaItem(Visitable):
         Arguments:
             action: The desired SQL action (e.g., 'create', 'drop', 'alter', 'comment').
                     The action must be present (case-insensitively) in the object's
-                    `.actions` list.
+                    [`actions`][firebird.lib.schema.SchemaItem.actions] list.
             **params: Keyword arguments specific to the requested `action`. These are
                       validated and passed directly to the internal `_get_<action>_sql`
                       method implemented by the subclass. Consult the specific
@@ -1948,20 +1948,20 @@ class SchemaItem(Visitable):
 class Collation(SchemaItem):
     """Represents a specific collation, defining rules for character sorting and comparison.
 
-    Collations are always associated with a specific `.CharacterSet`. They determine
+    Collations are always associated with a specific [`CharacterSet`][firebird.lib.schema.CharacterSet]. They determine
     aspects like case sensitivity, accent sensitivity, and handling of padding spaces
     during comparisons.
 
     Instances of this class map data primarily from the `RDB$COLLATIONS` system table.
     They are typically accessed via `Schema.collations` or `CharacterSet.collations`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Collation.get_sql_for]:
 
     *   User-defined collations: `create`, `drop`, `comment`.
     *   System collations: `comment`.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$COLLATIONS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -2051,11 +2051,11 @@ class Collation(SchemaItem):
         return self._attributes['RDB$COLLATION_ID']
     @property
     def character_set(self) -> CharacterSet:
-        """The `.CharacterSet` object this collation belongs to."""
+        """The [`CharacterSet`][firebird.lib.schema.CharacterSet] object this collation belongs to."""
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
     def base_collation(self) -> Collation | None:
-        """The base `.Collation` object this collation derives from, if any.
+        """The base [`Collation`][firebird.lib.schema.Collation] object this collation derives from, if any.
 
         Returns `None` if this collation is a primary collation for its character set
         or if it's based on an external definition (check `is_based_on_external()`).
@@ -2064,7 +2064,7 @@ class Collation(SchemaItem):
         return self.schema.collations.get(base_name) if base_name else None
     @property
     def attributes(self) -> CollationFlag:
-        """A `.CollationFlag` enum value representing the combined attributes
+        """A [`CollationFlag`][firebird.lib.schema.CollationFlag] enum value representing the combined attributes
         (pad space, case/accent sensitivity) defined by `RDB$COLLATION_ATTRIBUTES`."""
         return CollationFlag(self._attributes['RDB$COLLATION_ATTRIBUTES'])
     @property
@@ -2097,14 +2097,14 @@ class CharacterSet(SchemaItem):
     Instances of this class map data primarily from the `RDB$CHARACTER_SETS`
     system table. They are typically accessed via `Schema.character_sets`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.CharacterSet.get_sql_for]:
 
-    *   `alter` (keyword argument `collation`: `.Collation` instance or collation name):
+    *   `alter` (keyword argument `collation`: [`Collation`][firebird.lib.schema.Collation] instance or collation name):
         Sets the default collation for this character set.
     *   `comment`: Adds or removes a descriptive comment for the character set.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$CHARACTER_SETS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -2124,7 +2124,7 @@ class CharacterSet(SchemaItem):
         Arguments:
             **params: Accepts one keyword argument:
 
-                      *   `collation` (Collation | str): The `.Collation` object or the
+                      *   `collation` (Collation | str): The [`Collation`][firebird.lib.schema.Collation] object or the
                           string name of the collation to set as the default for this
                           character set. **Required**.
 
@@ -2162,7 +2162,7 @@ class CharacterSet(SchemaItem):
         """Returns the character set name (`RDB$CHARACTER_SET_NAME`)."""
         return self._attributes['RDB$CHARACTER_SET_NAME']
     def get_collation_by_id(self, id_: int) -> Collation | None:
-        """Retrieves a specific `.Collation` belonging to this character set by its ID.
+        """Retrieves a specific [`Collation`][firebird.lib.schema.Collation] belonging to this character set by its ID.
 
         Searches the cached `collations` associated with this character set.
 
@@ -2170,7 +2170,7 @@ class CharacterSet(SchemaItem):
             id_: The numeric ID (`RDB$COLLATION_ID`) of the collation to find.
 
         Returns:
-            The matching `.Collation` object, or `None` if no collation with that ID
+            The matching [`Collation`][firebird.lib.schema.Collation] object, or `None` if no collation with that ID
             exists within this character set (or if collations haven't been loaded).
         """
         return self.collations.find(lambda item: item.id == id_)
@@ -2185,7 +2185,7 @@ class CharacterSet(SchemaItem):
         return self._attributes['RDB$BYTES_PER_CHARACTER']
     @property
     def default_collation(self) -> Collation:
-        """The default `.Collation` object associated with this character set.
+        """The default [`Collation`][firebird.lib.schema.Collation] object associated with this character set.
 
         Identified by `RDB$DEFAULT_COLLATE_NAME`. Returns `None` if the default
         collation cannot be found (which would indicate a schema inconsistency).
@@ -2193,7 +2193,7 @@ class CharacterSet(SchemaItem):
         return self.collations.get(self._attributes['RDB$DEFAULT_COLLATE_NAME'])
     @property
     def collations(self) -> DataList[Collation]:
-        """A lazily-loaded `.DataList` of all `.Collation` objects associated with this character set."""
+        """A lazily-loaded `DataList` of all [`Collation`][firebird.lib.schema.Collation] objects associated with this character set."""
         if self.__collations is None:
             self.__collations = self.schema.collations.extract(lambda i:
                                                                i._attributes['RDB$CHARACTER_SET_ID'] == self.id,
@@ -2219,7 +2219,7 @@ class DatabaseException(SchemaItem):
     Instances of this class map data primarily from the `RDB$EXCEPTIONS` system table.
     They are typically accessed via `Schema.exceptions`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.DatabaseException.get_sql_for]:
 
     *   User-defined exceptions:
 
@@ -2236,7 +2236,7 @@ class DatabaseException(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$EXCEPTIONS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -2350,7 +2350,7 @@ class Sequence(SchemaItem):
     The SQL keyword used (`SEQUENCE` or `GENERATOR`) in generated DDL depends on
     the `Schema.opt_generator_keyword` setting.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Sequence.get_sql_for]:
 
     *   User-defined sequences:
 
@@ -2367,7 +2367,7 @@ class Sequence(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$GENERATORS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -2485,7 +2485,7 @@ class Sequence(SchemaItem):
     def value(self) -> int:
         """The current value of the sequence.
 
-        .. important::
+        !!! important
             Accessing this property executes `SELECT GEN_ID(name, 0) FROM RDB$DATABASE`
             against the database to retrieve the current value. It does **not**
             increment the sequence.
@@ -2511,7 +2511,7 @@ class Sequence(SchemaItem):
         """The initial value (`START WITH`) defined for the sequence (`RDB$INITIAL_VALUE`).
         Returns `None` if not explicitly set (defaults may apply based on DB version).
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
            Support for reading this attribute (requires Firebird 4.0+). Older versions
            might return `None` even if a start value was conceptually set.
         """
@@ -2521,24 +2521,24 @@ class Sequence(SchemaItem):
         """The increment step (`INCREMENT BY`) defined for the sequence (`RDB$GENERATOR_INCREMENT`).
         Returns `None` if not explicitly set (defaults to 1).
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
            Support for reading this attribute (requires Firebird 4.0+). Older versions
            might return `None` even if an increment was conceptually set.
         """
         return self._attributes.get('RDB$GENERATOR_INCREMENT')
 
 class TableColumn(SchemaItem):
-    """Represents a column within a database table (`.Table`).
+    """Represents a column within a database table ([`Table`][firebird.lib.schema.Table]).
 
     This class holds metadata about a table column, such as its name, data type
-    (derived from its underlying `.Domain`), nullability, default value,
+    (derived from its underlying [`Domain`][firebird.lib.schema.Domain]), nullability, default value,
     collation, position, and whether it's computed or an identity column.
 
     Instances map data primarily from the `RDB$RELATION_FIELDS` system table,
     linking to `RDB$FIELDS` via `RDB$FIELD_SOURCE` for domain/type information.
-    They are typically accessed via the `.Table.columns` property.
+    They are typically accessed via the [`Table.columns`][firebird.lib.schema.Table.columns] property.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.TableColumn.get_sql_for]:
 
     *   User table columns:
 
@@ -2562,8 +2562,8 @@ class TableColumn(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
-        table: The parent `.Table` object this column belongs to.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
+        table: The parent [`Table`][firebird.lib.schema.Table] object this column belongs to.
         attributes: Raw data dictionary fetched from the `RDB$RELATION_FIELDS` row.
     """
     def __init__(self, schema: Schema, table: Table, attributes: dict[str, Any]):
@@ -2672,11 +2672,11 @@ class TableColumn(SchemaItem):
     def get_dependents(self) -> DataList[Dependency]:
         """Retrieves a list of database objects that depend on this specific column.
 
-        Searches `.Schema.dependencies` matching the table name (`RDB$RELATION_NAME`),
+        Searches [`Schema.dependencies`][firebird.lib.schema.Schema.dependencies] matching the table name (`RDB$RELATION_NAME`),
         object type (0 for table), and this column's name (`RDB$FIELD_NAME`).
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this column is
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this column is
             part of the `depended_on` reference.
         """
         return self.schema.dependencies.extract(lambda d: d.depended_on_name == self._attributes['RDB$RELATION_NAME']
@@ -2684,11 +2684,11 @@ class TableColumn(SchemaItem):
     def get_dependencies(self) -> DataList[Dependency]:
         """Retrieves a list of database objects that this column depends on.
 
-        This is typically relevant for computed columns, checking `.Schema.dependencies`
+        This is typically relevant for computed columns, checking [`Schema.dependencies`][firebird.lib.schema.Schema.dependencies]
         where this column's table and name are the `dependent` reference.
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this column is
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this column is
             part of the `dependent` reference.
         """
         return self.schema.dependencies.extract(lambda d: d.dependent_name == self._attributes['RDB$RELATION_NAME']
@@ -2746,7 +2746,7 @@ class TableColumn(SchemaItem):
     def has_default(self) -> bool:
         """Checks if the column has a `DEFAULT` value defined.
 
-        Based on the presence of `RDB$DEFAULT_SOURCE`. Note that `.is_identity()`
+        Based on the presence of `RDB$DEFAULT_SOURCE`. Note that [`is_identity()`][firebird.lib.schema.TableColumn.is_identity]
         should be checked first, as identity columns may technically have a
         default source internally but are conceptually different.
 
@@ -2760,11 +2760,11 @@ class TableColumn(SchemaItem):
         return self._attributes['RDB$FIELD_ID']
     @property
     def table(self) -> Table:
-        """The parent `.Table` object this column belongs to."""
+        """The parent [`Table`][firebird.lib.schema.Table] object this column belongs to."""
         return self.__table
     @property
     def domain(self) -> Domain:
-        """The underlying `.Domain` object that defines this column's base data type
+        """The underlying [`Domain`][firebird.lib.schema.Domain] object that defines this column's base data type
         and constraints (`RDB$FIELD_SOURCE`). May be a system domain or a user domain."""
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
@@ -2790,7 +2790,7 @@ class TableColumn(SchemaItem):
         return result
     @property
     def collation(self) -> Collation | None:
-        """The specific `.Collation` object applied to this column (`RDB$COLLATION_ID`),
+        """The specific [`Collation`][firebird.lib.schema.Collation] object applied to this column (`RDB$COLLATION_ID`),
         if applicable (for character types).
 
         Returns `None` if the column type does not support collation or if the
@@ -2802,13 +2802,13 @@ class TableColumn(SchemaItem):
     def datatype(self) -> str:
         """A string representation of the column's complete SQL data type definition.
 
-        This is derived from the underlying `.Domain`'s datatype property.
+        This is derived from the underlying [`Domain`][firebird.lib.schema.Domain]'s datatype property.
         Example: 'VARCHAR(100) CHARACTER SET UTF8 COLLATE UNICODE_CI'.
         """
         return self.domain.datatype
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A lazily-loaded `.DataList` of specific privileges (`SELECT`, `UPDATE`, `REFERENCES`)
+        """A lazily-loaded `DataList` of specific privileges (`SELECT`, `UPDATE`, `REFERENCES`)
         granted directly on this column."""
         return self.schema.privileges.extract(lambda p: (p.subject_name == self.table.name and
                                                         p.field_name == self.name and
@@ -2816,11 +2816,11 @@ class TableColumn(SchemaItem):
                                                      copy = True)
     @property
     def generator(self) -> Sequence | None:
-        """The `.Sequence` (generator) associated with this column if it's an
+        """The [`Sequence`][firebird.lib.schema.Sequence] (generator) associated with this column if it's an
         IDENTITY column (`RDB$GENERATOR_NAME`).
 
         Returns:
-            The related `.Sequence` object, or `None` if this is not an identity column
+            The related [`Sequence`][firebird.lib.schema.Sequence] object, or `None` if this is not an identity column
             or the sequence cannot be found.
         """
         return self.schema.all_generators.get(self._attributes.get('RDB$GENERATOR_NAME'))
@@ -2829,7 +2829,7 @@ class TableColumn(SchemaItem):
         """The type of IDENTITY generation (`ALWAYS` or `BY DEFAULT`) specified for the column.
 
         Returns:
-            An `.IdentityType` enum member if this is an identity column (`RDB$IDENTITY_TYPE`
+            An [`IdentityType`][firebird.lib.schema.IdentityType] enum member if this is an identity column (`RDB$IDENTITY_TYPE`
             is not NULL), otherwise `None`.
         """
         return self._attributes.get('RDB$IDENTITY_TYPE')
@@ -2844,7 +2844,7 @@ class Index(SchemaItem):
 
     Instances of this class map data primarily from the `RDB$INDICES` and
     `RDB$INDEX_SEGMENTS` system tables. They are typically accessed via
-    `.Schema.indices`, `.Schema.sys_indices`, `.Schema.all_indices`, or `.Table.indices`.
+    [`Schema.indices`][firebird.lib.schema.Schema.indices], [`Schema.sys_indices`][firebird.lib.schema.Schema.sys_indices], [`Schema.all_indices`][firebird.lib.schema.Schema.all_indices], or [`Table.indices`][firebird.lib.schema.Table.indices].
 
     Supported SQL actions via `get_sql_for()`:
 
@@ -2865,7 +2865,7 @@ class Index(SchemaItem):
         *   Note: System indexes usually cannot be dropped directly; drop the constraint instead.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$INDICES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -3029,7 +3029,7 @@ class Index(SchemaItem):
         return self.name in self.schema._get_constraint_indices()
     @property
     def table(self) -> Table:
-        """The `.Table` object this index is defined on (`RDB$RELATION_NAME`)."""
+        """The [`Table`][firebird.lib.schema.Table] object this index is defined on (`RDB$RELATION_NAME`)."""
         return self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
     @property
     def id(self) -> int:
@@ -3037,7 +3037,7 @@ class Index(SchemaItem):
         return self._attributes['RDB$INDEX_ID']
     @property
     def index_type(self) -> IndexType:
-        """The index ordering type (`.IndexType.ASCENDING` or `.IndexType.DESCENDING`).
+        """The index ordering type ([`IndexType.ASCENDING`][firebird.lib.schema.IndexType] or [`IndexType.DESCENDING`][firebird.lib.schema.IndexType]).
 
         Based on `RDB$INDEX_TYPE` (NULL or 0 = ascending, 1 = descending).
         """
@@ -3045,11 +3045,11 @@ class Index(SchemaItem):
                 else IndexType.ASCENDING)
     @property
     def partner_index(self) -> Index | None:
-        """For a FOREIGN KEY index, the associated PRIMARY KEY or UNIQUE key `.Index`
+        """For a FOREIGN KEY index, the associated PRIMARY KEY or UNIQUE key [`Index`][firebird.lib.schema.Index]
         it references (`RDB$FOREIGN_KEY` contains the partner index name).
 
         Returns:
-            The partner `.Index` object, or `None` if this is not a foreign key index
+            The partner [`Index`][firebird.lib.schema.Index] object, or `None` if this is not a foreign key index
             or the partner index cannot be found.
         """
         return (self.schema.all_indices.get(pname) if (pname := self._attributes['RDB$FOREIGN_KEY'])
@@ -3100,7 +3100,7 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         return self.__segment_statistics
     @property
     def segments(self) -> DataList[TableColumn]:
-        """A `.DataList` of the `.TableColumn` objects corresponding to the index segments.
+        """A `DataList` of the [`TableColumn`][firebird.lib.schema.TableColumn] objects corresponding to the index segments.
 
         Returns an empty list for expression-based indexes. Uses `segment_names` to
         look up columns in the associated `Table`.
@@ -3108,7 +3108,7 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         return DataList(self.table.columns.get(colname) for colname in self.segment_names)
     @property
     def constraint(self) -> Constraint | None:
-        """The `.Constraint` object (PK, UK, FK) that this index enforces, if any.
+        """The [`Constraint`][firebird.lib.schema.Constraint] object (PK, UK, FK) that this index enforces, if any.
 
         Returns `None` if the index does not enforce a constraint (i.e., it's purely
         for performance).
@@ -3122,13 +3122,13 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         Returns the condition string (typically enclosed in parentheses), or `None`
         if this is not a partial index.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
            Requires Firebird 5.0+. Older versions will return `None`.
         """
         return self._attributes['RDB$CONDITION_SOURCE']
 
 class ViewColumn(SchemaItem):
-    """Represents a column within a database view (`.View`).
+    """Represents a column within a database view ([`View`][firebird.lib.schema.View]).
 
     View columns derive their properties (like data type, nullability) from the
     underlying query's output columns, which might originate from base tables,
@@ -3144,8 +3144,8 @@ class ViewColumn(SchemaItem):
         (`COMMENT ON COLUMN view_name.column_name IS ...`).
 
     Arguments:
-        schema: The parent `.Schema` instance.
-        view: The parent `.View` object this column belongs to.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
+        view: The parent [`View`][firebird.lib.schema.View] object this column belongs to.
         attributes: Raw data dictionary fetched from the `RDB$RELATION_FIELDS` row
                     (potentially joined with `RDB$VIEW_RELATIONS` for base info).
     """
@@ -3183,11 +3183,11 @@ class ViewColumn(SchemaItem):
     def get_dependents(self) -> DataList[Dependency]:
         """Retrieves a list of database objects that depend on this specific view column.
 
-        Searches `.Schema.dependencies` matching the view name (`RDB$RELATION_NAME`),
+        Searches [`Schema.dependencies`][firebird.lib.schema.Schema.dependencies] matching the view name (`RDB$RELATION_NAME`),
         object type (1 for view), and this column's name (`RDB$FIELD_NAME`).
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this view column is
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this view column is
             part of the `depended_on` reference.
         """
         return self.schema.dependencies.extract(lambda d: d.depended_on_name == self._attributes['RDB$RELATION_NAME']
@@ -3195,11 +3195,11 @@ class ViewColumn(SchemaItem):
     def get_dependencies(self) -> DataList[Dependency]:
         """Retrieves a list of database objects that this view column depends on.
 
-        Searches `.Schema.dependencies` where this view column's view name and
+        Searches [`Schema.dependencies`][firebird.lib.schema.Schema.dependencies] where this view column's view name and
         column name are the `dependent` reference (dependent type is 1 for VIEW).
 
         Returns:
-            A `.DataList` containing `.Dependency` objects where this view column is
+            A `DataList` containing [`Dependency`][firebird.lib.schema.Dependency] objects where this view column is
             part of the `dependent` reference.
         """
         return self.schema.dependencies.extract(lambda d: d.dependent_name == self._attributes['RDB$RELATION_NAME']
@@ -3236,7 +3236,7 @@ class ViewColumn(SchemaItem):
         or procedures.
 
         Returns:
-            A `.TableColumn`, `.ViewColumn`, or `.ProcedureParameter` instance representing
+            A [`TableColumn`][firebird.lib.schema.TableColumn], [`ViewColumn`][firebird.lib.schema.ViewColumn], or [`ProcedureParameter`][firebird.lib.schema.ProcedureParameter] instance representing
             the ultimate source, or `None` if the source cannot be determined (e.g.,
             an expression without a direct base column).
 
@@ -3257,11 +3257,11 @@ class ViewColumn(SchemaItem):
         return None
     @property
     def view(self) -> View:
-        """The parent `.View` object this column belongs to."""
+        """The parent [`View`][firebird.lib.schema.View] object this column belongs to."""
         return self.__view
     @property
     def domain(self) -> Domain:
-        """The underlying `.Domain` object that defines this column's base data type
+        """The underlying [`Domain`][firebird.lib.schema.Domain] object that defines this column's base data type
         and constraints (`RDB$FIELD_SOURCE`)."""
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
@@ -3275,7 +3275,7 @@ class ViewColumn(SchemaItem):
         return self._attributes['RDB$SECURITY_CLASS']
     @property
     def collation(self) -> Collation | None:
-        """The specific `.Collation` object applied to this view column (`RDB$COLLATION_ID`),
+        """The specific [`Collation`][firebird.lib.schema.Collation] object applied to this view column (`RDB$COLLATION_ID`),
         if applicable (for character types) and different from the domain default.
 
         Returns `None` if the column type does not support collation or if the
@@ -3287,17 +3287,16 @@ class ViewColumn(SchemaItem):
     def datatype(self) -> str:
         """A string representation of the column's SQL data type definition.
 
-        Derived from the underlying `.Domain`'s datatype property.
+        Derived from the underlying [`Domain`][firebird.lib.schema.Domain]'s datatype property.
         Example: 'VARCHAR(50) CHARACTER SET UTF8'.
         """
         return self.domain.datatype
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A lazily-loaded `.DataList` of privileges (`SELECT`, `UPDATE`, `REFERENCES`)
+        """A lazily-loaded `DataList` of privileges (`SELECT`, `UPDATE`, `REFERENCES`)
         granted specifically on this view column.
 
-        .. note::
-
+        !!! note
            In `RDB$USER_PRIVILEGES`, privileges on view columns are often logged
            with the subject type as TABLE (0), not VIEW (1). This property
            accounts for that when filtering.
@@ -3350,7 +3349,7 @@ class Domain(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$FIELDS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -3559,7 +3558,7 @@ class Domain(SchemaItem):
         return self._attributes['RDB$FIELD_SCALE']
     @property
     def field_type(self) -> FieldType:
-        """The base data type code (`.FieldType`) defined for the domain (`RDB$FIELD_TYPE`)."""
+        """The base data type code ([`FieldType`][firebird.lib.schema.FieldType]) defined for the domain (`RDB$FIELD_TYPE`)."""
         return FieldType(self._attributes['RDB$FIELD_TYPE'])
     @property
     def sub_type(self) -> int | None:
@@ -3567,7 +3566,7 @@ class Domain(SchemaItem):
 
         Commonly used for `BLOB` subtypes (0=binary, 1=text) or `NUMERIC`/`DECIMAL`
         indication (1=numeric, 2=decimal) for exact numeric types. Returns the raw
-        integer if not a standard `.FieldSubType` enum member, or `None`.
+        integer if not a standard [`FieldSubType`][firebird.lib.schema.FieldSubType] enum member, or `None`.
         """
         return self._attributes['RDB$FIELD_SUB_TYPE']
     @property
@@ -3587,7 +3586,7 @@ class Domain(SchemaItem):
         return self._attributes['RDB$EXTERNAL_SCALE']
     @property
     def external_type(self) -> FieldType | None:
-        """Data type code (`.FieldType`) of the field if mapped from an external table
+        """Data type code ([`FieldType`][firebird.lib.schema.FieldType]) of the field if mapped from an external table
         (`RDB$EXTERNAL_TYPE`). Returns `None` otherwise."""
         if (value := self._attributes['RDB$EXTERNAL_TYPE']) is not None:
             return FieldType(value)
@@ -3610,7 +3609,7 @@ class Domain(SchemaItem):
         return self._attributes['RDB$CHARACTER_LENGTH']
     @property
     def collation(self) -> Collation | None:
-        """The specific `.Collation` object defined for the domain (`RDB$COLLATION_ID`),
+        """The specific [`Collation`][firebird.lib.schema.Collation] object defined for the domain (`RDB$COLLATION_ID`),
         if applicable (for character/text types).
 
         Returns `None` if the domain type does not support collation or if the
@@ -3620,7 +3619,7 @@ class Domain(SchemaItem):
                                                self._attributes['RDB$COLLATION_ID'])
     @property
     def character_set(self) -> CharacterSet | None:
-        """The `.CharacterSet` object associated with the domain (`RDB$CHARACTER_SET_ID`),
+        """The [`CharacterSet`][firebird.lib.schema.CharacterSet] object associated with the domain (`RDB$CHARACTER_SET_ID`),
         if applicable (for character/text types). Returns `None` otherwise."""
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
@@ -3690,12 +3689,12 @@ class Dependency(SchemaItem):
     for DDL operations (e.g., dropping or altering objects).
 
     Instances of this class are typically accessed via `Schema.dependencies` or by
-    calling `get_dependents()` or `get_dependencies()` on other `.SchemaItem` objects.
+    calling `get_dependents()` or `get_dependencies()` on other [`SchemaItem`][firebird.lib.schema.SchemaItem] objects.
 
     This class itself does not support any direct SQL actions via `get_sql_for()`.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$DEPENDENCIES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -3722,14 +3721,14 @@ class Dependency(SchemaItem):
         """Dependencies do not have further dependents.
 
         Returns:
-            An empty `.DataList`.
+            An empty `DataList`.
         """
         return DataList()
     def get_dependencies(self) -> DataList:
         """Dependencies represent a relationship and do not have dependencies themselves.
 
         Returns:
-            An empty `.DataList`.
+            An empty `DataList`.
         """
         return DataList()
     def is_packaged(self) -> bool:
@@ -3749,7 +3748,7 @@ class Dependency(SchemaItem):
         Resolves the object based on `RDB$DEPENDENT_NAME` and `RDB$DEPENDENT_TYPE`.
 
         Returns:
-            The `.SchemaItem` subclass instance (e.g., `.View`, `.Procedure`, `.Trigger`)
+            The [`SchemaItem`][firebird.lib.schema.SchemaItem] subclass instance (e.g., [`View`][firebird.lib.schema.View], [`Procedure`][firebird.lib.schema.Procedure], [`Trigger`][firebird.lib.schema.Trigger])
             representing the dependent object, or `None` if the object cannot be found
             or the type is currently unhandled.
         """
@@ -3804,7 +3803,7 @@ class Dependency(SchemaItem):
         return self._attributes['RDB$DEPENDENT_NAME']
     @property
     def dependent_type(self) -> ObjectType:
-        """The type (`.ObjectType`) of the object that has the dependency (`RDB$DEPENDENT_TYPE`)."""
+        """The type ([`ObjectType`][firebird.lib.schema.ObjectType]) of the object that has the dependency (`RDB$DEPENDENT_TYPE`)."""
         return ObjectType(value) if (value := self._attributes['RDB$DEPENDENT_TYPE']) is not None else None
     @property
     def field_name(self) -> str | None:
@@ -3825,8 +3824,8 @@ class Dependency(SchemaItem):
         container object (table, view, procedure, etc.).
 
         Returns:
-            The `.SchemaItem` subclass instance (e.g., `.Table`, `.Procedure`, `.Domain`)
-            or a `.TableColumn` / `.ViewColumn` instance representing the object being
+            The [`SchemaItem`][firebird.lib.schema.SchemaItem] subclass instance (e.g., [`Table`][firebird.lib.schema.Table], [`Procedure`][firebird.lib.schema.Procedure], [`Domain`][firebird.lib.schema.Domain])
+            or a [`TableColumn`][firebird.lib.schema.TableColumn] / [`ViewColumn`][firebird.lib.schema.ViewColumn] instance representing the object being
             depended upon, or `None` if it cannot be resolved or the type is unhandled.
         """
         result = None
@@ -3884,11 +3883,11 @@ class Dependency(SchemaItem):
         return self._attributes['RDB$DEPENDED_ON_NAME']
     @property
     def depended_on_type(self) -> ObjectType:
-        """The type (`.ObjectType`) of the object being depended upon (`RDB$DEPENDED_ON_TYPE`)."""
+        """The type ([`ObjectType`][firebird.lib.schema.ObjectType]) of the object being depended upon (`RDB$DEPENDED_ON_TYPE`)."""
         return ObjectType(value) if (value := self._attributes['RDB$DEPENDED_ON_TYPE']) is not None else None
     @property
     def package(self) -> Package | None:
-        """The `.Package` object involved, if the dependency relates to a packaged object
+        """The [`Package`][firebird.lib.schema.Package] object involved, if the dependency relates to a packaged object
         (`RDB$PACKAGE_NAME`).
 
         This typically means the `dependent` object is part of this package. Returns `None`
@@ -3905,7 +3904,7 @@ class Constraint(SchemaItem):
 
     Instances map data primarily from `RDB$RELATION_CONSTRAINTS`, potentially joined with
     `RDB$REF_CONSTRAINTS` (for FK) and `RDB$CHECK_CONSTRAINTS` (for CHECK).
-    They are typically accessed via `.Schema.constraints` or `.Table.constraints`.
+    They are typically accessed via [`Schema.constraints`][firebird.lib.schema.Schema.constraints] or [`Table.constraints`][firebird.lib.schema.Table.constraints].
 
     Supported SQL actions via `get_sql_for()`:
 
@@ -3921,14 +3920,13 @@ class Constraint(SchemaItem):
             typically managed as part of the column/domain definition. System
             constraints (on system tables) generally cannot be modified.
 
-    .. note::
-
+    !!! note
        NOT NULL constraints are represented by this class internally when fetched
        from system tables but do not support `create` or `drop` actions here.
        They are managed via `ALTER DOMAIN` or `ALTER TABLE ... ALTER COLUMN`.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from `RDB$RELATION_CONSTRAINTS`
                     (potentially joined with other constraint tables).
     """
@@ -4020,35 +4018,35 @@ class Constraint(SchemaItem):
         """Checks if this is a `NOT NULL` constraint.
 
         Returns:
-            `True` if `constraint_type` is `.ConstraintType.NOT_NULL`, `False` otherwise.
+            `True` if `constraint_type` is [`ConstraintType.NOT_NULL`][firebird.lib.schema.ConstraintType], `False` otherwise.
         """
         return self.constraint_type == ConstraintType.NOT_NULL
     def is_pkey(self) -> bool:
         """Checks if this is a `PRIMARY KEY` constraint.
 
         Returns:
-            `True` if `constraint_type` is `.ConstraintType.PRIMARY_KEY`, `False` otherwise.
+            `True` if `constraint_type` is [`ConstraintType.PRIMARY_KEY`][firebird.lib.schema.ConstraintType], `False` otherwise.
         """
         return self.constraint_type == ConstraintType.PRIMARY_KEY
     def is_fkey(self) -> bool:
         """Checks if this is a `FOREIGN KEY` constraint.
 
         Returns:
-            `True` if `constraint_type` is `.ConstraintType.FOREIGN_KEY`, `False` otherwise.
+            `True` if `constraint_type` is [`ConstraintType.FOREIGN_KEY`][firebird.lib.schema.ConstraintType], `False` otherwise.
         """
         return self.constraint_type == ConstraintType.FOREIGN_KEY
     def is_unique(self) -> bool:
         """Checks if this is a `UNIQUE` constraint.
 
         Returns:
-            `True` if `constraint_type` is `.ConstraintType.UNIQUE`, `False` otherwise.
+            `True` if `constraint_type` is [`ConstraintType.UNIQUE`][firebird.lib.schema.ConstraintType], `False` otherwise.
         """
         return self.constraint_type == ConstraintType.UNIQUE
     def is_check(self) -> bool:
         """Checks if this is a `CHECK` constraint.
 
         Returns:
-            `True` if `constraint_type` is `.ConstraintType.CHECK`, `False` otherwise.
+            `True` if `constraint_type` is [`ConstraintType.CHECK`][firebird.lib.schema.ConstraintType], `False` otherwise.
         """
         return self.constraint_type == ConstraintType.CHECK
     def is_deferrable(self) -> bool:
@@ -4073,7 +4071,7 @@ class Constraint(SchemaItem):
         return self._attributes.get('RDB$INITIALLY_DEFERRED', 'NO').upper() == 'YES'
     @property
     def constraint_type(self) -> ConstraintType:
-        """The type of the constraint (`.ConstraintType` enum).
+        """The type of the constraint ([`ConstraintType`][firebird.lib.schema.ConstraintType] enum).
 
         Derived from `RDB$CONSTRAINT_TYPE` ('PRIMARY KEY', 'UNIQUE', etc.).
         Returns `None` if the type string is unrecognized.
@@ -4081,11 +4079,11 @@ class Constraint(SchemaItem):
         return ConstraintType(self._attributes['RDB$CONSTRAINT_TYPE'])
     @property
     def table(self) -> Table:
-        """The `.Table` object this constraint is defined on (`RDB$RELATION_NAME`)."""
+        """The [`Table`][firebird.lib.schema.Table] object this constraint is defined on (`RDB$RELATION_NAME`)."""
         return self.schema.all_tables.get(self._attributes['RDB$RELATION_NAME'])
     @property
     def index(self) -> Index | None:
-        """The `.Index` object used to enforce the constraint (`RDB$INDEX_NAME`).
+        """The [`Index`][firebird.lib.schema.Index] object used to enforce the constraint (`RDB$INDEX_NAME`).
 
         Relevant for PRIMARY KEY, UNIQUE, and FOREIGN KEY constraints.
         Returns `None` for CHECK and NOT NULL constraints, or if the index cannot be found.
@@ -4102,7 +4100,7 @@ class Constraint(SchemaItem):
         return []
     @property
     def triggers(self) -> DataList[Trigger]:
-        """For a `CHECK` constraint: A `.DataList` of the `.Trigger` objects that enforce it.
+        """For a `CHECK` constraint: A `DataList` of the [`Trigger`][firebird.lib.schema.Trigger] objects that enforce it.
 
         Returns an empty list for other constraint types or if triggers cannot be found.
         """
@@ -4117,7 +4115,7 @@ class Constraint(SchemaItem):
     @property
     def partner_constraint(self) -> Constraint | None:
         """For a `FOREIGN KEY` constraint: The referenced `PRIMARY KEY` or `UNIQUE`
-        `.Constraint` object (`RDB$CONST_NAME_UQ`).
+        [`Constraint`][firebird.lib.schema.Constraint] object (`RDB$CONST_NAME_UQ`).
 
         Returns `None` for other constraint types or if the partner constraint cannot be found.
         """
@@ -4154,9 +4152,9 @@ class Table(SchemaItem):
     are fetched from other system tables (`RDB$RELATION_FIELDS`, `RDB$RELATION_CONSTRAINTS`,
     `RDB$INDICES`, `RDB$TRIGGERS`).
 
-    Access typically occurs via `.Schema.tables`, `.Schema.sys_tables`, or `.Schema.all_tables`.
+    Access typically occurs via [`Schema.tables`][firebird.lib.schema.Schema.tables], [`Schema.sys_tables`][firebird.lib.schema.Schema.sys_tables], or [`Schema.all_tables`][firebird.lib.schema.Schema.all_tables].
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Table.get_sql_for]:
 
     *   User-defined tables:
 
@@ -4179,7 +4177,7 @@ class Table(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$RELATIONS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -4357,8 +4355,8 @@ class Table(SchemaItem):
         """Checks if this table is a Global Temporary Table (GTT).
 
         Returns:
-            `True` if `table_type` is `.RelationType.GLOBAL_TEMPORARY_DELETE` or
-            `.RelationType.GLOBAL_TEMPORARY_PRESERVE`, `False` otherwise.
+            `True` if `table_type` is [`RelationType.GLOBAL_TEMPORARY_DELETE`][firebird.lib.schema.RelationType] or
+            [`RelationType.GLOBAL_TEMPORARY_PRESERVE`][firebird.lib.schema.RelationType], `False` otherwise.
         """
         return self.table_type in (RelationType.GLOBAL_TEMPORARY_DELETE,
                                    RelationType.GLOBAL_TEMPORARY_PRESERVE)
@@ -4368,8 +4366,8 @@ class Table(SchemaItem):
         Excludes views and GTTs.
 
         Returns:
-            `True` if `table_type` is `.RelationType.PERSISTENT` or
-            `.RelationType.EXTERNAL`, `False` otherwise.
+            `True` if `table_type` is [`RelationType.PERSISTENT`][firebird.lib.schema.RelationType] or
+            [`RelationType.EXTERNAL`][firebird.lib.schema.RelationType], `False` otherwise.
         """
         return self.table_type in (RelationType.PERSISTENT, RelationType.EXTERNAL)
     def is_external(self) -> bool:
@@ -4419,7 +4417,7 @@ class Table(SchemaItem):
         return self._attributes['RDB$FORMAT']
     @property
     def table_type(self) -> RelationType:
-        """The type of the relation (`.RelationType` enum).
+        """The type of the relation ([`RelationType`][firebird.lib.schema.RelationType] enum).
 
         Derived from `RDB$RELATION_TYPE` (0=Persistent, 2=External,
         4=GTT Preserve, 5=GTT Delete). Views (1) and Virtual (3) are excluded
@@ -4451,21 +4449,21 @@ class Table(SchemaItem):
         return self._attributes['RDB$FLAGS']
     @property
     def primary_key(self) -> Constraint | None:
-        """The `PRIMARY KEY` `.Constraint` object defined for this table.
+        """The `PRIMARY KEY` [`Constraint`][firebird.lib.schema.Constraint] object defined for this table.
 
         Returns:
-            The `.Constraint` object representing the primary key, or `None` if
+            The [`Constraint`][firebird.lib.schema.Constraint] object representing the primary key, or `None` if
             no primary key is defined on this table. Finds the first constraint
             marked as PK.
         """
         return self.constraints.find(lambda c: c.is_pkey())
     @property
     def foreign_keys(self) -> DataList[Constraint]:
-        """A `.DataList` of all `FOREIGN KEY` `.Constraint` objects defined for this table."""
+        """A `DataList` of all `FOREIGN KEY` [`Constraint`][firebird.lib.schema.Constraint] objects defined for this table."""
         return self.constraints.extract(lambda c: c.is_fkey(), copy=True)
     @property
     def columns(self) -> DataList[TableColumn]:
-        """A lazily-loaded `.DataList` of all `.TableColumn` objects defined for this table.
+        """A lazily-loaded `DataList` of all [`TableColumn`][firebird.lib.schema.TableColumn] objects defined for this table.
 
         Columns are ordered by their position (`RDB$FIELD_POSITION`). Fetched from
         `RDB$RELATION_FIELDS`.
@@ -4484,35 +4482,35 @@ class Table(SchemaItem):
         return self.__columns
     @property
     def constraints(self) -> DataList[Constraint]:
-        """A `.DataList` of all `.Constraint` objects (PK, FK, UK, CHECK) defined for this table.
+        """A `DataList` of all [`Constraint`][firebird.lib.schema.Constraint] objects (PK, FK, UK, CHECK) defined for this table.
 
-        Filters the main `.Schema.constraints` collection.
+        Filters the main [`Schema.constraints`][firebird.lib.schema.Schema.constraints] collection.
         """
         return self.schema.constraints.extract(lambda c: c._attributes['RDB$RELATION_NAME'] == self.name,
                                                copy=True)
     @property
     def indices(self) -> DataList[Index]:
-        """A `.DataList` of all `.Index` objects defined for this table.
+        """A `DataList` of all [`Index`][firebird.lib.schema.Index] objects defined for this table.
 
-        Filters the main `.Schema.all_indices` collection.
+        Filters the main [`Schema.all_indices`][firebird.lib.schema.Schema.all_indices] collection.
         """
         return self.schema.all_indices.extract(lambda i: i._attributes['RDB$RELATION_NAME'] == self.name,
                                                copy=True)
     @property
     def triggers(self) -> DataList[Trigger]:
-        """A `.DataList` of all `.Trigger` objects defined for this table.
+        """A `DataList` of all [`Trigger`][firebird.lib.schema.Trigger] objects defined for this table.
 
         Filters the main `Schema.triggers` collection (which contains user triggers).
-        Use `.Schema.all_triggers` if system triggers are needed.
+        Use [`Schema.all_triggers`][firebird.lib.schema.Schema.all_triggers] if system triggers are needed.
         """
         return self.schema.triggers.extract(lambda t: t._attributes['RDB$RELATION_NAME'] == self.name,
                                             copy=True)
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A `.DataList` of all `.Privilege` objects granted *on* this table.
+        """A `DataList` of all [`Privilege`][firebird.lib.schema.Privilege] objects granted *on* this table.
 
-        Filters the main `.Schema.privileges` collection. Includes privileges granted
-        on the table as a whole, not column-specific privileges (see `.TableColumn.privileges`).
+        Filters the main [`Schema.privileges`][firebird.lib.schema.Schema.privileges] collection. Includes privileges granted
+        on the table as a whole, not column-specific privileges (see [`TableColumn.privileges`][firebird.lib.schema.TableColumn.privileges]).
         """
         return self.schema.privileges.extract(lambda p: ((p.subject_name == self.name) and
                                                          (p.subject_type in self._type_code)),
@@ -4529,9 +4527,9 @@ class View(SchemaItem):
     `RDB$VIEW_BLR` is NOT NULL. Associated columns are fetched from
     `RDB$RELATION_FIELDS`.
 
-    Access typically occurs via `.Schema.views`, `.Schema.sys_views`, or `.Schema.all_views`.
+    Access typically occurs via [`Schema.views`][firebird.lib.schema.Schema.views], [`Schema.sys_views`][firebird.lib.schema.Schema.sys_views], or [`Schema.all_views`][firebird.lib.schema.Schema.all_views].
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.View.get_sql_for]:
 
     *   User-defined views:
 
@@ -4556,7 +4554,7 @@ class View(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$RELATIONS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -4665,8 +4663,7 @@ class View(SchemaItem):
         Performs a case-insensitive search for "WITH CHECK OPTION" within the view's
         SQL source (`sql` property).
 
-        .. warning::
-
+        !!! warning
            This is a simple text search and might produce false positives if the
            text appears within comments or string literals in the view definition.
 
@@ -4710,7 +4707,7 @@ class View(SchemaItem):
         return self._attributes['RDB$FLAGS']
     @property
     def columns(self) -> DataList[ViewColumn]:
-        """A lazily-loaded `.DataList` of all `.ViewColumn` objects defined for this view.
+        """A lazily-loaded `DataList` of all [`ViewColumn`][firebird.lib.schema.ViewColumn] objects defined for this view.
 
         Columns are ordered by their position (`RDB$FIELD_POSITION`). Fetched from
         `RDB$RELATION_FIELDS` potentially joined with `RDB$VIEW_RELATIONS`.
@@ -4728,9 +4725,9 @@ r.RDB$DEFAULT_SOURCE, r.RDB$COLLATION_ID, r.RDB$BASE_FIELD, v.RDB$RELATION_NAME 
         return self.__columns
     @property
     def triggers(self) -> DataList[Trigger]:
-        """A `.DataList` of all user `.Trigger` objects defined for this view.
+        """A `DataList` of all user [`Trigger`][firebird.lib.schema.Trigger] objects defined for this view.
 
-        Filters the main `.Schema.triggers` collection. Use `.Schema.all_triggers` if system
+        Filters the main [`Schema.triggers`][firebird.lib.schema.Schema.triggers] collection. Use [`Schema.all_triggers`][firebird.lib.schema.Schema.all_triggers] if system
         triggers are needed.
         """
         return self.schema.triggers.extract(lambda t:
@@ -4738,14 +4735,13 @@ r.RDB$DEFAULT_SOURCE, r.RDB$COLLATION_ID, r.RDB$BASE_FIELD, v.RDB$RELATION_NAME 
                                             copy=True)
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A `.DataList` of all `.Privilege` objects granted *on* this view.
+        """A `DataList` of all [`Privilege`][firebird.lib.schema.Privilege] objects granted *on* this view.
 
         Filters the main `Schema.privileges` collection. Includes privileges granted
         on the view as a whole. Column-specific privileges are accessed via
         `ViewColumn.privileges`.
 
-        .. note::
-
+        !!! note
            In `RDB$USER_PRIVILEGES`, privileges on views are often logged with the
            subject type as TABLE (0). This property accounts for that when filtering.
         """
@@ -4766,10 +4762,10 @@ class Trigger(SchemaItem):
     sequence/position to control execution order among multiple triggers for the same event.
 
     Instances map data primarily from the `RDB$TRIGGERS` system table. They are
-    accessed via `.Schema.triggers`, `.Schema.sys_triggers`, `.Schema.all_triggers`,
-    or `.Table.triggers`/`View.triggers`.
+    accessed via [`Schema.triggers`][firebird.lib.schema.Schema.triggers], [`Schema.sys_triggers`][firebird.lib.schema.Schema.sys_triggers], [`Schema.all_triggers`][firebird.lib.schema.Schema.all_triggers],
+    or [`Table.triggers`][firebird.lib.schema.Table.triggers]/`View.triggers`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Trigger.get_sql_for]:
 
     *   User-defined triggers:
 
@@ -4791,7 +4787,7 @@ class Trigger(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$TRIGGERS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -4960,14 +4956,14 @@ class Trigger(SchemaItem):
         """Checks if this is a database-level trigger (ON CONNECT, etc.).
 
         Returns:
-            `True` if `trigger_type` is `.TriggerType.DB`, `False` otherwise.
+            `True` if `trigger_type` is [`TriggerType.DB`][firebird.lib.schema.TriggerType], `False` otherwise.
         """
         return self.trigger_type is TriggerType.DB
     def is_ddl_trigger(self) -> bool:
         """Checks if this is a DDL trigger (ON CREATE TABLE, etc.).
 
         Returns:
-            `True` if `trigger_type` is `.TriggerType.DDL`, `False` otherwise.
+            `True` if `trigger_type` is [`TriggerType.DDL`][firebird.lib.schema.TriggerType], `False` otherwise.
         """
         return self.trigger_type is TriggerType.DDL
     def is_insert(self) -> bool:
@@ -5018,7 +5014,7 @@ class Trigger(SchemaItem):
         return ' '.join(l)
     @property
     def relation(self) -> Table | View | None:
-        """The `.Table` or `.View` object this trigger is associated with (`RDB$RELATION_NAME`).
+        """The [`Table`][firebird.lib.schema.Table] or [`View`][firebird.lib.schema.View] object this trigger is associated with (`RDB$RELATION_NAME`).
 
         Returns `None` for database-level (DB) or DDL triggers.
         """
@@ -5046,9 +5042,9 @@ class Trigger(SchemaItem):
         Returns:
             Depends on trigger type:
 
-            *   For DML triggers: A `.DMLTrigger` flag combination (e.g., `INSERT|UPDATE`).
-            *   For DB triggers: A `.DBTrigger` enum member (e.g., `CONNECT`).
-            *   For DDL triggers: A `.DDLTrigger` enum member (e.g., `CREATE_TABLE`).
+            *   For DML triggers: A [`DMLTrigger`][firebird.lib.schema.DMLTrigger] flag combination (e.g., `INSERT|UPDATE`).
+            *   For DB triggers: A [`DBTrigger`][firebird.lib.schema.DBTrigger] enum member (e.g., `CONNECT`).
+            *   For DDL triggers: A [`DDLTrigger`][firebird.lib.schema.DDLTrigger] enum member (e.g., `CREATE_TABLE`).
         """
         if self.trigger_type == TriggerType.DDL:
             return DDLTrigger((self._attributes['RDB$TRIGGER_TYPE'] & ~TriggerType.DDL) >> 1)
@@ -5062,7 +5058,7 @@ class Trigger(SchemaItem):
         return result
     @property
     def time(self) -> TriggerTime:
-        """The execution time relative to the event (`.TriggerTime`: BEFORE or AFTER).
+        """The execution time relative to the event ([`TriggerTime`][firebird.lib.schema.TriggerTime]: BEFORE or AFTER).
         """
         return TriggerTime((self._attributes['RDB$TRIGGER_TYPE'] + (0 if self.is_ddl_trigger() else 1)) & 1)
     @property
@@ -5106,24 +5102,24 @@ class Trigger(SchemaItem):
         return self._attributes['RDB$TRIGGER_INACTIVE'] == 0
 
 class ProcedureParameter(SchemaItem):
-    """Represents an input or output parameter of a stored procedure (`.Procedure`).
+    """Represents an input or output parameter of a stored procedure ([`Procedure`][firebird.lib.schema.Procedure]).
 
     This class holds metadata about a single parameter, including its name,
     data type (derived from a domain, column type, or defined inline), direction
     (input/output), position, nullability, default value, and collation.
 
     Instances map data primarily from the `RDB$PROCEDURE_PARAMETERS` system table.
-    They are accessed via the `.Procedure.input_params` or `.Procedure.output_params`
+    They are accessed via the [`Procedure.input_params`][firebird.lib.schema.Procedure.input_params] or [`Procedure.output_params`][firebird.lib.schema.Procedure.output_params]
     properties.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.ProcedureParameter.get_sql_for]:
 
     *   `comment`: Adds or removes a descriptive comment for the parameter
         (`COMMENT ON PARAMETER proc_name.param_name IS ...`).
 
     Arguments:
-        schema: The parent `.Schema` instance.
-        proc: The parent `.Procedure` object this parameter belongs to.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
+        proc: The parent [`Procedure`][firebird.lib.schema.Procedure] object this parameter belongs to.
         attributes: Raw data dictionary fetched from the `RDB$PROCEDURE_PARAMETERS` row.
     """
     def __init__(self, schema: Schema, proc: Procedure, attributes: dict[str, Any]):
@@ -5185,7 +5181,7 @@ class ProcedureParameter(SchemaItem):
         """Checks if this is an INPUT parameter.
 
         Returns:
-            `True` if `parameter_type` is `.ParameterType.INPUT`, `False` otherwise.
+            `True` if `parameter_type` is [`ParameterType.INPUT`][firebird.lib.schema.ParameterType], `False` otherwise.
         """
         return self.parameter_type is ParameterType.INPUT
     def is_nullable(self) -> bool:
@@ -5217,7 +5213,7 @@ class ProcedureParameter(SchemaItem):
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def procedure(self) -> Procedure:
-        """The parent `.Procedure` object this parameter belongs to."""
+        """The parent [`Procedure`][firebird.lib.schema.Procedure] object this parameter belongs to."""
         return self.schema.all_procedures.get(self._attributes['RDB$PROCEDURE_NAME'])
     @property
     def sequence(self) -> int:
@@ -5226,7 +5222,7 @@ class ProcedureParameter(SchemaItem):
         return self._attributes['RDB$PARAMETER_NUMBER']
     @property
     def domain(self) -> Domain:
-        """The underlying `.Domain` object that defines this parameter's base data type
+        """The underlying [`Domain`][firebird.lib.schema.Domain] object that defines this parameter's base data type
         and constraints (`RDB$FIELD_SOURCE`)."""
         return self.schema.all_domains.get(self._attributes['RDB$FIELD_SOURCE'])
     @property
@@ -5255,7 +5251,7 @@ class ProcedureParameter(SchemaItem):
                f"{table.columns.get(self._attributes['RDB$FIELD_NAME']).get_quoted_name()}"
     @property
     def type_from(self) -> TypeFrom:
-        """Indicates the source of the parameter's data type definition (`.TypeFrom`).
+        """Indicates the source of the parameter's data type definition ([`TypeFrom`][firebird.lib.schema.TypeFrom]).
 
         Determined by `RDB$PARAMETER_MECHANISM`:
 
@@ -5287,7 +5283,7 @@ class ProcedureParameter(SchemaItem):
         return result
     @property
     def collation(self) -> Collation | None:
-        """The specific `.Collation` object applied to this parameter (`RDB$COLLATION_ID`),
+        """The specific [`Collation`][firebird.lib.schema.Collation] object applied to this parameter (`RDB$COLLATION_ID`),
         if applicable (for character types) and different from the domain default.
 
         Returns `None` if the parameter type does not support collation, if the
@@ -5297,7 +5293,7 @@ class ProcedureParameter(SchemaItem):
                 else self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'], cid))
     @property
     def mechanism(self) -> Mechanism | None:
-        """The mechanism used for passing the parameter (`.Mechanism`), derived from
+        """The mechanism used for passing the parameter ([`Mechanism`][firebird.lib.schema.Mechanism]), derived from
         `RDB$PARAMETER_MECHANISM`.
 
         Indicates if passed by value or reference, relevant for type determination.
@@ -5307,7 +5303,7 @@ class ProcedureParameter(SchemaItem):
     @property
     def column(self) -> TableColumn | None:
         """If the parameter type is derived using `TYPE OF COLUMN`, this property
-        returns the source `.TableColumn` object.
+        returns the source [`TableColumn`][firebird.lib.schema.TableColumn] object.
 
         Based on `RDB$RELATION_NAME` and `RDB$FIELD_NAME`. Returns `None` otherwise.
         """
@@ -5315,7 +5311,7 @@ class ProcedureParameter(SchemaItem):
                 else self.schema.all_tables.get(rname).columns.get(self._attributes['RDB$FIELD_NAME']))
     @property
     def package(self) -> Package | None:
-        """The `.Package` object this parameter's procedure belongs to, if any.
+        """The [`Package`][firebird.lib.schema.Package] object this parameter's procedure belongs to, if any.
 
         Based on `RDB$PACKAGE_NAME`. Returns `None` if the procedure is standalone.
         """
@@ -5327,14 +5323,14 @@ class Procedure(SchemaItem):
     Stored procedures encapsulate reusable PSQL logic, accepting input parameters
     and optionally returning output parameters (for selectable procedures) or
     single values (legacy functions implemented as procedures). They can be
-    standalone or part of a `.Package`.
+    standalone or part of a [`Package`][firebird.lib.schema.Package].
 
     Instances map data primarily from the `RDB$PROCEDURES` system table. Associated
     parameters are fetched from `RDB$PROCEDURE_PARAMETERS`. Procedures are
-    accessed via `.Schema.procedures`, `.Schema.sys_procedures`, `.Schema.all_procedures`,
-    or `.Package.procedures`.
+    accessed via [`Schema.procedures`][firebird.lib.schema.Schema.procedures], [`Schema.sys_procedures`][firebird.lib.schema.Schema.sys_procedures], [`Schema.all_procedures`][firebird.lib.schema.Schema.all_procedures],
+    or [`Package.procedures`][firebird.lib.schema.Package.procedures].
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Procedure.get_sql_for]:
 
     *   User-defined, standalone procedures:
 
@@ -5364,7 +5360,7 @@ class Procedure(SchemaItem):
         *   Note: Packaged procedures are typically managed via `ALTER PACKAGE`.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$PROCEDURES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -5562,7 +5558,7 @@ class Procedure(SchemaItem):
             name: The case-sensitive name of the parameter to find.
 
         Returns:
-            The matching `.ProcedureParameter` object, or `None` if no parameter
+            The matching [`ProcedureParameter`][firebird.lib.schema.ProcedureParameter] object, or `None` if no parameter
             with that name exists.
         """
         for p in self.output_params:
@@ -5619,7 +5615,7 @@ class Procedure(SchemaItem):
         return self._attributes['RDB$OWNER_NAME']
     @property
     def input_params(self) -> DataList[ProcedureParameter]:
-        """A lazily-loaded `.DataList` of the procedure's input `.ProcedureParameter` objects.
+        """A lazily-loaded `DataList` of the procedure's input [`ProcedureParameter`][firebird.lib.schema.ProcedureParameter] objects.
 
         Ordered by position (`RDB$PARAMETER_NUMBER`). Returns an empty list if the
         procedure has no input parameters. Fetched from `RDB$PROCEDURE_PARAMETERS`.
@@ -5635,7 +5631,7 @@ class Procedure(SchemaItem):
         return self.__input_params
     @property
     def output_params(self) -> DataList[ProcedureParameter]:
-        """A lazily-loaded `.DataList` of the procedure's output `.ProcedureParameter` objects.
+        """A lazily-loaded `DataList` of the procedure's output [`ProcedureParameter`][firebird.lib.schema.ProcedureParameter] objects.
 
         Ordered by position (`RDB$PARAMETER_NUMBER`). Returns an empty list if the
         procedure has no output parameters (i.e., does not have a `RETURNS` clause).
@@ -5652,7 +5648,7 @@ class Procedure(SchemaItem):
         return self.__output_params
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A `.DataList` of `EXECUTE` `.Privilege` objects granted on this procedure.
+        """A `DataList` of `EXECUTE` [`Privilege`][firebird.lib.schema.Privilege] objects granted on this procedure.
 
         Filters the main `Schema.privileges` collection for this procedure's name
         and type (`ObjectType.PROCEDURE`).
@@ -5686,7 +5682,7 @@ class Procedure(SchemaItem):
         return self._attributes.get('RDB$ENTRYPOINT')
     @property
     def package(self) -> Package | None:
-        """The `.Package` object this procedure belongs to, if any (`RDB$PACKAGE_NAME`).
+        """The [`Package`][firebird.lib.schema.Package] object this procedure belongs to, if any (`RDB$PACKAGE_NAME`).
 
         Returns `None` if the procedure is standalone.
         """
@@ -5708,9 +5704,9 @@ class Role(SchemaItem):
     predefined system role.
 
     Instances map data primarily from the `RDB$ROLES` system table. They are
-    accessed via `.Schema.roles`.
+    accessed via [`Schema.roles`][firebird.lib.schema.Schema.roles].
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Role.get_sql_for]:
 
     *   User-defined roles:
 
@@ -5723,7 +5719,7 @@ class Role(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$ROLES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -5797,9 +5793,9 @@ class Role(SchemaItem):
         return self._attributes.get('RDB$SECURITY_CLASS')
     @property
     def privileges(self) -> DataList[Privilege]:
-        """A `.DataList` of all `.Privilege` objects *granted to* this role.
+        """A `DataList` of all [`Privilege`][firebird.lib.schema.Privilege] objects *granted to* this role.
 
-        Filters the main `.Schema.privileges` collection where this role is the
+        Filters the main [`Schema.privileges`][firebird.lib.schema.Schema.privileges] collection where this role is the
         grantee (`RDB$USER`). This includes object privileges (SELECT, INSERT, etc.)
         and potentially membership in other roles granted TO this role.
 
@@ -5811,7 +5807,7 @@ class Role(SchemaItem):
                                                      copy=True)
 
 class FunctionArgument(SchemaItem):
-    """Represents an argument or the return value of a User-Defined Function (`.Function`).
+    """Represents an argument or the return value of a User-Defined Function ([`Function`][firebird.lib.schema.Function]).
 
     This class holds metadata about a single function argument/return value, including
     its name, data type, position, passing mechanism (e.g., by value,
@@ -5824,8 +5820,8 @@ class FunctionArgument(SchemaItem):
     Its definition is part of the `DECLARE EXTERNAL FUNCTION` or `CREATE FUNCTION` statement.
 
     Arguments:
-        schema: The parent `.Schema` instance.
-        function: The parent `.Function` object this argument belongs to.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
+        function: The parent [`Function`][firebird.lib.schema.Function] object this argument belongs to.
         attributes: Raw data dictionary fetched from the `RDB$FUNCTION_ARGUMENTS` row.
     """
     def __init__(self, schema: Schema, function: Function, attributes: dict[str, Any]):
@@ -5956,7 +5952,7 @@ class FunctionArgument(SchemaItem):
         return bool(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def function(self) -> Function:
-        """The parent `.Function` object this argument belongs to."""
+        """The parent [`Function`][firebird.lib.schema.Function] object this argument belongs to."""
         return self.__function
     @property
     def position(self) -> int:
@@ -5965,7 +5961,7 @@ class FunctionArgument(SchemaItem):
         return self._attributes['RDB$ARGUMENT_POSITION']
     @property
     def mechanism(self) -> Mechanism | None:
-        """The mechanism (`.Mechanism` enum) used for passing the argument.
+        """The mechanism ([`Mechanism`][firebird.lib.schema.Mechanism] enum) used for passing the argument.
 
         Derived from the absolute value of `RDB$MECHANISM`. See `is_freeit()` for sign meaning.
         Returns `None` if the mechanism code is unrecognized or missing.
@@ -5973,7 +5969,7 @@ class FunctionArgument(SchemaItem):
         return None if (x := self._attributes['RDB$MECHANISM']) is None else Mechanism(abs(x))
     @property
     def field_type(self) -> FieldType | None:
-        """The base data type code (`.FieldType`) of the argument (`RDB$FIELD_TYPE`).
+        """The base data type code ([`FieldType`][firebird.lib.schema.FieldType]) of the argument (`RDB$FIELD_TYPE`).
 
         Returns `None` if the type code is missing or zero (may occur for PSQL params
         relying solely on domain/column type).
@@ -5997,7 +5993,7 @@ class FunctionArgument(SchemaItem):
     def sub_type(self) -> FieldSubType | None:
         """The field sub-type code (`RDB$FIELD_SUB_TYPE`).
 
-        Returns a `.FieldSubType` enum member (e.g., `BINARY`, `TEXT`, `NUMERIC`, `DECIMAL`)
+        Returns a [`FieldSubType`][firebird.lib.schema.FieldSubType] enum member (e.g., `BINARY`, `TEXT`, `NUMERIC`, `DECIMAL`)
         if recognized, the raw integer code otherwise, or `None` if missing.
         """
         return None if (x := self._attributes['RDB$FIELD_SUB_TYPE']) is None else FieldSubType(x)
@@ -6007,7 +6003,7 @@ class FunctionArgument(SchemaItem):
         return self._attributes['RDB$CHARACTER_LENGTH']
     @property
     def character_set(self) -> CharacterSet | None:
-        """The `.CharacterSet` object (`RDB$CHARACTER_SET_ID`) for character/text types.
+        """The [`CharacterSet`][firebird.lib.schema.CharacterSet] object (`RDB$CHARACTER_SET_ID`) for character/text types.
         Returns `None` otherwise."""
         return self.schema.get_charset_by_id(self._attributes['RDB$CHARACTER_SET_ID'])
     @property
@@ -6063,7 +6059,7 @@ class FunctionArgument(SchemaItem):
             return ''.join(l)
     @property
     def type_from(self) -> TypeFrom | None:
-        """Indicates the source (`.TypeFrom`) of a PSQL parameter's data type definition.
+        """Indicates the source ([`TypeFrom`][firebird.lib.schema.TypeFrom]) of a PSQL parameter's data type definition.
 
         Returns `None` for external UDF arguments or if the source cannot be determined.
         """
@@ -6084,7 +6080,7 @@ class FunctionArgument(SchemaItem):
         return self._attributes.get('RDB$ARGUMENT_NAME')
     @property
     def domain(self) -> Domain | None:
-        """The underlying `.Domain` object (`RDB$FIELD_SOURCE`) for PSQL function parameters.
+        """The underlying [`Domain`][firebird.lib.schema.Domain] object (`RDB$FIELD_SOURCE`) for PSQL function parameters.
         Returns `None` for external UDF arguments or if no domain is associated."""
         return self.schema.all_domains.get(self._attributes.get('RDB$FIELD_SOURCE'))
     @property
@@ -6099,24 +6095,24 @@ class FunctionArgument(SchemaItem):
         return result
     @property
     def collation(self) -> Collation | None:
-        """The specific `.Collation` object (`RDB$COLLATION_ID`) for character types.
+        """The specific [`Collation`][firebird.lib.schema.Collation] object (`RDB$COLLATION_ID`) for character types.
         Returns `None` if not applicable or using default."""
         return (None if (cid := self._attributes.get('RDB$COLLATION_ID')) is None
                 else self.schema.get_collation_by_id(self.domain._attributes['RDB$CHARACTER_SET_ID'], cid))
     @property
     def argument_mechanism(self) -> Mechanism | None:
-        """The mechanism (`.Mechanism`) used for passing PSQL function parameters
+        """The mechanism ([`Mechanism`][firebird.lib.schema.Mechanism]) used for passing PSQL function parameters
         (`RDB$ARGUMENT_MECHANISM`). Returns `None` for external UDFs or if unknown."""
         return None if (code := self._attributes.get('RDB$ARGUMENT_MECHANISM')) is None else Mechanism(code)
     @property
     def column(self) -> TableColumn | None:
-        """The source `.TableColumn` if a PSQL parameter uses `TYPE OF COLUMN`.
+        """The source [`TableColumn`][firebird.lib.schema.TableColumn] if a PSQL parameter uses `TYPE OF COLUMN`.
         Returns `None` otherwise."""
         return (None if (rname := self._attributes.get('RDB$RELATION_NAME')) is None
                 else self.schema.all_tables.get(rname).columns.get(self._attributes['RDB$FIELD_NAME']))
     @property
     def package(self) -> Package | None:
-        """The `.Package` if the function is part of one (`RDB$PACKAGE_NAME`).
+        """The [`Package`][firebird.lib.schema.Package] if the function is part of one (`RDB$PACKAGE_NAME`).
         Returns `None` otherwise."""
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
 
@@ -6129,14 +6125,14 @@ class Function(SchemaItem):
         `DECLARE EXTERNAL FUNCTION`. Arguments are passed by value, reference, or descriptor.
     *   **PSQL Functions:** Implemented directly in PSQL using `CREATE FUNCTION`, similar
         to stored procedures but must return a value via the `RETURNS` clause. Can be
-        standalone or part of a `.Package`.
+        standalone or part of a [`Package`][firebird.lib.schema.Package].
 
     Instances map data primarily from the `RDB$FUNCTIONS` system table. Associated
     arguments/return values are fetched from `RDB$FUNCTION_ARGUMENTS`. Functions are
-    accessed via `.Schema.functions`, `.Schema.sys_functions`, `.Schema.all_functions`,
-    or `.Package.functions`.
+    accessed via [`Schema.functions`][firebird.lib.schema.Schema.functions], [`Schema.sys_functions`][firebird.lib.schema.Schema.sys_functions], [`Schema.all_functions`][firebird.lib.schema.Schema.all_functions],
+    or [`Package.functions`][firebird.lib.schema.Package.functions].
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Function.get_sql_for]:
 
     *   External UDFs:
 
@@ -6168,7 +6164,7 @@ class Function(SchemaItem):
         *   Note: Packaged functions are typically managed via `ALTER PACKAGE`.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$FUNCTIONS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -6443,7 +6439,7 @@ where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
         return self._attributes['RDB$ENTRYPOINT']
     @property
     def returns(self) -> FunctionArgument | None:
-        """The `.FunctionArgument` object representing the function's return value.
+        """The [`FunctionArgument`][firebird.lib.schema.FunctionArgument] object representing the function's return value.
 
         This argument is identified by the `RDB$RETURN_ARGUMENT` field in `RDB$FUNCTIONS`.
         Returns `None` if the function does not return a value or arguments are not loaded.
@@ -6454,7 +6450,7 @@ where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
         return None if self.__returns is None else self.__returns()
     @property
     def arguments(self) -> DataList[FunctionArgument]:
-        """A lazily-loaded `.DataList` of the function's input `.FunctionArgument` objects.
+        """A lazily-loaded `DataList` of the function's input [`FunctionArgument`][firebird.lib.schema.FunctionArgument] objects.
 
         Excludes the argument designated as the return value. Ordered by position.
         Returns an empty list if there are no input arguments.
@@ -6469,12 +6465,12 @@ where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
         return self._attributes.get('RDB$ENGINE_NAME')
     @property
     def package(self) -> Package | None:
-        """The `.Package` object this function belongs to, if any (`RDB$PACKAGE_NAME`).
+        """The [`Package`][firebird.lib.schema.Package] object this function belongs to, if any (`RDB$PACKAGE_NAME`).
         Returns `None` if the function is standalone."""
         return self.schema.packages.get(self._attributes.get('RDB$PACKAGE_NAME'))
     @property
     def private_flag(self) -> Privacy | None:
-        """The privacy flag (`.Privacy`: PUBLIC or PRIVATE) for packaged functions.
+        """The privacy flag ([`Privacy`][firebird.lib.schema.Privacy]: PUBLIC or PRIVATE) for packaged functions.
 
         Derived from `RDB$PRIVATE_FLAG`. Returns `None` if not a packaged function.
         """
@@ -6506,7 +6502,7 @@ where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
         return self._attributes.get('RDB$OWNER_NAME')
     @property
     def legacy_flag(self) -> Legacy:
-        """Indicates if the function uses legacy syntax/behavior (`.Legacy` enum).
+        """Indicates if the function uses legacy syntax/behavior ([`Legacy`][firebird.lib.schema.Legacy] enum).
 
         Derived from `RDB$LEGACY_FLAG`.
         """
@@ -6529,14 +6525,14 @@ class DatabaseFile(SchemaItem):
     the database or shadow set, its starting page number, and its length in pages.
 
     Instances map data from the `RDB$FILES` system table. They are typically accessed
-    via `.Schema.files` (for main database files) or `.Shadow.files` (for shadow files).
+    via [`Schema.files`][firebird.lib.schema.Schema.files] (for main database files) or [`Shadow.files`][firebird.lib.schema.Shadow.files] (for shadow files).
 
     This class represents a physical file component and does not support any direct
-    SQL actions via `.get_sql_for()`. Database file management is done through other
+    SQL actions via [`get_sql_for()`][firebird.lib.schema.DatabaseFile.get_sql_for]. Database file management is done through other
     commands (e.g., `ALTER DATABASE ADD FILE`, `CREATE SHADOW`).
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$FILES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -6589,7 +6585,7 @@ class Shadow(SchemaItem):
     Instances primarily map data derived from `RDB$FILES` where `RDB$SHADOW_NUMBER` > 0.
     They are accessed via `Schema.shadows`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Shadow.get_sql_for]:
 
     *   `create`: Generates the `CREATE SHADOW shadow_id [AUTO|MANUAL] [CONDITIONAL] FILE '...' [LENGTH N] [FILE '...' STARTING AT P [LENGTH N]] ...` statement.
     *   `drop` (optional keyword arg `preserve`: bool=False): Generates `DROP SHADOW shadow_id [PRESERVE FILE]`.
@@ -6600,7 +6596,7 @@ class Shadow(SchemaItem):
         Shadows do not have user-assigned names in SQL; they are identified by their numeric ID.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary containing `RDB$SHADOW_NUMBER` and `RDB$FILE_FLAGS`
                     fetched from the RDB$FILES row corresponding to the shadow's
                     primary file (sequence 0).
@@ -6678,7 +6674,7 @@ class Shadow(SchemaItem):
     def is_manual(self) -> bool:
         """Checks if the shadow requires manual intervention (`MANUAL`).
 
-        Based on the `.ShadowFlag.MANUAL` flag.
+        Based on the [`ShadowFlag.MANUAL`][firebird.lib.schema.ShadowFlag] flag.
 
         Returns:
             `True` if manual, `False` if automatic (AUTO).
@@ -6687,7 +6683,7 @@ class Shadow(SchemaItem):
     def is_inactive(self) -> bool:
         """Checks if the shadow is currently marked as inactive (`INACTIVE`).
 
-        Based on the `.ShadowFlag.INACTIVE` flag. The engine typically ignores
+        Based on the [`ShadowFlag.INACTIVE`][firebird.lib.schema.ShadowFlag] flag. The engine typically ignores
         inactive shadows.
 
         Returns:
@@ -6698,7 +6694,7 @@ class Shadow(SchemaItem):
         """Checks if the shadow is conditional (`CONDITIONAL`).
 
         Conditional shadows are only activated by the engine if the main database
-        becomes inaccessible. Based on the `.ShadowFlag.CONDITIONAL` flag.
+        becomes inaccessible. Based on the [`ShadowFlag.CONDITIONAL`][firebird.lib.schema.ShadowFlag] flag.
 
         Returns:
             `True` if conditional, `False` otherwise.
@@ -6710,12 +6706,12 @@ class Shadow(SchemaItem):
         return self._attributes['RDB$SHADOW_NUMBER']
     @property
     def flags(self) -> ShadowFlag:
-        """A `.ShadowFlag` enum value representing the combined flags
+        """A [`ShadowFlag`][firebird.lib.schema.ShadowFlag] enum value representing the combined flags
         (INACTIVE, MANUAL, CONDITIONAL) defined by `RDB$FILE_FLAGS` for this shadow."""
         return ShadowFlag(self._attributes['RDB$FILE_FLAGS'])
     @property
     def files(self) -> DataList[DatabaseFile]:
-        """A lazily-loaded `.DataList` of the `.DatabaseFile` objects comprising this shadow.
+        """A lazily-loaded `DataList` of the [`DatabaseFile`][firebird.lib.schema.DatabaseFile] objects comprising this shadow.
 
         Ordered by sequence number. Fetched from `RDB$FILES` matching this shadow's ID.
         """
@@ -6742,7 +6738,7 @@ class Privilege(SchemaItem):
     Instances are typically accessed via `Schema.privileges` or filtered using methods like
     `Schema.get_privileges_of()` or properties like `Table.privileges`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Privilege.get_sql_for]:
 
     *   `grant` (optional keyword arg `grantors`: list[str]=['SYSDBA']): Generates the
         `GRANT ... ON ... TO ... [WITH GRANT/ADMIN OPTION] [GRANTED BY ...]` statement.
@@ -6753,7 +6749,7 @@ class Privilege(SchemaItem):
         The `GRANTED BY` clause is added if the actual grantor is not in the `grantors` list.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$USER_PRIVILEGES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -6939,7 +6935,7 @@ class Privilege(SchemaItem):
         Resolves based on `RDB$USER` (name) and `RDB$USER_TYPE`.
 
         Returns:
-            A `~firebird.driver.UserInfo`, `.Role`, `.Procedure`, `.Trigger`, or `.View`
+            A `UserInfo`, [`Role`][firebird.lib.schema.Role], [`Procedure`][firebird.lib.schema.Procedure], [`Trigger`][firebird.lib.schema.Trigger], or [`View`][firebird.lib.schema.View]
             object representing the grantee, or `None` if resolution fails.
         """
         return self.schema.get_item(self._attributes['RDB$USER'],
@@ -6949,13 +6945,13 @@ class Privilege(SchemaItem):
         """The grantor: the user who granted the privilege (`RDB$GRANTOR`).
 
         Returns:
-            A `~firebird.driver.UserInfo` object representing the grantor, or `None`
+            A `UserInfo` object representing the grantor, or `None`
             if the grantor name is missing.
         """
         return UserInfo(user_name=self._attributes['RDB$GRANTOR'])
     @property
     def privilege(self) -> PrivilegeCode:
-        """The type of privilege granted (`.PrivilegeCode` enum).
+        """The type of privilege granted ([`PrivilegeCode`][firebird.lib.schema.PrivilegeCode] enum).
 
         Derived from `RDB$PRIVILEGE` ('S', 'I', 'U', 'D', 'R', 'X', 'G', 'M', ...).
         """
@@ -6967,7 +6963,7 @@ class Privilege(SchemaItem):
         return self._attributes['RDB$RELATION_NAME']
     @property
     def subject_type(self) -> ObjectType:
-        """The type (`.ObjectType`) of the object to which the privilege is granted
+        """The type ([`ObjectType`][firebird.lib.schema.ObjectType]) of the object to which the privilege is granted
         (`RDB$OBJECT_TYPE`)."""
         return ObjectType(self._attributes['RDB$OBJECT_TYPE'])
     @property
@@ -6980,13 +6976,13 @@ class Privilege(SchemaItem):
         return self._attributes['RDB$FIELD_NAME']
     @property
     def subject(self) -> Role | Table | View | Procedure | Function:
-        """The database object (`.SchemaItem`) on which the privilege is granted.
+        """The database object ([`SchemaItem`][firebird.lib.schema.SchemaItem]) on which the privilege is granted.
 
         Resolves based on `subject_name` and `subject_type`. May return specific
         column objects if `field_name` is set.
 
         Returns:
-            The specific object (e.g., `.Table`, `.Procedure`, `.Role`, `.TableColumn`),
+            The specific object (e.g., [`Table`][firebird.lib.schema.Table], [`Procedure`][firebird.lib.schema.Procedure], [`Role`][firebird.lib.schema.Role], [`TableColumn`][firebird.lib.schema.TableColumn]),
             or `None` if resolution fails.
         """
         result = self.schema.get_item(self.subject_name, self.subject_type, self.field_name)
@@ -7000,7 +6996,7 @@ class Privilege(SchemaItem):
         return self._attributes['RDB$USER']
     @property
     def user_type(self) -> ObjectType:
-        """The type (`.ObjectType`) of the grantee (`RDB$USER_TYPE`)."""
+        """The type ([`ObjectType`][firebird.lib.schema.ObjectType]) of the grantee (`RDB$USER_TYPE`)."""
         return ObjectType(self._attributes['RDB$USER_TYPE'])
     @property
     def grantor_name(self) -> str:
@@ -7008,7 +7004,7 @@ class Privilege(SchemaItem):
         return self._attributes['RDB$GRANTOR']
     @property
     def grant_option(self) -> GrantOption | None:
-        """Indicates if the privilege includes the grant/admin option (`.GrantOption`).
+        """Indicates if the privilege includes the grant/admin option ([`GrantOption`][firebird.lib.schema.GrantOption]).
 
         Derived from `RDB$GRANT_OPTION` (0=None, 1=Grant, 2=Admin).
         Returns `None` if the option code is unrecognized or missing.
@@ -7032,7 +7028,7 @@ class Package(SchemaItem):
     system tables (`RDB$PROCEDURES`, `RDB$FUNCTIONS`). Packages are accessed
     via `Schema.packages`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Package.get_sql_for]:
 
     *   `create` (keyword argument `body`: bool=False): Generates `CREATE PACKAGE [BODY] ... AS ... END`.
         If `body` is `False` (default), creates the package header using `self.header`.
@@ -7046,14 +7042,13 @@ class Package(SchemaItem):
         If `body` is `True`, drops only the package body.
     *   `comment`: Generates `COMMENT ON PACKAGE ... IS ...`.
 
-    .. note::
-
+    !!! note
        Altering the contents of a package typically involves using `CREATE OR ALTER PACKAGE [BODY]`
        with the complete new source code, rather than a specific `ALTER PACKAGE` command
        to modify parts (which is less common in Firebird PSQL).
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$PACKAGES` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -7181,7 +7176,7 @@ class Package(SchemaItem):
         return self._attributes['RDB$OWNER_NAME']
     @property
     def functions(self) -> DataList[Function]:
-        """A `.DataList` of all `.Function` objects defined within this package.
+        """A `DataList` of all [`Function`][firebird.lib.schema.Function] objects defined within this package.
 
         Filters the main `Schema.functions` collection based on package name.
         """
@@ -7189,7 +7184,7 @@ class Package(SchemaItem):
                                              copy=True)
     @property
     def procedures(self) -> DataList[Procedure]:
-        """A `.DataList` of all `.Procedure` objects defined within this package.
+        """A `DataList` of all [`Procedure`][firebird.lib.schema.Procedure] objects defined within this package.
 
         Filters the main `Schema.procedures` collection based on package name.
         """
@@ -7207,12 +7202,12 @@ class BackupHistory(SchemaItem):
     via `Schema.backup_history`.
 
     This class represents a historical record and does not support any direct
-    SQL actions via `.get_sql_for()`. Backup history is managed implicitly by
+    SQL actions via [`get_sql_for()`][firebird.lib.schema.BackupHistory.get_sql_for]. Backup history is managed implicitly by
     `nbackup` operations and potentially explicit `DELETE FROM RDB$BACKUP_HISTORY`
     statements (use with caution).
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$BACKUP_HISTORY` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):
@@ -7275,7 +7270,7 @@ class Filter(SchemaItem):
     Instances map data from the `RDB$FILTERS` system table. They are typically accessed
     via `Schema.filters`.
 
-    Supported SQL actions via `.get_sql_for()`:
+    Supported SQL actions via [`get_sql_for()`][firebird.lib.schema.Filter.get_sql_for]:
 
     *   User-defined filters:
 
@@ -7288,7 +7283,7 @@ class Filter(SchemaItem):
         *   `comment`: Adds or removes a descriptive comment.
 
     Arguments:
-        schema: The parent `.Schema` instance.
+        schema: The parent [`Schema`][firebird.lib.schema.Schema] instance.
         attributes: Raw data dictionary fetched from the `RDB$FILTERS` row.
     """
     def __init__(self, schema: Schema, attributes: dict[str, Any]):

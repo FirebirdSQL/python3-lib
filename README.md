@@ -26,6 +26,7 @@ Currently it contains modules for:
 - [Installation](#installation)
 - [License](#license)
 - [Documentation](#documentation)
+- [Development](#development)
 
 ## Installation
 
@@ -40,5 +41,10 @@ pip install firebird-lib
 
 ## Documentation
 
-The documentation for this package is available at [https://firebird-lib.readthedocs.io](https://firebird-lib.readthedocs.io)
+The documentation for this package is available at [https://firebird-lib.rtfd.io](https://firebird-lib.rtfd.io)
+
+## Development
+
+See the [development guide](development/README.md) for the project layout, test setup,
+and module-specific maintenance notes.
 

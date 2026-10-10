@@ -92,7 +92,7 @@ class State(IntEnum):
 class IsolationMode(IntEnum):
     """Transaction solation mode.
 
-    .. versionchanged:: 1.4.0 - `READ_COMMITTED_READ_CONSISTENCY` value added
+    **Changed in version 1.4.0:** `READ_COMMITTED_READ_CONSISTENCY` value added
     """
     CONSISTENCY = 0
     CONCURRENCY = 1
@@ -119,7 +119,7 @@ class Security(Enum):
 class CryptState(IntEnum):
     """Database encryption state.
 
-    .. versionadded:: 1.4.0
+    **Added in version 1.4.0.**
     """
     NOT_ENCRYPTED = 0
     ENCRYPTED = 1
@@ -147,15 +147,15 @@ class Monitor:
         Arguments:
             connection: Connection that should be used to access monitoring tables.
         """
-        #: The underlying driver Connection. Becomes None after close().
         self._con: Connection | None = connection
-        #: Internal cursor using a separate read-committed transaction for MON$ queries.
+        """The underlying driver Connection. Becomes None after close()."""
         self._ic: Cursor | None = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
                                                                     access_mode=TraAccessMode.READ)).cursor()
+        """Internal cursor using a separate read-committed transaction for MON$ queries."""
         self._ic._logging_id_ = 'monitor.internal_cursor'
         self.__internal: bool = False
-        #: ID of the connection this Monitor instance is primarily associated with.
         self._con_id: int = connection.info.id
+        """ID of the connection this Monitor instance is primarily associated with."""
         #
         self.__database: DatabaseInfo | None = None
         self.__attachments: DataList[AttachmentInfo] | None = None
@@ -203,7 +203,7 @@ class Monitor:
         self.__variables = None
         self.__tablestats = None
     def close(self) -> None:
-        """Sever link to `~firebird.driver.Connection`.
+        """Sever link to `Connection`.
         """
         if self._ic.transaction.is_active():
             self._ic.transaction.commit()
@@ -217,12 +217,12 @@ class Monitor:
         self._ic.transaction.begin()
     @property
     def closed(self) -> bool:
-        """True if link to `~firebird.driver.core.Connection` is closed.
+        """True if link to `Connection` is closed.
         """
         return self._con is None
     @property
     def db(self) -> DatabaseInfo:
-        """`.DatabaseInfo` object for attached database.
+        """[`DatabaseInfo`][firebird.lib.monitor.DatabaseInfo] object for attached database.
         """
         if self.__database is None:
             self.__database = DatabaseInfo(self, self._select_row('select * from mon$database'))
@@ -238,7 +238,7 @@ class Monitor:
         return self.__attachments
     @property
     def this_attachment(self) -> AttachmentInfo:
-        """`.AttachmentInfo` object for current connection.
+        """[`AttachmentInfo`][firebird.lib.monitor.AttachmentInfo] object for current connection.
         """
         return self.attachments.get(self._con_id)
     @property
@@ -319,7 +319,7 @@ FROM MON$TABLE_STATS ts join MON$RECORD_STATS r
     def compiled_statements(self) -> DataList[CompiledStatementInfo]:
         """list of all compiled statements.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         if self.__compiled_statements is None:
             self.__compiled_statements = DataList((CompiledStatementInfo(self, row) for row
@@ -339,10 +339,10 @@ class InfoItem:
                     and values fetched from the corresponding MON$ table row.
     """
     def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
-        #: Weak reference proxy to the parent `.Monitor` instance.
         self.monitor: weakref.ProxyType[Monitor] = monitor if isinstance(monitor, weakref.ProxyType) else weakref.proxy(monitor)
-        #: Raw attributes fetched from the monitoring table row.
+        """Weak reference proxy to the parent [`Monitor`][firebird.lib.monitor.Monitor] instance."""
         self._attributes: dict[str, Any] = attributes
+        """Raw attributes fetched from the monitoring table row."""
     def _strip_attribute(self, attr: str) -> None:
         if self._attributes.get(attr):
             self._attributes[attr] = self._attributes[attr].strip()
@@ -433,7 +433,7 @@ class DatabaseInfo(InfoItem):
         return BackupState(self._attributes['MON$BACKUP_STATE'])
     @property
     def iostats(self) -> IOStatsInfo | None:
-        """`.IOStatsInfo` for this object."""
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.DATABASE))
     @property
@@ -450,7 +450,7 @@ class DatabaseInfo(InfoItem):
         return Security(self._attributes.get('MON$SEC_DATABASE'))
     @property
     def tablestats(self) -> dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object."""
+        """Dictionary of [`TableStatsInfo`][firebird.lib.monitor.TableStatsInfo] instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.DATABASE)}
     # Firebird 4
@@ -458,7 +458,7 @@ class DatabaseInfo(InfoItem):
     def crypt_state(self) -> CryptState | None:
         """Current state of database encryption.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         value = self._attributes.get('MON$CRYPT_STATE')
         return None if value is None else CryptState(value)
@@ -466,7 +466,7 @@ class DatabaseInfo(InfoItem):
     def guid(self) -> UUID | None:
         """Database GUID (persistent until restore / fixup).
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         value = self._attributes.get('MON$GUID')
         return None if value is None else UUID(value)
@@ -474,28 +474,28 @@ class DatabaseInfo(InfoItem):
     def file_id(self) -> str | None:
         """Unique ID of the database file at the filesystem level.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$FILE_ID')
     @property
     def next_attachment(self) -> int | None:
         """Current value of the next attachment ID counter.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$NEXT_ATTACHMENT')
     @property
     def next_statement(self) -> int | None:
         """Current value of the next statement ID counter.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$NEXT_STATEMENT')
     @property
     def replica_mode(self) -> ReplicaMode | None:
         """Database replica mode.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         value = self._attributes.get('MON$REPLICA_MODE')
         return None if value is None else ReplicaMode(value)
@@ -607,7 +607,7 @@ class AttachmentInfo(InfoItem):
                                               copy=True)
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object."""
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.ATTACHMENT))
     @property
@@ -636,7 +636,7 @@ class AttachmentInfo(InfoItem):
         return bool(self._attributes.get('MON$SYSTEM_FLAG'))
     @property
     def tablestats(self) -> dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object."""
+        """Dictionary of [`TableStatsInfo`][firebird.lib.monitor.TableStatsInfo] instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.ATTACHMENT)}
     # Firebird 4
@@ -644,42 +644,42 @@ class AttachmentInfo(InfoItem):
     def idle_timeout(self) -> int | None:
         """Connection level idle timeout.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$IDLE_TIMEOUT')
     @property
     def idle_timer(self) -> datetime.datetime | None:
         """Idle timer expiration time.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$IDLE_TIMER')
     @property
     def statement_timeout(self) -> int | None:
         """Connection level statement timeout.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$STATEMENT_TIMEOUT')
     @property
     def wire_compressed(self) -> bool | None:
         """Wire compression.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return bool(self._attributes.get('MON$WIRE_COMPRESSED'))
     @property
     def wire_encrypted(self) -> bool | None:
         """Wire encryption.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return bool(self._attributes.get('MON$WIRE_ENCRYPTED'))
     @property
     def wire_crypt_plugin(self) -> str | None:
         """Name of the wire encryption plugin used by client.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$WIRE_CRYPT_PLUGIN')
     # Firebird 5
@@ -687,7 +687,7 @@ class AttachmentInfo(InfoItem):
     def session_timezone(self) -> str | None:
         """Actual timezone of the session.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$SESSION_TIMEZONE')
     @property
@@ -695,7 +695,7 @@ class AttachmentInfo(InfoItem):
         """Maximum number of parallel workers for this connection, 1 means no parallel workers.
         “Garbage Collector” and “Cache Writer” connections may report 0.
 
-        .. versionadded:: 2.0.1
+        **Added in version 2.0.1.**
         """
         return self._attributes.get('MON$PARALLEL_WORKERS')
 
@@ -728,7 +728,7 @@ class TransactionInfo(InfoItem):
         return self._attributes['MON$TRANSACTION_ID']
     @property
     def attachment(self) -> AttachmentInfo:
-        """`.AttachmentInfo` instance to which this transaction belongs."""
+        """[`AttachmentInfo`][firebird.lib.monitor.AttachmentInfo] instance to which this transaction belongs."""
         return self.monitor.attachments.get(self._attributes['MON$ATTACHMENT_ID'])
     @property
     def state(self) -> State:
@@ -770,12 +770,12 @@ class TransactionInfo(InfoItem):
                                               copy=True)
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object."""
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object."""
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.TRANSACTION))
     @property
     def tablestats(self) -> dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object."""
+        """Dictionary of [`TableStatsInfo`][firebird.lib.monitor.TableStatsInfo] instances for this object."""
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.TRANSACTION)}
 
@@ -809,12 +809,12 @@ class StatementInfo(InfoItem):
         return self._attributes['MON$STATEMENT_ID']
     @property
     def attachment(self) -> AttachmentInfo:
-        """`.AttachmentInfo` instance to which this statement belongs.
+        """[`AttachmentInfo`][firebird.lib.monitor.AttachmentInfo] instance to which this statement belongs.
         """
         return self.monitor.attachments.get(self._attributes['MON$ATTACHMENT_ID'])
     @property
     def transaction(self) -> TransactionInfo:
-        """`.TransactionInfo` instance to which this statement belongs or None.
+        """[`TransactionInfo`][firebird.lib.monitor.TransactionInfo] instance to which this statement belongs or None.
         """
         return self.monitor.transactions.get(self._attributes['MON$TRANSACTION_ID'])
     @property
@@ -856,13 +856,13 @@ class StatementInfo(InfoItem):
         return callstack
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object.
         """
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.STATEMENT))
     @property
     def tablestats(self) -> dict[str, TableStatsInfo]:
-        """Dictionary of `.TableStatsInfo` instances for this object.
+        """Dictionary of [`TableStatsInfo`][firebird.lib.monitor.TableStatsInfo] instances for this object.
         """
         return {io.table_name: io for io in self.monitor.tablestats
                 if (io.stat_id == self.stat_id) and (io.group is Group.STATEMENT)}
@@ -871,22 +871,22 @@ class StatementInfo(InfoItem):
     def timeout(self) -> int | None:
         """Connection level statement timeout.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$STATEMENT_TIMEOUT')
     @property
     def timer(self) -> datetime.datetime | None:
         """Statement timer expiration time.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$STATEMENT_TIMER')
     # Firebird 5
     @property
     def compiled_statement(self) -> CompiledStatementInfo | None:
-        """`.CompiledStatementInfo` instance to which this statement relates.
+        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this statement relates.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
 
@@ -904,12 +904,12 @@ class CallStackInfo(InfoItem):
         return self._attributes['MON$CALL_ID']
     @property
     def statement(self) -> StatementInfo:
-        """Top-level `.StatementInfo` instance to which this call stack entry belongs.
+        """Top-level [`StatementInfo`][firebird.lib.monitor.StatementInfo] instance to which this call stack entry belongs.
         """
         return self.monitor.statements.get(self._attributes['MON$STATEMENT_ID'])
     @property
     def caller(self) -> CallStackInfo:
-        """Call stack entry (`.CallStackInfo`) of the caller.
+        """Call stack entry ([`CallStackInfo`][firebird.lib.monitor.CallStackInfo]) of the caller.
         """
         return self.monitor.callstack.get(self._attributes['MON$CALLER_ID'])
     @property
@@ -957,16 +957,16 @@ class CallStackInfo(InfoItem):
                else self.monitor._con.schema.packages.get(name)
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object.
         """
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.CALL))
     # Firebird 5
     @property
     def compiled_statement(self) -> CompiledStatementInfo | None:
-        """`.CompiledStatementInfo` instance to which this statement relates.
+        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this statement relates.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
 
@@ -1112,7 +1112,7 @@ class IOStatsInfo(InfoItem):
     def intermediate_gc(self) -> int | None:
         """Number of records processed by the intermediate garbage collection.
 
-        .. versionadded:: 1.4.0
+        **Added in version 1.4.0.**
         """
         return self._attributes.get('MON$RECORD_IMGC')
 
@@ -1218,7 +1218,7 @@ class TableStatsInfo(InfoItem):
     def intermediate_gc(self) -> int | None:
         """Number of records processed by the intermediate garbage collection.
 
-        .. versionadded:: 2.0.1
+        **Added in version 2.0.1.**
         """
         return self._attributes.get('MON$RECORD_IMGC')
 
@@ -1239,12 +1239,12 @@ class ContextVariableInfo(InfoItem):
         return self._attributes['MON$TRANSACTION_ID'] is not None
     @property
     def attachment(self) -> AttachmentInfo:
-        """`.AttachmentInfo` instance to which this context variable belongs or None.
+        """[`AttachmentInfo`][firebird.lib.monitor.AttachmentInfo] instance to which this context variable belongs or None.
         """
         return self.monitor.attachments.get(self._attributes['MON$ATTACHMENT_ID'])
     @property
     def transaction(self) -> TransactionInfo:
-        """`.TransactionInfo` instance to which this context variable belongs or None.
+        """[`TransactionInfo`][firebird.lib.monitor.TransactionInfo] instance to which this context variable belongs or None.
         """
         return self.monitor.transactions.get(self._attributes['MON$TRANSACTION_ID'])
     @property
@@ -1263,7 +1263,7 @@ class ContextVariableInfo(InfoItem):
 class CompiledStatementInfo(InfoItem):
     """Information about compiled statement.
 
-    .. versionadded:: 1.4.0
+    **Added in version 1.4.0.**
     """
     def __init__(self, monitor: Monitor, attributes: dict[str, Any]):
         super().__init__(monitor, attributes)
@@ -1304,7 +1304,7 @@ class CompiledStatementInfo(InfoItem):
         return self._attributes.get('MON$PACKAGE_NAME')
     @property
     def iostats(self) -> IOStatsInfo:
-        """`.IOStatsInfo` for this object.
+        """[`IOStatsInfo`][firebird.lib.monitor.IOStatsInfo] for this object.
         """
         return self.monitor.iostats.find(lambda io: (io.stat_id == self.stat_id)
                                          and (io.group is Group.STATEMENT))

@@ -165,6 +165,7 @@ def test_02_parse30_a(data_path):
     # Expected Table Data (verify first few tables for brevity)
     expected_tables_data = [
         {'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+         'big_record_pages': None,
          'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
          'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
          'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
@@ -172,6 +173,7 @@ def test_02_parse30_a(data_path):
          'primary_pointer_page': 297, 'secondary_pages': 2, 'swept_pages': 0, 'table_id': 140, 'table_size': None, 'total_formats': None,
          'total_fragments': None, 'total_records': None, 'total_versions': None, 'used_formats': None},
         {'avg_fill': 8, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+         'big_record_pages': None,
          'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
          'data_page_slots': 1, 'data_pages': 1, 'distribution': FillDistribution(d20=1, d40=0, d60=0, d80=0, d100=0),
          'empty_pages': 0, 'full_pages': 0, 'index_root_page': 183, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None,
@@ -219,6 +221,7 @@ def test_03_parse30_d(data_path):
     assert len(db.tables) == 16
     expected_ar_table = {
         'avg_fill': 86, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+        'big_record_pages': None,
         'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
         'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
         'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': None, 'level_1': None, 'level_2': None,
@@ -294,6 +297,7 @@ def test_06_parse30_i(data_path):
     # Check a sample table structure from -i output
     expected_country_table = {
         'avg_fill': None, 'avg_fragment_length': None, 'avg_record_length': None, 'avg_unpacked_length': None,
+        'big_record_pages': None,
         'avg_version_length': None, 'blob_pages': None, 'blobs': None, 'blobs_total_length': None, 'compression_ratio': None,
         'data_page_slots': None, 'data_pages': None, 'distribution': None, 'empty_pages': None, 'full_pages': None,
         'index_root_page': None, 'indices': 1, 'level_0': None, 'level_1': None, 'level_2': None, 'max_fragments': None,
@@ -337,6 +341,7 @@ def test_07_parse30_r(data_path):
     # Check sample table with row stats
     expected_ar_table = {
         'avg_fill': 86, 'avg_fragment_length': 0.0, 'avg_record_length': 2.79, 'avg_unpacked_length': 120.0,
+        'big_record_pages': None,
         'avg_version_length': 16.61, 'blob_pages': 0, 'blobs': 125, 'blobs_total_length': 11237, 'compression_ratio': 42.99,
         'data_page_slots': 3, 'data_pages': 3, 'distribution': FillDistribution(d20=0, d40=0, d60=0, d80=1, d100=2),
         'empty_pages': 0, 'full_pages': 1, 'index_root_page': 299, 'indices': 0, 'level_0': 125, 'level_1': 0, 'level_2': 0,

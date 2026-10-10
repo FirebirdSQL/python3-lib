@@ -61,21 +61,21 @@ class LogMessage:
 
     Instances are immutable and orderable by timestamp.
     """
-    #: Firebird server identification
     origin: str
-    #: Date and time when message was written to log
+    """Firebird server identification"""
     timestamp: datetime
-    #: Severity level
+    """Date and time when message was written to log"""
     level: Severity
-    #: Message identification code
+    """Severity level"""
     code: int
-    #: Firebird server facility that wrote the message
+    """Message identification code"""
     facility: Facility
-    #: Message text. It may contain `str.format()` style `{param_name}` placeholders for
-    #: message parameters found in the `params` dictionary.
+    """Firebird server facility that wrote the message"""
     message: str
-    #: Dictionary containing parameters extracted from the log message text.
+    """Message text. It may contain `str.format()` style `{param_name}` placeholders for
+    message parameters found in the `params` dictionary."""
     params: dict[str, Any]
+    """Dictionary containing parameters extracted from the log message text."""
 
 class LogParser:
     """A stateful parser for Firebird server log files (`firebird.log`).
@@ -85,8 +85,8 @@ class LogParser:
     method to process an entire iterable of lines.
     """
     def __init__(self):
-        #: Internal buffer holding lines for the current log entry being processed.
         self.__buffer: list[str] = []
+        """Internal buffer holding lines for the current log entry being processed."""
     def push(self, line: str| STOP) -> LogMessage | None:
         """Pushes a single line (or STOP sentinel) into the parser.
 
@@ -95,7 +95,7 @@ class LogParser:
         buffered lines into a complete `LogMessage`.
 
         Arguments:
-            line: Single line from Firebird log, or the `~firebird.base.types.STOP` sentinel
+            line: Single line from Firebird log, or the `STOP` sentinel
                   to signal the end of input and process any remaining buffered lines.
 
         Returns:
@@ -172,7 +172,7 @@ class LogParser:
                    (e.g., a file object or list of strings).
 
         Yields:
-            `.LogMessage` instances describing individual log entries.
+            [`LogMessage`][firebird.lib.log.LogMessage] instances describing individual log entries.
 
         Raises:
             firebird.base.types.Error: When a malformed log entry header is detected

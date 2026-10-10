@@ -132,10 +132,12 @@ dmypy.json
 *.wpr
 *.wpu
 
-# Sphinx build
-docs/_build
+# Documentation build
 docs/firebird-lib.docset/
+docs/site/
+docs/.cache/
 
 # Other local files and directories
 local/
 work/
+plan/

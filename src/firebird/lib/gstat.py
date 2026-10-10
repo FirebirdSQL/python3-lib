@@ -162,16 +162,16 @@ class FillDistribution:
 
     Stores the count of pages falling into specific fill percentage ranges.
     """
-    #: Count of pages filled 0 - 19%
     d20: int
-    #: Count of pages filled 20 - 39%
+    """Count of pages filled 0 - 19%"""
     d40: int
-    #: Count of pages filled 40 - 59%
+    """Count of pages filled 20 - 39%"""
     d60: int
-    #: Count of pages filled 60 - 79%
+    """Count of pages filled 40 - 59%"""
     d80: int
-    #: Count of pages filled 80 - 99%
+    """Count of pages filled 60 - 79%"""
     d100: int
+    """Count of pages filled 80 - 99%"""
 
 @dataclass(frozen=True)
 class Encryption:
@@ -183,18 +183,18 @@ class Encryption:
 
 @dataclass
 class _ParserState:
-    #: Current line number being processed.
     line_no: int = 0
-    #: Reference to the StatTable currently being parsed.
+    """Current line number being processed."""
     table: StatTable | None = None
-    #: Reference to the StatIndex currently being parsed.
+    """Reference to the StatTable currently being parsed."""
     index: StatIndex | None = None
-    #: Flag indicating if the next line starts a new table/index block.
+    """Reference to the StatIndex currently being parsed."""
     new_block: bool = True
-    #: Flag indicating if the parser is currently processing table data (vs. index data).
+    """Flag indicating if the next line starts a new table/index block."""
     in_table: bool = False
-    #: Current parsing step/section (0=Header/Seek, 1=Header, 2=Variable, 3=Files, 4=Data/Indices).
+    """Flag indicating if the parser is currently processing table data (vs. index data)."""
     step: int = 0
+    """Current parsing step/section (0=Header/Seek, 1=Header, 2=Variable, 3=Files, 4=Data/Indices)."""
 
 def empty_str(value: str) -> bool:
     """Return True if string is empty (whitespace don't count) or None.
@@ -208,74 +208,76 @@ class StatTable:
     `None` or 0 until parsed from the input.
     """
     def __init__(self):
-        #: Table name
         self.name: str | None = None
-        #: Table ID
+        """Table name"""
         self.table_id: int | None = None
-        #: Primary Pointer Page for table
+        """Table ID"""
         self.primary_pointer_page: int | None = None
-        #: Index Root Page for table
+        """Primary Pointer Page for table"""
         self.index_root_page: int | None = None
-        #: Average record length
+        """Index Root Page for table"""
         self.avg_record_length: float | None = None
-        #: Total number of record in table
+        """Average record length"""
         self.total_records: int | None = None
-        #: Average record version length
+        """Total number of record in table"""
         self.avg_version_length: float | None = None
-        #: Total number of record versions
+        """Average record version length"""
         self.total_versions: int | None = None
-        #: Max number of versions for single record
+        """Total number of record versions"""
         self.max_versions: int | None = None
-        #: Number of data pages for table
+        """Max number of versions for single record"""
         self.data_pages: int | None = None
-        #: Number of data page slots for table
+        """Number of data pages for table"""
         self.data_page_slots: int | None = None
-        #: Average data page fill ratio
+        """Number of data page slots for table"""
         self.avg_fill: float | None = None
-        #: Data page fill distribution statistics. Final type is `FillDistribution`.
+        """Average data page fill ratio"""
         self.distribution: FillDistribution | None = None
-        #: Indices belonging to table. Items are `weakref.proxy` to `StatIndex`.
+        """Data page fill distribution statistics. Final type is `FillDistribution`."""
         self.indices: DataList[StatIndex] = DataList(type_spec=StatIndex, key_expr='item.name')
-        #: Number of Pointer Pages
+        """Indices belonging to table. Items are `weakref.proxy` to `StatIndex`."""
         self.pointer_pages: int | None = None
-        #: Number of record formats
+        """Number of Pointer Pages"""
         self.total_formats: int | None = None
-        #: Number of actually used record formats
+        """Number of record formats"""
         self.used_formats: int | None = None
-        #: Average length of record fragments
+        """Number of actually used record formats"""
         self.avg_fragment_length: float | None = None
-        #: Total number of record fragments
+        """Average length of record fragments"""
         self.total_fragments: int | None = None
-        #: Max number of fragments for single record
+        """Total number of record fragments"""
         self.max_fragments: int | None = None
-        #: Average length of unpacked record
+        """Max number of fragments for single record"""
         self.avg_unpacked_length: float | None = None
-        #: Record compression ratio
+        """Average length of unpacked record"""
         self.compression_ratio: float | None = None
-        #: Number of Primary Data Pages
+        """Record compression ratio"""
         self.primary_pages: int | None = None
-        #: Number of Secondary Data Pages
+        """Number of Primary Data Pages"""
         self.secondary_pages: int | None = None
-        #: Number of swept data pages
+        """Number of Secondary Data Pages"""
         self.swept_pages: int | None = None
-        #: Number of empty data pages
+        """Number of swept data pages"""
         self.empty_pages: int | None = None
-        #: Number of full data pages
+        """Number of empty data pages"""
         self.full_pages: int | None = None
-        #: Number of BLOB values
+        """Number of full data pages"""
         self.blobs: int | None = None
-        #: Total length of BLOB values (bytes)
+        """Number of BLOB values"""
         self.blobs_total_length: int | None = None
-        #: Number of BLOB pages
+        """Total length of BLOB values (bytes)"""
         self.blob_pages: int | None = None
-        #: Number of Level 0 BLOB values
+        """Number of BLOB pages"""
         self.level_0: int | None = None
-        #: Number of Level 1 BLOB values
+        """Number of Level 0 BLOB values"""
         self.level_1: int | None = None
-        #: Number of Level 2 BLOB values
+        """Number of Level 1 BLOB values"""
         self.level_2: int | None = None
-        #: Table size
+        """Number of Level 2 BLOB values"""
         self.table_size: int | None = None
+        """Table size"""
+        self.big_record_pages: int | None = None
+        """Big record pages"""
 
 class StatIndex:
     """Statistics for a single database index, populated from gstat output.
@@ -284,41 +286,41 @@ class StatIndex:
     Attributes are populated by the `StatDatabase` parser.
     """
     def __init__(self, table):
-        #: wekref.proxy: Proxy to parent `.StatTable`
         self.table: weakref.ProxyType = weakref.proxy(table)
+        """wekref.proxy: Proxy to parent [`StatTable`][firebird.lib.gstat.StatTable]"""
         table.indices.append(weakref.proxy(self))
-        #: Index name
         self.name: str | None = None
-        #: Index ID
+        """Index name"""
         self.index_id: int | None = None
-        #: Depth of index tree
+        """Index ID"""
         self.depth: int | None = None
-        #: Number of leaft index tree buckets
+        """Depth of index tree"""
         self.leaf_buckets: int | None = None
-        #: Number of index tree nodes
+        """Number of leaft index tree buckets"""
         self.nodes: int | None = None
-        #: Average data length
+        """Number of index tree nodes"""
         self.avg_data_length: float | None = None
-        #: Total number of duplicate keys
+        """Average data length"""
         self.total_dup: int | None = None
-        #: Max number of occurences for single duplicate key
+        """Total number of duplicate keys"""
         self.max_dup: int | None = None
-        #: Index page fill distribution statistics
+        """Max number of occurences for single duplicate key"""
         self.distribution: FillDistribution | None = None
-        #: Index Root page
+        """Index page fill distribution statistics"""
         self.root_page: int | None = None
-        #: Average node length
+        """Index Root page"""
         self.avg_node_length: float | None = None
-        #: Average key length
+        """Average node length"""
         self.avg_key_length: float | None = None
-        #: Index key compression ratio
+        """Average key length"""
         self.compression_ratio: float | None = None
-        #: Average key prefix length
+        """Index key compression ratio"""
         self.avg_prefix_length: float | None = None
-        #: Index clustering factor
+        """Average key prefix length"""
         self.clustering_factor: float | None = None
-        #: Ratio
+        """Index clustering factor"""
         self.ratio: float | None = None
+        """Ratio"""
 
 class StatDatabase:
     """Parses and holds Firebird database statistics produced by the gstat utility.
@@ -329,71 +331,71 @@ class StatDatabase:
     and `indices` collections.
     """
     def __init__(self):
-        #: GSTAT version
         self.gstat_version: int | None = None
-        #: System change number
+        """GSTAT version"""
         self.system_change_number: int | None = None
-        #: GSTAT execution timestamp
+        """System change number"""
         self.executed: datetime.datetime | None = None
-        #: GSTAT completion timestamp
+        """GSTAT execution timestamp"""
         self.completed: datetime.datetime | None = None
-        #: Database filename
+        """GSTAT completion timestamp"""
         self.filename: str | None = None
-        #: Database flags
+        """Database filename"""
         self.flags: int = 0
-        #: Database header generation
+        """Database flags"""
         self.generation: int = 0
-        #: Database page size
+        """Database header generation"""
         self.page_size: int = 0
-        #: Oldest Interesting Transaction
+        """Database page size"""
         self.oit: int = 0
-        #: Oldest Active Transaction
+        """Oldest Interesting Transaction"""
         self.oat: int = 0
-        #: Oldest Snapshot Transaction
+        """Oldest Active Transaction"""
         self.ost: int = 0
-        #: Next Transaction
+        """Oldest Snapshot Transaction"""
         self.next_transaction: int = 0
-        #: Next attachment ID
+        """Next Transaction"""
         self.next_attachment_id: int = 0
-        #: Implementation
+        """Next attachment ID"""
         self.implementation: str | None = None
-        #: Number of shadows
+        """Implementation"""
         self.shadow_count: int = 0
-        #: Number of page buffers
+        """Number of shadows"""
         self.page_buffers: int = 0
-        #: Next header page
+        """Number of page buffers"""
         self.next_header_page: int = 0
-        #: SQL Dialect
+        """Next header page"""
         self.database_dialect: int = 0
-        #: Database creation timestamp
+        """SQL Dialect"""
         self.creation_date: datetime.datetime | None = None
-        #: Database attributes
+        """Database creation timestamp"""
         self.attributes: list[DbAttribute] = []
+        """Database attributes"""
         # Variable data
-        #: Sweep interval
         self.sweep_interval: int | None = None
-        #: Continuation file
+        """Sweep interval"""
         self.continuation_file: str | None = None
-        #: Last logical page
+        """Continuation file"""
         self.last_logical_page: int | None = None
-        #: Backup GUID
+        """Last logical page"""
         self.backup_guid: str | None = None
-        #: Root file name
+        """Backup GUID"""
         self.root_filename: str | None = None
-        #: Replay logging file
+        """Root file name"""
         self.replay_logging_file: str | None = None
-        #: Backup difference file
+        """Replay logging file"""
         self.backup_diff_file: str | None = None
-        #: Encryption statistics for data pages.
+        """Backup difference file"""
         self.encrypted_data_pages: int | None = None
-        #: Encryption statistics for index pages.
+        """Encryption statistics for data pages."""
         self.encrypted_index_pages: int | None = None
-        #: Encryption statistics for blob pages.
+        """Encryption statistics for index pages."""
         self.encrypted_blob_pages: int | None = None
-        #: Database file names
+        """Encryption statistics for blob pages."""
         self.continuation_files: list[str] = []
-        #: Database GUID
+        """Database file names"""
         self.database_guid: str | None = None
+        """Database GUID"""
         #
         self.__line_no: int = 0
         self.__table: StatTable | None = None
@@ -546,6 +548,8 @@ class StatDatabase:
             pass
         elif line.startswith('Table size:'):
             self.__table.table_size = int(line[12:-6]) # Extract value from 'Table size: <VALUE> bytes'
+        elif line.startswith('Big record pages:'):
+            self.__table.big_record_pages = int(line[18:]) # Extract value from 'Big record pages: <VALUE>'
         else:
             raise Error(f'Unknown information (line {self.__line_no})')
     def __parse_index(self, line: str) -> None:
@@ -615,10 +619,10 @@ class StatDatabase:
     def has_table_stats(self) -> bool:
         """Returns True if instance contains information about tables.
 
-        .. important::
+        !!! important
 
-           This is not the same as check for empty :data:`tables` list. When gstat is run
-           with `-i` without `-d` option, :data:`tables` list contains instances that does
+           This is not the same as check for empty `tables` list. When gstat is run
+           with `-i` without `-d` option, `tables` list contains instances that does
            not have any other information about table but table name and its indices.
         """
         return self.tables[0].primary_pointer_page is not None if len(self.tables) > 0 else False
@@ -736,9 +740,9 @@ class StatDatabase:
                     self.__parse_index(line)
     @property
     def tables(self) -> DataList[StatTable]:
-        """`~firebird.base.collections.DataList` of `.StatTable` instances."""
+        """`DataList` of [`StatTable`][firebird.lib.gstat.StatTable] instances."""
         return self.__tables
     @property
     def indices(self) -> DataList[StatIndex]:
-        """`~firebird.base.collections.DataList` of `.StatIndex` instances."""
+        """`DataList` of [`StatIndex`][firebird.lib.gstat.StatIndex] instances."""
         return self.__indices

@@ -74,16 +74,16 @@ class Facility(IntEnum):
 @dataclass(order=True, frozen=True)
 class MsgDesc:
     """Describes the structure and metadata of a known Firebird log message type."""
-    #: Message ID
     msg_id: int
-    #: Message severity level
+    """Message ID"""
     severity: Severity
-    #: Firebird facility
+    """Message severity level"""
     facility: Facility
-    #: A list defining the message structure. Contains literal string parts
-    #: and placeholder strings like '{type:name}' (e.g., '{s:syscall}', '{d:error_code}').
-    #: The special string 'OPTIONAL' marks the beginning of an optional suffix.
+    """Firebird facility"""
     msg_format: list[str]
+    """A list defining the message structure. Contains literal string parts
+    and placeholder strings like '{type:name}' (e.g., '{s:syscall}', '{d:error_code}').
+    The special string 'OPTIONAL' marks the beginning of an optional suffix."""
     def get_pattern(self, *, without_optional: bool) -> str:
         """Returns a `str.format()`-style pattern for the message.
 
@@ -105,7 +105,6 @@ class MsgDesc:
                 result += part
         return result
 
-#: list of Firebird server log message descriptors
 messages = [
   # firebird/src/common/fb_exception.cpp:240
   MsgDesc(msg_id=1, severity=Severity.ERROR, facility=Facility.SYSTEM,
@@ -969,12 +968,13 @@ messages = [
   MsgDesc(msg_id=287, severity=Severity.ERROR, facility=Facility.SYSTEM,
           msg_format=['Database: ', '{s:database}', '\n', '{s:err_msg}']),
 ]
+"""list of Firebird server log message descriptors"""
 
 # Pre-processed lists for faster message identification:
-#: Messages starting with a variable placeholder.
 _r_msgs = []
-#: Messages grouped by their fixed starting word for quick filtering.
+"""Messages starting with a variable placeholder."""
 _h_msgs = {}
+"""Messages grouped by their fixed starting word for quick filtering."""
 
 for _msg in messages:
     if _msg.msg_format[0].startswith('{'):
@@ -983,8 +983,8 @@ for _msg in messages:
         _parts = _msg.msg_format[0].split()
         _h_msgs.setdefault(_parts[0], []).append(_msg)
 
-#: Internal sentinel object used during parsing in identify_msg.
 _END_CHUNK = object()
+"""Internal sentinel object used during parsing in identify_msg."""
 
 def identify_msg(msg: str) -> tuple[MsgDesc, dict[str, Any], bool] | None:
     """Attempts to identify a log message string against known message descriptors.
@@ -995,14 +995,14 @@ def identify_msg(msg: str) -> tuple[MsgDesc, dict[str, Any], bool] | None:
     Returns:
         A tuple containing:
 
-        - The matched `.MsgDesc` instance.
+        - The matched [`MsgDesc`][firebird.lib.logmsgs.MsgDesc] instance.
         - A dictionary mapping parameter names (from placeholders like `{s:name}`)
-          to their extracted values (as strings or integers).
+            to their extracted values (as strings or integers).
         - A boolean flag: `True` if the optional part of the message format
-          (following 'OPTIONAL') was *not* present in the input `msg`,
-          `False` otherwise.
+            (following 'OPTIONAL') was *not* present in the input `msg`,
+            `False` otherwise.
 
-        Returns `None` if the `msg` does not match any known `.MsgDesc` pattern.
+        Returns `None` if the `msg` does not match any known [`MsgDesc`][firebird.lib.logmsgs.MsgDesc] pattern.
     """
     parts = msg.split()
     if parts[0] in _h_msgs:

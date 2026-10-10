@@ -14,8 +14,8 @@ nav = [
         { "Processing trace sessions" = "usage-guide/trace.md" },
     ] },
     { "Reference" = [
-        { "Schema" = "ref-schema.md" },
         { "Monitoring" = "ref-monitor.md" },
+        { "Schema" = "ref-schema.md" },
         { "Trace" = "ref-trace.md" },
         { "gstat" = "ref-gstat.md" },
         { "Server Log" = "ref-log.md" },
@@ -24,6 +24,16 @@ nav = [
     { "Changelog" = "changelog.md" },
     { "License" = "license.md" },
 ]
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
 
 [project.theme]
 favicon = "assets/fb-favicon.png"

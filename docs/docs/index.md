@@ -13,20 +13,17 @@ This package provides modules for:
 Start with the [Usage Guide](usage-guide/introduction.md).
 
 !!! note
-    Requires Python 3.11+
+    Driver development is sponsored by [IBPhoenix](http://www.ibphoenix.com).
+
+    [![PyPI - Version](https://img.shields.io/pypi/v/firebird-lib.svg)](https://pypi.org/project/firebird-lib)
+    [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/firebird-lib.svg)](https://pypi.org/project/firebird-lib)
+    [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
+    [![PyPI - Downloads](https://img.shields.io/pypi/dm/firebird-lib)](https://pypi.org/project/firebird-lib)
+    [![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/pypi/firebird-lib)](https://libraries.io/pypi/firebird-lib)
+    [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/FirebirdSQL/python3-lib)
+
+    [Source repository](https://github.com/FirebirdSQL/python3-lib)
 
 !!! tip
     You can download docset for [Dash](https://kapeli.com/dash) (MacOS) or [Zeal](https://zealdocs.org/) (Windows / Linux) documentation
-
     readers from [releases](https://github.com/FirebirdSQL/python3-lib/releases) at github.
-
-Library development is sponsored by [IBPhoenix](http://www.ibphoenix.com).
-
-[firebird-driver]: https://pypi.org/project/firebird-driver/
-[Python]: http://python.org
-[Firebird]: http://www.firebirdsql.org
-[Firebird Project]: http://www.firebirdsql.org
-[IBPhoenix]: http://www.ibphoenix.com
-[releases]: https://github.com/FirebirdSQL/python3-lib/releases
-[Dash]: https://kapeli.com/dash
-[Zeal]: https://zealdocs.org/

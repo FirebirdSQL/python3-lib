@@ -977,7 +977,7 @@ class Schema(Visitable):
         self._con = connection
         self._ic = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
                                                      access_mode=TraAccessMode.READ)).cursor()
-        self._ic._logging_id_ = 'schema.internal_cursor'
+        self._ic.stream_blob_threshold = -1 # All BLOBs as materialized
         self.__clear()
         self.ods = self._con.info.ods
         if self.ods == 12.0: # Firebird 3

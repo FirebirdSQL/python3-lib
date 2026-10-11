@@ -152,7 +152,7 @@ class Monitor:
         self._ic: Cursor | None = self._con.transaction_manager(tpb(Isolation.READ_COMMITTED_RECORD_VERSION,
                                                                     access_mode=TraAccessMode.READ)).cursor()
         """Internal cursor using a separate read-committed transaction for MON$ queries."""
-        self._ic._logging_id_ = 'monitor.internal_cursor'
+        self._ic.stream_blob_threshold = -1 # All blobs as materialized
         self.__internal: bool = False
         self._con_id: int = connection.info.id
         """ID of the connection this Monitor instance is primarily associated with."""

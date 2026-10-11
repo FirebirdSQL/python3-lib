@@ -141,3 +141,4 @@ docs/.cache/
 local/
 work/
 plan/
+hatch.toml

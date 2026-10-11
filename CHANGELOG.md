@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Development
+
+### Added
+
+- `gstat`: Parse the `Big record pages` statistic into `StatTable.big_record_pages`.
+- Maintainer guides for the library modules, architecture, and testing workflow.
+
+### Changed
+
+- `monitor` and `schema`: Materialize all BLOB values fetched by their internal cursors.
+- Convert the user documentation from Sphinx to Zensical, including the site themes and
+  docset build workflow.
+
+### Fixed
+
+- `trace`: Preserve parameter values containing ` = ` instead of dropping the affected
+  trace event (GT-9).
+- Correct the server log examples in the user documentation.
+
 ## [2.0.1] - 2026-04-20
 
 ### Added

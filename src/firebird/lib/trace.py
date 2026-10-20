@@ -1444,21 +1444,21 @@ class TraceParser:
             next_line = self.__current_block[0]
             if "Table" in next_line and "Natural" in next_line:
                 self.__event_values['access'] = []
-                if self.__current_block.popleft() != "Table                             Natural     Index    Update    Insert    Delete   Backout     Purge   Expunge":
+                header = self.__current_block.popleft()
+                columns = ('Table', 'Natural', 'Index', 'Update', 'Insert',
+                           'Delete', 'Backout', 'Purge', 'Expunge')
+                if tuple(header.split()) != columns:
                     raise Error("Performance table header expected")
-                if self.__current_block.popleft() != "*"*111:
+                positions = [header.index(name) for name in columns[1:]]
+                separator = self.__current_block.popleft()
+                if not separator or set(separator) != {'*'}:
                     raise Error("Performance table header separator expected")
                 while self.__current_block:
                     entry = self.__current_block.popleft()
-                    self.__event_values['access'].append(AccessStats(intern(entry[:32].strip()),
-                                                                     safe_int(entry[32:41].strip()),
-                                                                     safe_int(entry[41:51].strip()),
-                                                                     safe_int(entry[51:61].strip()),
-                                                                     safe_int(entry[61:71].strip()),
-                                                                     safe_int(entry[71:81].strip()),
-                                                                     safe_int(entry[81:91].strip()),
-                                                                     safe_int(entry[91:101].strip()),
-                                                                     safe_int(entry[101:111].strip())))
+                    values = [safe_int(entry[start:end].strip()) for start, end in
+                              zip(positions, [*positions[1:], None], strict=True)]
+                    self.__event_values['access'].append(
+                        AccessStats(intern(entry[:positions[0]].strip()), *values))
     def _parse_sql_info(self) -> None:
         plan = self.__event_values['plan']
         sql = self.__event_values['sql']
@@ -1474,6 +1474,8 @@ class TraceParser:
         self.__event_values['sql_id'] = sql_id
     def _parse_trigger(self) -> None:
         trigger, event = self.__current_block.popleft().split('(')
+        if trigger.startswith('Trigger '):
+            trigger = trigger[len('Trigger '):]
         if ' FOR ' in trigger:
             trigger, table = trigger.split(' FOR ')
             self.__event_values['trigger'] = intern(trigger)
@@ -1481,7 +1483,7 @@ class TraceParser:
         else:
             self.__event_values['trigger'] = intern(trigger.strip())
             self.__event_values['table'] = None
-        self.__event_values['event'] = intern(event.strip('()'))
+        self.__event_values['event'] = intern(event.strip('(): '))
     def _parse_service(self) -> None:
         svc_id = ''
         line = self.__current_block.popleft()

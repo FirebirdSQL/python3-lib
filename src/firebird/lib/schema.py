@@ -3125,7 +3125,7 @@ from rdb$index_segments where rdb$index_name = ? order by rdb$field_position""",
         **Added in version 1.4.0.**
            Requires Firebird 5.0+. Older versions will return `None`.
         """
-        return self._attributes['RDB$CONDITION_SOURCE']
+        return self._attributes.get('RDB$CONDITION_SOURCE')
 
 class ViewColumn(SchemaItem):
     """Represents a column within a database view ([`View`][firebird.lib.schema.View]).

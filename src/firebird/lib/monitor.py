@@ -667,14 +667,16 @@ class AttachmentInfo(InfoItem):
 
         **Added in version 1.4.0.**
         """
-        return bool(self._attributes.get('MON$WIRE_COMPRESSED'))
+        value = self._attributes.get('MON$WIRE_COMPRESSED')
+        return None if value is None else bool(value)
     @property
     def wire_encrypted(self) -> bool | None:
         """Wire encryption.
 
         **Added in version 1.4.0.**
         """
-        return bool(self._attributes.get('MON$WIRE_ENCRYPTED'))
+        value = self._attributes.get('MON$WIRE_ENCRYPTED')
+        return None if value is None else bool(value)
     @property
     def wire_crypt_plugin(self) -> str | None:
         """Name of the wire encryption plugin used by client.
@@ -888,7 +890,8 @@ class StatementInfo(InfoItem):
 
         **Added in version 1.4.0.**
         """
-        return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
+        statement_id = self._attributes.get('MON$COMPILED_STATEMENT_ID')
+        return self.monitor.compiled_statements.get(statement_id) if statement_id is not None else None
 
 class CallStackInfo(InfoItem):
     """Information about PSQL call (stack frame).

@@ -14,6 +14,11 @@ Use the `Monitor` context manager or `close()` to release its cursor. When addin
 `MON$` collection, include it in initialization, cache invalidation, and lifecycle paths.
 Check server and ODS support before reading columns or tables introduced in later Firebird
 versions; `MON$COMPILED_STATEMENTS`, for example, is tested only when available.
+Properties backed by optional monitoring columns return `None` when the column is absent.
+In particular, `StatementInfo.compiled_statement` must avoid querying
+`MON$COMPILED_STATEMENTS` on Firebird 3 and 4. Missing or null wire compression and encryption
+values must not be converted to `False`; embedded attachments have no
+wire transport.
 
 The integration tests are in `tests/test_monitor.py`; the user reference is
 `docs/docs/ref-monitor.md`.

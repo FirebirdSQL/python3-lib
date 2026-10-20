@@ -24,6 +24,7 @@ Currently it contains modules for:
 **Table of Contents**
 
 - [Installation](#installation)
+- [Agent skill](#agent-skill)
 - [License](#license)
 - [Documentation](#documentation)
 - [Development](#development)
@@ -35,6 +36,23 @@ Requires: Firebird 3+
 ```console
 pip install firebird-lib
 ```
+
+## Agent skill
+
+The [firebird-lib skill](skills/firebird-lib/SKILL.md) helps coding agents use this
+package in other projects. Copy the entire `skills/firebird-lib` directory, including
+its `references`, into the user skill directory for your agent:
+
+| Agent | User skill directory |
+| --- | --- |
+| Codex | `~/.codex/skills/` |
+| Claude Code | `~/.claude/skills/` |
+| Gemini CLI | `~/.agents/skills/` |
+
+For example, from a checkout of this repository, run
+`cp -R skills/firebird-lib ~/.codex/skills/` to make the skill available to Codex
+across projects. Use the corresponding directory for another agent.
+
 ## License
 
 `firebird-lib` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.

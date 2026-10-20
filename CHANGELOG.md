@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- A portable agent skill for using `firebird-lib` in other projects.
 - `schema`: Expose role system privileges and SQL SECURITY settings from Firebird 4 onward.
   Generated DDL includes explicit object clauses and the database default where applicable.
 - `gstat`: Parse generator page encryption statistics into

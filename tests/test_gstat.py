@@ -72,12 +72,13 @@ def get_object_data(obj, skip=()):
     pytest.param(('s', SrvStatFlag.DEFAULT | SrvStatFlag.SYS_RELATIONS,
                   (True, True, False, False, True)), id='system'),
 ])
-def test_live_gstat_fb3(case, fb_vars, db_file, server_connection):
+def test_live_gstat(case, fb_vars, db_file, server_connection):
     """Parse the same complete service report through parse() and push()."""
     mode, flags, features = case
     version = fb_vars['version']
-    if version.major != 3:
-        pytest.skip(f'Live gstat assertions are supported on Firebird 3; found {version}')
+    ods_versions = {3: {'12.0'}, 4: {'13.0'}, 5: {'13.0', '13.1'}}
+    if version.major not in ods_versions:
+        pytest.skip(f'Live gstat assertions are supported on Firebird 3-5; found {version}')
 
     server_connection.database.get_statistics(database=db_file, flags=flags)
     lines = server_connection.readlines()
@@ -104,7 +105,7 @@ def test_live_gstat_fb3(case, fb_vars, db_file, server_connection):
 
     assert parsed.filename == str(db_file)
     assert parsed.gstat_version == 3
-    assert parsed.ods_version == '12.0'
+    assert parsed.ods_version in ods_versions[version.major]
     assert parsed.page_size == 8192
     assert parsed.database_dialect == 3
     assert DbAttribute.WRITE in parsed.attributes

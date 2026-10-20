@@ -12,7 +12,8 @@ and preserve partial/optional statistics sections.
 
 `tests/test_gstat.py` requests live gstat reports through the driver Services API for each
 supported report mode, then checks both whole-input and incremental parsing of the same
-lines. These live cases currently run only on Firebird 3; other engine versions skip them
-until their output is supported. Synthetic malformed-input cases run on every backend.
+lines. The live cases cover Firebird 3, 4, and 5 using the detected engine version, including
+the `local` and `localem` backends. Other engine versions skip them until their output is
+supported. Synthetic malformed-input cases run on every backend.
 The encryption report can include generator-page totals; keep those in
 `StatDatabase.encrypted_generator_pages`. Public usage is in `docs/docs/ref-gstat.md`.

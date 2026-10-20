@@ -13,6 +13,7 @@ The Zensical sources in `docs/docs/` are the published user documentation.
 | `tests/test_*.py` | Tests corresponding to library modules |
 | `tests/conftest.py` | Shared Firebird server configuration and database fixtures |
 | `tests/fbtest*.fdb` | Versioned databases for integration tests and live gstat reports |
+| `tools/check_schema.py` | Standalone report of unused `RDB$` metadata by engine version |
 | `docs/docs/` | Zensical user guide and API reference |
 | `pyproject.toml` | Build, dependencies, Hatch environments, and Ruff settings |
 

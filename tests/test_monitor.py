@@ -121,9 +121,9 @@ def test_03_DatabaseInfo(db_connection, fb_vars):
         assert db_info.name.upper() == str(db_file).upper()
         assert db_info.page_size == 8192
 
-        if version.base_version == FB30:
+        if f"{version.major}.{version.minor}" == FB30:
             assert db_info.ods == 12.0
-        elif version.base_version == FB40:
+        elif f"{version.major}.{version.minor}" == FB40:
             assert db_info.ods == 13.0
         else: # FB 5.0+
             # ODS 13.1 introduced in 5.0 beta 1
@@ -158,7 +158,7 @@ def test_03_DatabaseInfo(db_connection, fb_vars):
             assert stats.owner is db_info
 
         # Firebird 4 properties
-        if version.base_version == FB30:
+        if f"{version.major}.{version.minor}" == FB30:
             assert db_info.crypt_state is None
             assert db_info.guid is None
             assert db_info.file_id is None
@@ -209,9 +209,9 @@ def test_04_AttachmentInfo(db_connection, fb_vars, db_file):
             assert isinstance(s.client_version, str)
 
             # Remote version prefix depends on FB version
-            if version.base_version == FB30:
+            if f"{version.major}.{version.minor}" == FB30:
                 assert s.remote_version.startswith('P15')
-            elif version.base_version == FB40:
+            elif f"{version.major}.{version.minor}" == FB40:
                 assert s.remote_version.startswith('P17')
             else: # FB 5.0+
                 assert s.remote_version.startswith('P18') or s.remote_version.startswith('P19')
@@ -267,7 +267,7 @@ def test_04_AttachmentInfo(db_connection, fb_vars, db_file):
                 m.this_attachment.terminate()
 
         # Firebird 4 properties
-        if version.base_version == FB30:
+        if f"{version.major}.{version.minor}" == FB30:
             assert s.idle_timeout is None
             assert s.idle_timer is None
             assert s.statement_timeout is None
@@ -278,12 +278,12 @@ def test_04_AttachmentInfo(db_connection, fb_vars, db_file):
             assert s.idle_timeout == 0
             assert s.idle_timer is None # Timer only set if timeout > 0
             assert s.statement_timeout == 0
-            assert isinstance(s.wire_compressed, bool)
-            assert isinstance(s.wire_encrypted, bool)
+            assert isinstance(s.wire_compressed, (bool, type(None))) # No wire transport for embedded
+            assert isinstance(s.wire_encrypted, (bool, type(None)))
             assert isinstance(s.wire_crypt_plugin, (str, type(None))) # None if not encrypted
 
         # Firebird 5 properties
-        if version.base_version in [FB30, FB40]:
+        if f"{version.major}.{version.minor}" in [FB30, FB40]:
             assert s.session_timezone is None
         else: # FB 5.0+
             assert isinstance(s.session_timezone, str)
@@ -311,7 +311,7 @@ def test_05_TransactionInfo(db_connection, fb_vars):
             assert isinstance(s.oldest, int)
             assert isinstance(s.oldest_active, int)
 
-            if version.base_version == FB30:
+            if f"{version.major}.{version.minor}" == FB30:
                 assert s.isolation_mode is IsolationMode.READ_COMMITTED_RV
             else: # FB 4.0+
                 assert s.isolation_mode is IsolationMode.READ_COMMITTED_READ_CONSISTENCY
@@ -409,7 +409,7 @@ def test_06_StatementInfo(db_connection, fb_vars):
         assert isinstance(s.tablestats, dict) # Check it's a dict
 
         # Firebird 4 properties
-        if version.base_version == FB30:
+        if f"{version.major}.{version.minor}" == FB30:
             assert s.timeout is None
             assert s.timer is None
         else: # FB 4.0+
@@ -417,7 +417,7 @@ def test_06_StatementInfo(db_connection, fb_vars):
             assert s.timer is None # Timer only set if timeout > 0
 
         # Firebird 5 properties
-        if version.base_version in [FB30, FB40]:
+        if f"{version.major}.{version.minor}" in [FB30, FB40]:
             assert s.compiled_statement is None
         else: # FB 5.0+
             assert isinstance(s.compiled_statement, CompiledStatementInfo)
@@ -528,7 +528,7 @@ def test_08_IOStatsInfo(db_connection, fb_vars):
         assert s.max_memory_allocated >= 0
 
         # Firebird 4+ property
-        if version.base_version == FB30:
+        if f"{version.major}.{version.minor}" == FB30:
             assert s.intermediate_gc is None
         else:
             assert s.intermediate_gc >= 0

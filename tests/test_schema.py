@@ -129,7 +129,7 @@ def test_01_SchemaBindClose(db_connection):
 def test_02_SchemaFromConnection(db_connection, fb_vars):
     """Tests accessing schema objects via connection.schema and basic counts."""
     s = db_connection.schema
-    version = fb_vars['version'].base_version # Use base version (e.g., '3.0')
+    version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
     assert s.param_type_from == {0: 'DATATYPE', 1: 'DOMAIN', 2: 'TYPE OF DOMAIN', 3: 'TYPE OF COLUMN'}
     if version in (FB30, FB40):
@@ -788,7 +788,7 @@ def test_09_ViewColumn(db_connection):
 def test_10_Domain(db_connection, fb_vars):
     """Tests Domain objects."""
     s = db_connection.schema
-    version = fb_vars['version'].base_version
+    version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
     # System domain
     c = s.all_domains.get('RDB$6')
@@ -1536,7 +1536,7 @@ def test_19_FunctionArgument(db_connection):
 def test_20_Function(db_connection, fb_vars):
     """Tests Function objects (UDF and PSQL)."""
     s = db_connection.schema
-    version = fb_vars['version'].base_version
+    version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
     # --- UDF Tests (using mocks) ---
     c = _mockFunction(s, 'STRING2BLOB')
@@ -2572,7 +2572,7 @@ END"""
 def test_27_Script(db_connection, fb_vars):
     """Tests get_metadata_ddl script generation for various sections."""
     s = db_connection.schema
-    version = fb_vars['version'].base_version
+    version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
     assert len(sm.SCRIPT_DEFAULT_ORDER) == 25
 
@@ -2735,7 +2735,7 @@ def test_26_Visitor(db_connection):
 def test_27_Script(db_connection, fb_vars):
     """Tests get_metadata_ddl script generation."""
     s = db_connection.schema
-    version = fb_vars['version'].base_version
+    version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
     assert 25 == len(sm.SCRIPT_DEFAULT_ORDER)
     script = s.get_metadata_ddl(sections=[sm.Section.COLLATIONS])

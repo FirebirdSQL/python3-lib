@@ -1,13 +1,22 @@
 # Testing and documentation workflow
 
 Run commands from the repository root. `tests/conftest.py` initializes the Firebird client
-and connects to the server during pytest configuration. Therefore even `test_gstat.py`,
-`test_log.py`, or `test_trace.py` needs a working Firebird client and server in this suite.
+and connects to the service manager during pytest configuration. Therefore even `test_gstat.py`,
+`test_log.py`, or `test_trace.py` needs a working Firebird client and engine in this suite.
 The fixture copies a version-matched `tests/fbtest30.fdb`, `fbtest40.fdb`, or `fbtest50.fdb`
 into a temporary directory and points the registered `pytest` database at that copy.
 Supported fixture branches cover Firebird 3, 4, and 5.
 
-By default the fixture uses a local server and `SYSDBA` / `masterkey`. For another setup,
+At startup, the tests inspect entry points in `firebird.runtime.providers`. With one provider,
+they set `FIREBIRD` to its runtime root and load its client library before the first
+connection. With more than one provider, setup stops with an error. Without a provider,
+the configured or system client library is used. The pytest `Firebird:` header reports the
+loaded provider and the selected source database. The `fb3em`, `fb4em`, and `fb5em` Hatch
+backends install the matching `firebird-embedded` dependency and use the corresponding
+`fbtest30.fdb`, `fbtest40.fdb`, or `fbtest50.fdb` database. The `local` backend connects to
+localhost; `localem` uses a local embedded connection with the system runtime.
+
+By default the fixture uses `SYSDBA` / `masterkey`. For another setup,
 pass `--host`, `--port`, `--client-lib`, `--server`, or `--driver-config` to pytest as needed.
 The optional `tests/firebird-driver.conf` file is read when present; an explicit
 `--driver-config` path takes precedence. Keep connection credentials in local configuration,
@@ -16,16 +25,17 @@ not in committed documentation or test data.
 ## Commands
 
 ```console
-hatch run hatch-test.py3.11:pytest tests/test_gstat.py --host=localhost
+hatch test -i backend=fb3em -py 3.11 tests/test_schema.py
+hatch test -i backend=local -py 3.11 tests/test_gstat.py
 hatch test
 hatch run ruff check src/firebird/lib
 git diff --check
 hatch run doc:build
 ```
 
-The first command runs one test file in an installed Hatch Python 3.11 test environment;
-choose the Python version available locally. `hatch test` uses the configured 3.11–3.14
-matrix and passes `--host=localhost`. Run focused tests first, then the applicable broader
+The first command runs one test file against Firebird 3 embedded in a Python 3.11 test
+environment; choose the Python version available locally. `hatch test -a` uses the
+configured Python and backend matrix. Run focused tests first, then the applicable broader
 suite when a server and the required Python environments are available. Ruff configuration
 and exclusions are in `pyproject.toml`.
 

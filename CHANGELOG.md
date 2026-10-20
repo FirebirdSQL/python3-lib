@@ -8,17 +8,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- `schema`: Expose role system privileges and SQL SECURITY settings from Firebird 4 onward.
+  Generated DDL includes explicit object clauses and the database default where applicable.
+- `gstat`: Parse generator page encryption statistics into
+  `StatDatabase.encrypted_generator_pages`.
+- Add a standalone `tools/check_schema.py` report for unused system metadata and
+  unmapped `RDB$TYPES` rows.
+- Add a test that checks monitoring table and column coverage against Firebird 3, 4,
+  and 5.
 - `gstat`: Parse the `Big record pages` statistic into `StatTable.big_record_pages`.
 - Maintainer guides for the library modules, architecture, and testing workflow.
 
 ### Changed
 
+- Support local and embedded Firebird 3, 4, and 5 backends in the test matrix;
+  obtain `gstat` test data from the live service instead of checked-in output files.
+- `gstat`: Correct the types of data, index, and BLOB page encryption statistics to
+  `Encryption`.
 - `monitor` and `schema`: Materialize all BLOB values fetched by their internal cursors.
 - Convert the user documentation from Sphinx to Zensical, including the site themes and
   docset build workflow.
 
 ### Fixed
 
+- `monitor`: Preserve unavailable wire compression and encryption as `None`, and avoid
+  reading compiled statement references when the metadata is absent or null.
+- `schema`: Return `None` for an index condition when its Firebird 5 metadata column
+  is unavailable.
 - `trace`: Preserve parameter values containing ` = ` instead of dropping the affected
   trace event (GT-9).
 - Correct the server log examples in the user documentation.

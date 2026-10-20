@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- Live trace service tests against Firebird 3, 4, and 5 for database and service
+  activity, transaction outcomes, statements, executable objects, and sweep.
 - A portable agent skill for using `firebird-lib` in other projects.
 - `schema`: Expose role system privileges and SQL SECURITY settings from Firebird 4 onward.
   Generated DDL includes explicit object clauses and the database default where applicable.
@@ -32,6 +34,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+- `trace`: Parse Firebird 5 trigger labels and performance tables whose column
+  spacing differs between engine versions.
 - `monitor`: Preserve unavailable wire compression and encryption as `None`, and avoid
   reading compiled statement references when the metadata is absent or null.
 - `schema`: Return `None` for an index condition when its Firebird 5 metadata column

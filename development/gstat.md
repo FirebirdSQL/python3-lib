@@ -10,6 +10,9 @@ state for another stream. A format change may require updates in both a specific
 table and the section parser. Keep malformed-input errors tied to the appropriate line
 and preserve partial/optional statistics sections.
 
-`tests/test_gstat.py` covers whole-input and incremental parsing with the checked-in
-`tests/gstat30-*.out` samples, plus malformed-input cases. Public usage is in
-`docs/docs/ref-gstat.md`.
+`tests/test_gstat.py` requests live gstat reports through the driver Services API for each
+supported report mode, then checks both whole-input and incremental parsing of the same
+lines. These live cases currently run only on Firebird 3; other engine versions skip them
+until their output is supported. Synthetic malformed-input cases run on every backend.
+The encryption report can include generator-page totals; keep those in
+`StatDatabase.encrypted_generator_pages`. Public usage is in `docs/docs/ref-gstat.md`.

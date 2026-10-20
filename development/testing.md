@@ -26,7 +26,7 @@ not in committed documentation or test data.
 
 ```console
 hatch test -i backend=fb3em -py 3.11 tests/test_schema.py
-hatch test -i backend=local -py 3.11 tests/test_gstat.py
+hatch test -i backend=fb3em -py 3.11 tests/test_gstat.py
 hatch test
 hatch run ruff check src/firebird/lib
 git diff --check

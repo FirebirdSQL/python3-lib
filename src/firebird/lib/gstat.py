@@ -121,7 +121,7 @@ items_tbl3: TLogItemSpec = [
     ('blob pages:', 'i', None),
     ('Level 0:', 'i', None),
     ('Level 1:', 'i', None),
-    ('Level 2:', 'i', None), 
+    ('Level 2:', 'i', None),
 ]
 
 items_idx3: TLogItemSpec = [
@@ -386,17 +386,18 @@ class StatDatabase:
         """Replay logging file"""
         self.backup_diff_file: str | None = None
         """Backup difference file"""
-        self.encrypted_data_pages: int | None = None
+        self.encrypted_data_pages: Encryption | None = None
         """Encryption statistics for data pages."""
-        self.encrypted_index_pages: int | None = None
+        self.encrypted_index_pages: Encryption | None = None
         """Encryption statistics for index pages."""
-        self.encrypted_blob_pages: int | None = None
+        self.encrypted_blob_pages: Encryption | None = None
         """Encryption statistics for blob pages."""
+        self.encrypted_generator_pages: Encryption | None = None
+        """Encryption statistics for generator pages, when reported."""
         self.continuation_files: list[str] = []
         """Database file names"""
         self.database_guid: str | None = None
         """Database GUID"""
-        #
         self.__line_no: int = 0
         self.__table: StatTable | None = None
         self.__index: StatIndex | None = None
@@ -435,10 +436,10 @@ class StatDatabase:
         self.encrypted_data_pages = None
         self.encrypted_index_pages = None
         self.encrypted_blob_pages = None
+        self.encrypted_generator_pages = None
         self.continuation_files.clear()
         self.__tables: DataList[StatTable] = DataList(type_spec=StatTable, key_expr='item.name')
         self.__indices: DataList[StatIndex] = DataList(type_spec=StatIndex, key_expr='item.name')
-        #
         self.__line_no = 0
         self.__table = None
         self.__index = None
@@ -455,7 +456,6 @@ class StatDatabase:
                         self.gstat_version = GSTAT_30
                     elif key == 'Checksum':
                         raise Error("Output from gstat older than Firebird 3 is not supported")
-                #
                 value: str = line[len(key):].strip()
                 if valtype == 'i':  # integer
                     value = int(value)
@@ -614,6 +614,8 @@ class StatDatabase:
             self.encrypted_index_pages = data
         elif 'Blob pages:' in line:
             self.encrypted_blob_pages = data
+        elif 'Generator pages:' in line:
+            self.encrypted_generator_pages = data
         else:
             raise Error(f'Unknown encryption information (line {self.__line_no})')
     def has_table_stats(self) -> bool:

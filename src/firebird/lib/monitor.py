@@ -886,7 +886,8 @@ class StatementInfo(InfoItem):
     # Firebird 5
     @property
     def compiled_statement(self) -> CompiledStatementInfo | None:
-        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this statement relates.
+        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this
+        statement relates, or None when unavailable.
 
         **Added in version 1.4.0.**
         """
@@ -967,11 +968,13 @@ class CallStackInfo(InfoItem):
     # Firebird 5
     @property
     def compiled_statement(self) -> CompiledStatementInfo | None:
-        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this statement relates.
+        """[`CompiledStatementInfo`][firebird.lib.monitor.CompiledStatementInfo] instance to which this
+        call relates, or None when unavailable.
 
         **Added in version 1.4.0.**
         """
-        return self.monitor.compiled_statements.get(self._attributes['MON$COMPILED_STATEMENT_ID'])
+        statement_id = self._attributes.get('MON$COMPILED_STATEMENT_ID')
+        return self.monitor.compiled_statements.get(statement_id) if statement_id is not None else None
 
 class IOStatsInfo(InfoItem):
     """Information about page and row level I/O operations, and about memory consumption.

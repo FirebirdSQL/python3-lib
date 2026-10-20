@@ -385,6 +385,7 @@ class Section(Enum):
     INDEX_ACTIVATIONS = auto()
     TRIGGER_DEACTIVATIONS = auto()
     TRIGGER_ACTIVATIONS = auto()
+    DATABASE_SECURITY = auto()
 
 class Category(Enum):
     """Schema information collection categories."""
@@ -442,7 +443,7 @@ class CollationFlag(IntFlag):
     CASE_INSENSITIVE = 2
     ACCENT_INSENSITIVE = 4
 
-SCRIPT_DEFAULT_ORDER = [Section.COLLATIONS, Section.CHARACTER_SETS,
+SCRIPT_DEFAULT_ORDER = [Section.DATABASE_SECURITY, Section.COLLATIONS, Section.CHARACTER_SETS,
                         Section.UDFS, Section.GENERATORS,
                         Section.EXCEPTIONS, Section.DOMAINS,
                         Section.PACKAGE_DEFS,
@@ -457,6 +458,11 @@ SCRIPT_DEFAULT_ORDER = [Section.COLLATIONS, Section.CHARACTER_SETS,
                         Section.GRANTS, Section.ROLES, Section.COMMENTS,
                         Section.SHADOWS, Section.SET_GENERATORS]
 """Default order of sections for DDL script generation via `get_metadata_ddl()`."""
+
+
+def _sql_security_mode(value: bool | None) -> str | None:  # noqa: FBT001
+    """Translate the nullable RDB$SQL_SECURITY flag to its SQL keyword."""
+    return None if value is None else 'DEFINER' if value else 'INVOKER'
 
 
 def get_grants(privileges: list[Privilege], grantors: list[str] | None=None) -> list[str]:
@@ -660,53 +666,55 @@ class Schema(Visitable):
     or 'GENERATOR'). Defaults to 'SEQUENCE'."""
     param_type_from: ClassVar[dict[int, str]] = {0: 'DATATYPE', 1: 'DOMAIN',
                                                  2: 'TYPE OF DOMAIN', 3: 'TYPE OF COLUMN'}
-    """Mapping from parameter source codes (RDB$PARAMETER_MECHANISM) to descriptive strings."""
+    "Mapping from parameter source codes (RDB$PARAMETER_MECHANISM) to descriptive strings."
     object_types: ClassVar[dict[int, str]] = {}
-    """Mapping from object type codes (RDB$OBJECT_TYPE) to descriptive strings."""
+    "Mapping from object type codes (RDB$OBJECT_TYPE) to descriptive strings."
     object_type_codes:  ClassVar[dict[str, int]] = {}
-    """Reverse mapping from object type names to codes."""
+    "Reverse mapping from object type names to codes."
     character_set_names: ClassVar[dict[int, str]] = {}
-    """Mapping from character set IDs (RDB$CHARACTER_SET_ID) to names."""
+    "Mapping from character set IDs (RDB$CHARACTER_SET_ID) to names."
     field_types: ClassVar[dict[int, str]] = {}
-    """Mapping from field type codes (RDB$FIELD_TYPE) to SQL type names."""
+    "Mapping from field type codes (RDB$FIELD_TYPE) to SQL type names."
     field_subtypes: ClassVar[dict[int, str]] = {}
-    """Mapping from field sub-type codes (RDB$FIELD_SUB_TYPE) to names."""
+    "Mapping from field sub-type codes (RDB$FIELD_SUB_TYPE) to names."
     function_types: ClassVar[dict[int, str]] = {}
-    """Mapping from function type codes (RDB$FUNCTION_TYPE) to names."""
+    "Mapping from function type codes (RDB$FUNCTION_TYPE) to names."
     mechanism_types: ClassVar[dict[str, str]] = {}
-    """Mapping from mechanism codes (RDB$MECHANISM) to names."""
+    "Mapping from mechanism codes (RDB$MECHANISM) to names."
     parameter_mechanism_types: ClassVar[dict[int, str]] = {}
-    """Mapping from parameter mechanism codes (RDB$PARAMETER_MECHANISM) to names."""
+    "Mapping from parameter mechanism codes (RDB$PARAMETER_MECHANISM) to names."
     procedure_types: ClassVar[dict[int, str]] = {}
-    """Mapping from procedure type codes (RDB$PROCEDURE_TYPE) to names."""
+    "Mapping from procedure type codes (RDB$PROCEDURE_TYPE) to names."
     relation_types: ClassVar[dict[int, str]] = {}
-    """Mapping from relation type codes (RDB$RELATION_TYPE) to names."""
+    "Mapping from relation type codes (RDB$RELATION_TYPE) to names."
     system_flag_types: ClassVar[dict[int, str]] = {}
-    """Mapping from system flag codes (RDB$SYSTEM_FLAG) to names."""
+    "Mapping from system flag codes (RDB$SYSTEM_FLAG) to names."
     transaction_state_types: ClassVar[dict[int, str]] = {}
-    """Mapping from transaction state codes (RDB$TRANSACTION_STATE) to names."""
+    "Mapping from transaction state codes (RDB$TRANSACTION_STATE) to names."
     trigger_types: ClassVar[dict[int, str]] = {}
-    """Mapping from trigger type codes (RDB$TRIGGER_TYPE) to names."""
+    "Mapping from trigger type codes (RDB$TRIGGER_TYPE) to names."
     parameter_types: ClassVar[dict[int, str]] = {}
-    """Mapping from parameter type codes (RDB$PARAMETER_TYPE) to names."""
+    "Mapping from parameter type codes (RDB$PARAMETER_TYPE) to names."
     index_activity_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from index activity codes (RDB$INDEX_INACTIVE) to names."""
+    "Mapping from index activity codes (RDB$INDEX_INACTIVE) to names."
     index_unique_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from index uniqueness codes (RDB$UNIQUE_FLAG) to names."""
+    "Mapping from index uniqueness codes (RDB$UNIQUE_FLAG) to names."
     trigger_activity_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from trigger activity codes (RDB$TRIGGER_INACTIVE) to names."""
+    "Mapping from trigger activity codes (RDB$TRIGGER_INACTIVE) to names."
     grant_options: ClassVar[dict[int, str]] = {}
-    """Mapping from grant option codes (RDB$GRANT_OPTION) to names."""
+    "Mapping from grant option codes (RDB$GRANT_OPTION) to names."
     page_types: ClassVar[dict[int, str]] = {}
-    """Mapping from page type codes (RDB$PAGE_TYPE) to names."""
+    "Mapping from page type codes (RDB$PAGE_TYPE) to names."
     privacy_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from privacy flag codes (RDB$PRIVATE_FLAG) to names."""
+    "Mapping from privacy flag codes (RDB$PRIVATE_FLAG) to names."
     legacy_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from legacy flag codes (RDB$LEGACY_FLAG) to names."""
+    "Mapping from legacy flag codes (RDB$LEGACY_FLAG) to names."
     deterministic_flags: ClassVar[dict[int, str]] = {}
-    """Mapping from determinism flag codes (RDB$DETERMINISTIC_FLAG) to names."""
+    "Mapping from determinism flag codes (RDB$DETERMINISTIC_FLAG) to names."
     identity_type: ClassVar[dict[int, str]] = {}
-    """Mapping from identity type codes (RDB$IDENTITY_TYPE) to names."""
+    "Mapping from identity type codes (RDB$IDENTITY_TYPE) to names."
+    system_privileges: ClassVar[dict[int, str]] = {}
+    "Mapping from system priviledge type codes (RDB$SYSTEM_PRIVILEGES) to names."
     def __init__(self):
         self._con: Connection | None = None
         """The underlying driver Connection, or None if closed/unbound."""
@@ -906,6 +914,8 @@ class Schema(Visitable):
                     'RDB$TRIGGER_TYPE', 'RDB$TRIGGER_SOURCE', 'RDB$DESCRIPTION',
                     'RDB$TRIGGER_INACTIVE', 'RDB$SYSTEM_FLAG', 'RDB$FLAGS',
                     'RDB$VALID_BLR', 'RDB$ENGINE_NAME', 'RDB$ENTRYPOINT']
+            if self.ods >= 13.0:
+                cols.append('RDB$SQL_SECURITY')
             triggers = DataList((Trigger(self, row) for row
                                  in self._select(f"select {','.join(cols)} from RDB$TRIGGERS")),
                                 Trigger, 'item.name', frozen=True)
@@ -920,6 +930,8 @@ class Schema(Visitable):
                     'RDB$SECURITY_CLASS', 'RDB$OWNER_NAME', 'RDB$SYSTEM_FLAG',
                     'RDB$PROCEDURE_TYPE', 'RDB$VALID_BLR', 'RDB$ENGINE_NAME',
                     'RDB$ENTRYPOINT', 'RDB$PACKAGE_NAME', 'RDB$PRIVATE_FLAG']
+            if self.ods >= 13.0:
+                cols.append('RDB$SQL_SECURITY')
             procedures = DataList((Procedure(self, row) for row
                                    in self._select(f"select {','.join(cols)} from rdb$procedures")),
                                   Procedure, 'item.name', frozen=True)
@@ -936,6 +948,8 @@ class Schema(Visitable):
                     'RDB$PRIVATE_FLAG', 'RDB$FUNCTION_SOURCE', 'RDB$FUNCTION_ID',
                     'RDB$VALID_BLR', 'RDB$SECURITY_CLASS', 'RDB$OWNER_NAME',
                     'RDB$LEGACY_FLAG', 'RDB$DETERMINISTIC_FLAG']
+            if self.ods >= 13.0:
+                cols.append('RDB$SQL_SECURITY')
             functions = DataList((Function(self, row) for row
                                   in self._select(f"select {','.join(cols)} from rdb$functions")),
                                  Function, 'item.name', frozen=True)
@@ -1149,6 +1163,8 @@ class Schema(Visitable):
         self.deterministic_flags = enum_dict('RDB$DETERMINISTIC_FLAG')
         # Identity
         self.identity_type = enum_dict('RDB$IDENTITY_TYPE')
+        # System priviledges
+        self.system_privileges = enum_dict('RDB$SYSTEM_PRIVILEGES')
         # Map to type
         self._map_to_type_ = enum_dict('RDB$MAP_TO_TYPE')
         return self
@@ -1280,7 +1296,10 @@ class Schema(Visitable):
         #
         script = []
         for section in sections:
-            if section == Section.COLLATIONS:
+            if section == Section.DATABASE_SECURITY:
+                if self.sql_security is not None:
+                    script.append(f'ALTER DATABASE SET DEFAULT SQL SECURITY {self.sql_security}')
+            elif section == Section.COLLATIONS:
                 for collation in self.collations:
                     if not collation.is_sys_object():
                         script.append(collation.get_sql_for('create'))
@@ -1494,6 +1513,10 @@ class Schema(Visitable):
     def security_class(self) -> str:
         """Can refer to the security class applied as databasewide access control limits."""
         return self.__attrs['RDB$SECURITY_CLASS'].strip()
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit default SQL security mode, or `None` if unspecified (Firebird 4+)."""
+        return _sql_security_mode(self.__attrs.get('RDB$SQL_SECURITY'))
     @property
     def collations(self) -> DataList[Collation]:
         """`DataList` of all [`Collation`][firebird.lib.schema.Collation] objects defined in the database. Loads lazily."""
@@ -1736,9 +1759,10 @@ FROM RDB$FILTERS"""
         """`DataList` of all [`Package`][firebird.lib.schema.Package] objects in the database. Loads lazily."""
         if self.__packages is None:
             self.__fail_if_closed()
-            cmd = """select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE,
+            ext = ', RDB$SQL_SECURITY' if self.ods >= 13.0 else ''
+            cmd = f"""select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE,
 RDB$PACKAGE_BODY_SOURCE, RDB$VALID_BODY_FLAG, RDB$SECURITY_CLASS, RDB$OWNER_NAME,
-RDB$SYSTEM_FLAG, RDB$DESCRIPTION
+RDB$SYSTEM_FLAG, RDB$DESCRIPTION{ext}
             FROM RDB$PACKAGES"""
             self.__packages = DataList((Package(self, row) for row
                                         in self._select(cmd)), Package, 'item.name')
@@ -4314,6 +4338,8 @@ class Table(SchemaItem):
                         partdefs.append(uqdef)
             tabdef += ','.join(partdefs)
             tabdef += '\n)'
+            if self.sql_security is not None:
+                tabdef += f' SQL SECURITY {self.sql_security}'
             return tabdef
         except Exception as e:
             raise e
@@ -4429,6 +4455,10 @@ class Table(SchemaItem):
         """The security class name associated with this table, if any (`RDB$SECURITY_CLASS`).
         Used for access control limits. Returns `None` if not set."""
         return self._attributes['RDB$SECURITY_CLASS']
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit SQL security mode (`RDB$SQL_SECURITY`), or `None` if inherited."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
     @property
     def external_file(self) -> str | None:
         """The full path and filename of the external data file (`RDB$EXTERNAL_FILE`).
@@ -4676,6 +4706,10 @@ class View(SchemaItem):
         """The internal numeric ID (`RDB$RELATION_ID`) assigned to the view/relation."""
         return self._attributes['RDB$RELATION_ID']
     @property
+    def sql_security(self) -> str | None:
+        """SQL security metadata for this relation, or `None` if unspecified."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
+    @property
     def sql(self) -> str | None:
         """The `SELECT` statement text that defines the view (`RDB$VIEW_SOURCE`).
         Returns `None` if the source is not available."""
@@ -4825,8 +4859,10 @@ class Trigger(SchemaItem):
         if self._attributes['RDB$RELATION_NAME']:
             result += f' FOR {self.relation.get_quoted_name()}'
         result += f" {'ACTIVE' if self.active and not inactive else 'INACTIVE'}\n" \
-                  f"{self.get_type_as_string()} POSITION {self.sequence}\n" \
-                  f"{self.source}"
+                  f"{self.get_type_as_string()} POSITION {self.sequence}"
+        if self.sql_security is not None and self.engine_name is None:
+            result += f'\nSQL SECURITY {self.sql_security}'
+        result += f'\n{self.source}'
         return result
     def _get_alter_sql(self, **params) -> str:
         """Generates the SQL command to ALTER this trigger.
@@ -4895,6 +4931,8 @@ class Trigger(SchemaItem):
         #
         if not (header or body):
             raise ValueError("Header or body definition required.")
+        if self.sql_security is not None and self.engine_name is None:
+            header += f'\n  SQL SECURITY {self.sql_security}'
         return f'ALTER TRIGGER {self.get_quoted_name()}{header}{body}'
     def _get_drop_sql(self, **params) -> str:
         """Generates the SQL command to DROP this trigger.
@@ -5066,6 +5104,10 @@ class Trigger(SchemaItem):
         """The PSQL source code of the trigger body (`RDB$TRIGGER_SOURCE`).
         Returns `None` if source is unavailable."""
         return self._attributes['RDB$TRIGGER_SOURCE']
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit SQL security mode (`RDB$SQL_SECURITY`), or `None` if inherited."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
     @property
     def flags(self) -> int:
         """Internal flags (`RDB$FLAGS`) used by the engine. Interpretation may vary."""
@@ -5424,6 +5466,8 @@ class Procedure(SchemaItem):
                     result += f"  {p.get_sql_definition()}" \
                               f"{'' if p.sequence+1 == self._attributes['RDB$PROCEDURE_OUTPUTS'] else ','}\n"
                 result += ')\n'
+        if self.sql_security is not None and not self.is_packaged() and self.engine_name is None:
+            result += f'SQL SECURITY {self.sql_security}\n'
         return result+'AS\n'+(('BEGIN\nEND' if self.proc_type != 1
                                else 'BEGIN\n  SUSPEND;\nEND')
                               if no_code else self.source)
@@ -5493,6 +5537,10 @@ class Procedure(SchemaItem):
             else:
                 header += f'RETURNS ({outpars})\n'
         #
+        if self.sql_security is not None and not self.is_packaged() and self.engine_name is None:
+            if not header:
+                header = '\n'
+            header += f'SQL SECURITY {self.sql_security}\n'
         if code:
             if declare is None:
                 d = ''
@@ -5604,6 +5652,10 @@ class Procedure(SchemaItem):
         """The PSQL source code of the procedure body (`RDB$PROCEDURE_SOURCE`).
         Returns `None` if the source is unavailable."""
         return self._attributes['RDB$PROCEDURE_SOURCE']
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit SQL security mode (`RDB$SQL_SECURITY`), or `None` if inherited."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
     @property
     def security_class(self) -> str | None:
         """The security class name associated with this procedure, if any (`RDB$SECURITY_CLASS`).
@@ -5729,6 +5781,7 @@ class Role(SchemaItem):
         self._strip_attribute('RDB$OWNER_NAME')
         self._strip_attribute('RDB$SECURITY_CLASS')
         self._actions.append('comment')
+        self._system_privileges: set[str] | None = None
         if not self.is_sys_object():
             self._actions.extend(['create', 'drop'])
     def _get_create_sql(self, **params) -> str:
@@ -5791,6 +5844,17 @@ class Role(SchemaItem):
         """The security class name associated with this role, if any (`RDB$SECURITY_CLASS`).
         Returns `None` if not set."""
         return self._attributes.get('RDB$SECURITY_CLASS')
+    @property
+    def system_privileges(self) -> set[str]:
+        """Names of system privileges granted to this role (Firebird 4+).
+
+        Returns an empty set on Firebird 3 or when no system privileges are granted.
+        """
+        if self._system_privileges is None:
+            bitmap = int.from_bytes(self._attributes.get('RDB$SYSTEM_PRIVILEGES') or b'', 'little')
+            self._system_privileges = {name for code, name in self.schema.system_privileges.items()
+                                       if bitmap & (1 << code)}
+        return self._system_privileges
     @property
     def privileges(self) -> DataList[Privilege]:
         """A `DataList` of all [`Privilege`][firebird.lib.schema.Privilege] objects *granted to* this role.
@@ -6283,6 +6347,9 @@ class Function(SchemaItem):
         else:
             result += '\n'
         result += f'RETURNS {self.returns.get_sql_definition()}\n'
+        if self.sql_security is not None and not self.is_packaged() \
+                and self._attributes.get('RDB$ENGINE_NAME') is None:
+            result += f'SQL SECURITY {self.sql_security}\n'
         return result+'AS\n'+('BEGIN\nEND' if no_code else self.source)
     def _get_alter_sql(self, **params) -> str:
         """Generates the SQL command to ALTER this PSQL function.
@@ -6340,6 +6407,9 @@ class Function(SchemaItem):
         if not header:
             header += '\n'
         header += f'RETURNS {returns}\n'
+        if self.sql_security is not None and not self.is_packaged() \
+                and self._attributes.get('RDB$ENGINE_NAME') is None:
+            header += f'SQL SECURITY {self.sql_security}\n'
         #
         if code:
             if declare is None:
@@ -6481,6 +6551,10 @@ where rdb$function_name = ? order by rdb$argument_position""", (self.name,)))),
         """The PSQL source code (`RDB$FUNCTION_SOURCE`) for PSQL functions.
         Returns `None` for external UDFs."""
         return self._attributes.get('RDB$FUNCTION_SOURCE')
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit SQL security mode (`RDB$SQL_SECURITY`), or `None` if inherited."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
     @property
     def id(self) -> int:
         """The internal numeric ID (`RDB$FUNCTION_ID`)"""
@@ -7079,6 +7153,8 @@ class Package(SchemaItem):
         body = params.get('body')
         cbody = 'BODY ' if body else ''
         result = f'CREATE PACKAGE {cbody}{self.get_quoted_name()}'
+        if not body and self.sql_security is not None:
+            result += f'\nSQL SECURITY {self.sql_security}'
         return result+'\nAS\n'+(self.body if body else self.header)
     def _get_alter_sql(self, **params) -> str:
         """Generates the SQL command to CREATE the package header or body.
@@ -7103,7 +7179,8 @@ class Package(SchemaItem):
             hdr = ''
         else:
             hdr = '\n'.join(header) if isinstance(header, list) else header
-        return f'ALTER PACKAGE {self.get_quoted_name()}\nAS\nBEGIN\n{hdr}\nEND'
+        security = f'\nSQL SECURITY {self.sql_security}' if self.sql_security is not None else ''
+        return f'ALTER PACKAGE {self.get_quoted_name()}{security}\nAS\nBEGIN\n{hdr}\nEND'
     def _get_drop_sql(self, **params) -> str:
         """Generates the SQL command to DROP the package header or body.
 
@@ -7170,6 +7247,10 @@ class Package(SchemaItem):
         """The security class name associated with this package, if any (`RDB$SECURITY_CLASS`).
         Returns `None` if not set."""
         return self._attributes['RDB$SECURITY_CLASS']
+    @property
+    def sql_security(self) -> str | None:
+        """Explicit SQL security mode (`RDB$SQL_SECURITY`), or `None` if inherited."""
+        return _sql_security_mode(self._attributes.get('RDB$SQL_SECURITY'))
     @property
     def owner_name(self) -> str:
         """The user name of the package's owner/creator (`RDB$OWNER_NAME`)."""

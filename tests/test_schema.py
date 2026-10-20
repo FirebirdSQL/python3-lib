@@ -36,6 +36,7 @@
 """
 
 import pytest # Import pytest
+from firebird.driver import create_database
 from firebird.lib.schema import *
 from firebird.lib import schema as sm
 
@@ -1405,7 +1406,7 @@ END"""
 
     assert c.get_sql_for('comment') == 'COMMENT ON PROCEDURE GET_EMP_PROJ IS NULL'
 
-def test_18_Role(db_connection):
+def test_18_Role(db_connection, fb_vars):
     """Tests Role objects."""
     s = db_connection.schema
     c = s.roles.get('TEST_ROLE')
@@ -1419,6 +1420,20 @@ def test_18_Role(db_connection):
     assert not c.get_dependents()
     assert not c.get_dependencies()
     assert c.owner_name == 'SYSDBA'
+    if fb_vars['version'].major == 3:
+        assert 'RDB$SYSTEM_PRIVILEGES' not in c._attributes
+        assert c.system_privileges == set()
+    else:
+        assert 'RDB$SYSTEM_PRIVILEGES' in c._attributes
+        assert c.system_privileges <= set(s.system_privileges.values())
+        assert s.system_privileges[1] == 'USER_MANAGEMENT'
+        assert s.system_privileges[9] == 'CREATE_DATABASE'
+        assert s.system_privileges[16] == 'SELECT_ANY_OBJECT_IN_DATABASE'
+        role = sm.Role(s, {'RDB$ROLE_NAME': 'PRIVILEGED_ROLE', 'RDB$OWNER_NAME': 'SYSDBA',
+                           'RDB$SYSTEM_FLAG': 0,
+                           'RDB$SYSTEM_PRIVILEGES': bytes((0b00000010, 0b00000010, 0b00000001))})
+        assert role.system_privileges == {'USER_MANAGEMENT', 'CREATE_DATABASE',
+                                          'SELECT_ANY_OBJECT_IN_DATABASE'}
 
     # Test DDL generation
     assert c.get_sql_for('create') == "CREATE ROLE TEST_ROLE"
@@ -2569,12 +2584,110 @@ BEGIN
 END"""
     assert c.get_sql_for('comment') == 'COMMENT ON PACKAGE TEST IS NULL'
 
+def test_sql_security(db_connection, fb_vars, tmp_dir):
+    """SQL security metadata and DDL remain valid across engine versions."""
+    if fb_vars['version'].major == 3:
+        schema = db_connection.schema
+        assert schema.sql_security is None
+        assert schema.get_metadata_ddl(sections=[sm.Section.DATABASE_SECURITY]) == []
+        for items in (schema.tables, schema.views, schema.triggers, schema.procedures,
+                      schema.functions, schema.packages):
+            assert all(item.sql_security is None for item in items)
+        assert 'SQL SECURITY' not in schema.tables.get('COUNTRY').get_sql_for('create')
+        return
+
+    path = tmp_dir / 'sql-security-test.fdb'
+    host, port = fb_vars['host'], fb_vars['port']
+    dsn = str(path) if host is None else f'{host}/{port}:{path}' if port else f'{host}:{path}'
+    with create_database(dsn, user=fb_vars['user'], password=fb_vars['password'],
+                         charset='UTF8') as connection:
+        try:
+            with sm.Schema().bind(connection) as schema:
+                assert schema.sql_security is None
+                assert schema.get_metadata_ddl(sections=[sm.Section.DATABASE_SECURITY]) == []
+            cursor = connection.cursor()
+            statements = [
+                'ALTER DATABASE SET DEFAULT SQL SECURITY DEFINER',
+                'CREATE TABLE SQLSEC_T_DEF (ID INTEGER) SQL SECURITY DEFINER',
+                'CREATE TABLE SQLSEC_T_INV (ID INTEGER) SQL SECURITY INVOKER',
+                'CREATE TABLE SQLSEC_T_NULL (ID INTEGER)',
+                'CREATE VIEW SQLSEC_V AS SELECT ID FROM SQLSEC_T_NULL',
+                'CREATE PROCEDURE SQLSEC_P_DEF SQL SECURITY DEFINER AS BEGIN END',
+                'CREATE PROCEDURE SQLSEC_P_INV SQL SECURITY INVOKER AS BEGIN END',
+                'CREATE PROCEDURE SQLSEC_P_NULL AS BEGIN END',
+                'CREATE FUNCTION SQLSEC_F RETURNS INTEGER SQL SECURITY DEFINER AS BEGIN RETURN 1; END',
+                'CREATE FUNCTION SQLSEC_F_NULL RETURNS INTEGER AS BEGIN RETURN 1; END',
+                'CREATE TRIGGER SQLSEC_TR FOR SQLSEC_T_NULL BEFORE INSERT SQL SECURITY INVOKER AS BEGIN END',
+                'CREATE TRIGGER SQLSEC_TR_NULL FOR SQLSEC_T_NULL BEFORE INSERT AS BEGIN END',
+                'CREATE PACKAGE SQLSEC_PK SQL SECURITY DEFINER AS BEGIN PROCEDURE P; END',
+                'CREATE PACKAGE BODY SQLSEC_PK AS BEGIN PROCEDURE P AS BEGIN END END',
+                'CREATE PACKAGE SQLSEC_PK_NULL AS BEGIN PROCEDURE P; END',
+            ]
+            for statement in statements:
+                cursor.execute(statement)
+                connection.commit()
+            with sm.Schema().bind(connection) as schema:
+                assert schema.sql_security == 'DEFINER'
+                assert sm.SCRIPT_DEFAULT_ORDER[0] is sm.Section.DATABASE_SECURITY
+                assert schema.get_metadata_ddl(sections=[sm.Section.DATABASE_SECURITY]) == \
+                    ['ALTER DATABASE SET DEFAULT SQL SECURITY DEFINER']
+                table = schema.tables.get('SQLSEC_T_DEF')
+                assert table.sql_security == 'DEFINER'
+                assert table.get_sql_for('create').endswith(') SQL SECURITY DEFINER')
+                assert table.get_sql_for('recreate').endswith(') SQL SECURITY DEFINER')
+                assert schema.tables.get('SQLSEC_T_INV').sql_security == 'INVOKER'
+                inherited = schema.tables.get('SQLSEC_T_NULL')
+                assert inherited.sql_security is None
+                assert 'SQL SECURITY' not in inherited.get_sql_for('create')
+                view = schema.views.get('SQLSEC_V')
+                assert view.sql_security is None
+                assert 'SQL SECURITY' not in view.get_sql_for('create')
+                procedure = schema.procedures.get('SQLSEC_P_DEF')
+                assert procedure.sql_security == 'DEFINER'
+                assert 'SQL SECURITY DEFINER\nAS' in procedure.get_sql_for('create')
+                assert 'SQL SECURITY DEFINER\nAS' in procedure.get_sql_for('create_or_alter')
+                assert 'SQL SECURITY DEFINER\nAS' in procedure.get_sql_for('alter', code='')
+                assert schema.procedures.get('SQLSEC_P_INV').sql_security == 'INVOKER'
+                assert schema.procedures.get('SQLSEC_P_NULL').sql_security is None
+                assert 'SQL SECURITY' not in schema.procedures.get('SQLSEC_P_NULL').get_sql_for('create')
+                function = schema.functions.get('SQLSEC_F')
+                assert function.sql_security == 'DEFINER'
+                assert 'SQL SECURITY DEFINER\nAS' in function.get_sql_for('create')
+                assert 'SQL SECURITY DEFINER\nAS' in function.get_sql_for('recreate')
+                assert 'SQL SECURITY DEFINER\nAS' in function.get_sql_for('alter',
+                                                                           returns='INTEGER', code='')
+                assert schema.functions.get('SQLSEC_F_NULL').sql_security is None
+                assert 'SQL SECURITY' not in schema.functions.get('SQLSEC_F_NULL').get_sql_for('create')
+                trigger = schema.triggers.get('SQLSEC_TR')
+                assert trigger.sql_security == 'INVOKER'
+                assert 'SQL SECURITY INVOKER\nAS' in trigger.get_sql_for('create')
+                assert 'SQL SECURITY INVOKER\nAS' in trigger.get_sql_for('create_or_alter')
+                assert 'SQL SECURITY INVOKER' in trigger.get_sql_for('alter', active=False)
+                assert schema.triggers.get('SQLSEC_TR_NULL').sql_security is None
+                assert 'SQL SECURITY' not in schema.triggers.get('SQLSEC_TR_NULL').get_sql_for('create')
+                package = schema.packages.get('SQLSEC_PK')
+                assert package.sql_security == 'DEFINER'
+                assert 'SQL SECURITY DEFINER\nAS' in package.get_sql_for('create')
+                assert 'SQL SECURITY DEFINER\nAS' in package.get_sql_for('create_or_alter')
+                assert 'SQL SECURITY DEFINER\nAS' in package.get_sql_for('alter', header='PROCEDURE P;')
+                assert 'SQL SECURITY' not in package.get_sql_for('create', body=True)
+                assert 'SQL SECURITY' not in package.get_sql_for('recreate', body=True)
+                assert all(item.sql_security is None for item in package.procedures)
+                assert schema.packages.get('SQLSEC_PK_NULL').sql_security is None
+                assert 'SQL SECURITY' not in schema.packages.get('SQLSEC_PK_NULL').get_sql_for('create')
+                cursor.execute(procedure.get_sql_for('create_or_alter'))
+                cursor.execute(trigger.get_sql_for('alter', active=False))
+                connection.commit()
+        finally:
+            connection.drop_database()
+
+
 def test_27_Script(db_connection, fb_vars):
     """Tests get_metadata_ddl script generation for various sections."""
     s = db_connection.schema
     version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
-    assert len(sm.SCRIPT_DEFAULT_ORDER) == 25
+    assert len(sm.SCRIPT_DEFAULT_ORDER) == 26
 
     script = s.get_metadata_ddl(sections=[sm.Section.COLLATIONS])
     assert len(script) == 1
@@ -2737,7 +2850,7 @@ def test_27_Script(db_connection, fb_vars):
     s = db_connection.schema
     version = f"{fb_vars['version'].major}.{fb_vars['version'].minor}"
 
-    assert 25 == len(sm.SCRIPT_DEFAULT_ORDER)
+    assert 26 == len(sm.SCRIPT_DEFAULT_ORDER)
     script = s.get_metadata_ddl(sections=[sm.Section.COLLATIONS])
     assert script == ["CREATE COLLATION TEST_COLLATE\n   FOR WIN1250\n   FROM WIN_CZ\n   NO PAD\n   CASE INSENSITIVE\n   ACCENT INSENSITIVE\n   'DISABLE-COMPRESSIONS=0;DISABLE-EXPANSIONS=0'"]
     script = s.get_metadata_ddl(sections=[sm.Section.CHARACTER_SETS])

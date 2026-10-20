@@ -79,7 +79,8 @@ The `Schema` provides information about:
 - **Database:** [Owner name][firebird.lib.schema.Schema.owner_name],
     [default character set][firebird.lib.schema.Schema.default_character_set],
     [description][firebird.lib.schema.Schema.description],
-    [security class][firebird.lib.schema.Schema.security_class], [linger option][firebird.lib.schema.Schema.linger] and whether
+    [security class][firebird.lib.schema.Schema.security_class], [SQL security default][firebird.lib.schema.Schema.sql_security],
+    [linger option][firebird.lib.schema.Schema.linger] and whether
     database consist from [single or multiple files][firebird.lib.schema.Schema.is_multifile].
 - **Facilities:** Available [character sets][firebird.lib.schema.Schema.character_sets],
     [collations][firebird.lib.schema.Schema.collations], BLOB [filters][firebird.lib.schema.Schema.filters], database
@@ -135,6 +136,19 @@ There are next schema objects: `Collation`, `CharacterSet`, `DatabaseException`,
 `View`, `ViewColumn`, `Trigger`, `Procedure`, `ProcedureParameter`, `Function`,
 `FunctionArgument`, `Role`, `Dependency`, `DatabaseFile`, `Shadow`, `Package`,
 `Filter`, `BackupHistory` and `Privilege`.
+
+### SQL security (Firebird 4 and later)
+
+`Schema.sql_security` and the `sql_security` properties of tables, views, triggers,
+procedures, functions, and packages return `"DEFINER"`, `"INVOKER"`, or `None`. `None`
+means no explicit setting; the object inherits the applicable table or database default.
+Firebird 3 also returns `None`, because its system tables have no `RDB$SQL_SECURITY` column.
+
+Generated DDL includes `SQL SECURITY` only for an explicit setting and only where Firebird
+accepts the clause. Package bodies, packaged routines, external functions, and views do not
+get one. `Schema.get_metadata_ddl()` emits an explicit database default first as
+`ALTER DATABASE SET DEFAULT SQL SECURITY ...`; it emits no database security statement
+when the default is unspecified.
 
 
 <a id="visitor-pattern-support"></a>

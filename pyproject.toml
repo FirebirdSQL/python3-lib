@@ -53,6 +53,9 @@ packages = ["src/firebird"]
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.envs.default.scripts]
+build-skill = "python scripts/build_skill.py"
+
 [tool.hatch.envs.firebird-lib]
 extra-dependencies = [
   # Uncomment for work and testing with live dependencies

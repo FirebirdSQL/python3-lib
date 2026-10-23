@@ -31,7 +31,7 @@ classifiers = [
     ]
 dependencies = [
   "firebird-base~=2.0",
-  "firebird-driver~=2.0",
+  "firebird-driver~=2.1",
 ]
 
 [project.urls]
@@ -53,15 +53,30 @@ packages = ["src/firebird"]
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.hatch.envs.default]
-dependencies = [
+[tool.hatch.envs.firebird-lib]
+extra-dependencies = [
+  # Uncomment for work and testing with live dependencies
+  #"firebird-base @ file://../firebird-base",
+  #"firebird-driver @ file://../firebird-driver",
 ]
 
+[tool.hatch.envs.tools3]
+template = "firebird-lib"
+extra-dependencies = ["firebird-embedded~=3.0"]
+
+[tool.hatch.envs.tools4]
+template = "firebird-lib"
+extra-dependencies = ["firebird-embedded~=4.0"]
+
+[tool.hatch.envs.tools5]
+template = "firebird-lib"
+extra-dependencies = ["firebird-embedded~=5.0"]
+
 [tool.hatch.envs.hatch-test]
+template = "firebird-lib"
 
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
-#backend = ["local", "localem"]
 backend = ["local", "localem", "fb3em", "fb4em", "fb5em"]
 
 [tool.hatch.envs.hatch-test.overrides]

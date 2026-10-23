@@ -4,13 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Development
+## [2.1.0] - 2026-10-23
 
 ### Added
 
 - Live trace service tests against Firebird 3, 4, and 5 for database and service
   activity, transaction outcomes, statements, executable objects, and sweep.
-- A portable agent skill for using `firebird-lib` in other projects.
+- A portable agent skill for using `firebird-lib` in other projects, with a Hatch
+  workflow that packages it as a versioned ZIP for GitHub releases.
 - `schema`: Expose role system privileges and SQL SECURITY settings from Firebird 4 onward.
   Generated DDL includes explicit object clauses and the database default where applicable.
 - `gstat`: Parse generator page encryption statistics into
@@ -24,6 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- Require `firebird-driver~=2.1` (previously `~=2.0`).
+- Advertise Python 3.14 and 3.15, add Python 3.15 to the Hatch test matrix,
+  and add version-specific embedded environments for the schema metadata checker.
 - Support local and embedded Firebird 3, 4, and 5 backends in the test matrix;
   obtain `gstat` test data from the live service instead of checked-in output files.
 - `gstat`: Correct the types of data, index, and BLOB page encryption statistics to

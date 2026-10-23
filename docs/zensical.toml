@@ -66,7 +66,7 @@ find_stubs_package = true
 
 [project.plugins.llmstxt]
 enabled = true
-markdown_description = "For library version 2.0.1"
+markdown_description = "For library version 2.1.0"
 sections = {
     "Usage Guide" = [
         "usage-guide/introduction.md",

@@ -56,9 +56,9 @@ whole trace event.
 
    ```text
    from firebird.lib.trace import TraceParser
-   from firebird.base.type import STOP
+   from firebird.base.types import STOP
 
-   parser = LogParser()
+   parser = TraceParser()
    with open(filename) as f:
        for line in f:
            if events := parser.push(line):

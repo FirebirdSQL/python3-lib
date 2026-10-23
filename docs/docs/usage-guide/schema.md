@@ -137,6 +137,12 @@ There are next schema objects: `Collation`, `CharacterSet`, `DatabaseException`,
 `FunctionArgument`, `Role`, `Dependency`, `DatabaseFile`, `Shadow`, `Package`,
 `Filter`, `BackupHistory` and `Privilege`.
 
+### System privileges (Firebird 4 and later)
+
+[`Role.system_privileges`][firebird.lib.schema.Role.system_privileges] returns the names of
+system privileges granted to a role. It returns an empty set for Firebird 3 roles and roles
+without system privileges.
+
 ### SQL security (Firebird 4 and later)
 
 `Schema.sql_security` and the `sql_security` properties of tables, views, triggers,

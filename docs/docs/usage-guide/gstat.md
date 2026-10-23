@@ -44,3 +44,9 @@ There are two methods how to parse the gstat output:
 
    ```
 When gstat report is fully parsed, you can start processing the information stored in `StatDatabase` instance.
+
+When present in the report, `StatTable.big_record_pages` contains the table's big-record
+page count. `StatDatabase.encrypted_data_pages`, `encrypted_index_pages`,
+`encrypted_blob_pages`, and `encrypted_generator_pages` contain `Encryption` objects with
+`pages`, `encrypted`, and `unencrypted` counts. Optional statistics remain `None` when
+gstat does not report them.

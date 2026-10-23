@@ -45,8 +45,8 @@ hatch run tools4:python tools/check_schema.py
 hatch run tools5:python tools/check_schema.py
 ```
 
-The `tools3`, `tools4`, and `tools5` environments are local development settings in the
-uncommitted `pyproject.toml` injection. Without a registered embedded provider, the script
+The `tools3`, `tools4`, and `tools5` environments are defined in `pyproject.toml` and
+install the corresponding embedded provider. Without a registered provider, the script
 uses the local Firebird installation. It creates and removes a temporary database and prints
 a Markdown report with the actual engine version. Every `RDB$` table except those in
 `EXCLUDE_TABLES` is listed; tables queried by `schema.py` also list columns not consumed

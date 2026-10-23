@@ -18,7 +18,7 @@ The Zensical sources in `docs/docs/` are the published user documentation.
 | `pyproject.toml` | Build, dependencies, Hatch environments, and Ruff settings |
 
 The package requires Python `>=3.11` and depends on `firebird-base~=2.0` and
-`firebird-driver~=2.0`. Hatch tests are configured for Python 3.11–3.14. Refer to
+`firebird-driver~=2.1`. Hatch tests are configured for Python 3.11–3.15. Refer to
 `pyproject.toml` for the current authoritative settings.
 
 ## Where to read next

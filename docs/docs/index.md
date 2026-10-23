@@ -12,6 +12,16 @@ This package provides modules for:
 
 Start with the [Usage Guide](usage-guide/introduction.md).
 
+## Agent skill
+
+The [firebird-lib skill](https://github.com/FirebirdSQL/python3-lib/tree/master/skills/firebird-lib)
+helps coding agents use this package. Download `firebird-lib-<version>-skill.zip`
+from the matching [GitHub release](https://github.com/FirebirdSQL/python3-lib/releases)
+when the release includes the skill archive. Extract it into your agent's user
+skill directory. The ZIP contains the `firebird-lib` directory, including
+`SKILL.md` and its `references`. For Codex, run
+`unzip firebird-lib-<version>-skill.zip -d ~/.codex/skills/`.
+
 !!! note
     Driver development is sponsored by [IBPhoenix](http://www.ibphoenix.com).
 

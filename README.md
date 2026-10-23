@@ -40,8 +40,11 @@ pip install firebird-lib
 ## Agent skill
 
 The [firebird-lib skill](skills/firebird-lib/SKILL.md) helps coding agents use this
-package in other projects. Copy the entire `skills/firebird-lib` directory, including
-its `references`, into the user skill directory for your agent:
+package in other projects. Download `firebird-lib-<version>-skill.zip` from the
+matching [GitHub release](https://github.com/FirebirdSQL/python3-lib/releases) when
+the release includes the skill archive. Extract it into the user skill directory
+for your agent; the archive contains a `firebird-lib` directory with `SKILL.md`
+and its `references`:
 
 | Agent | User skill directory |
 | --- | --- |
@@ -49,9 +52,10 @@ its `references`, into the user skill directory for your agent:
 | Claude Code | `~/.claude/skills/` |
 | Gemini CLI | `~/.agents/skills/` |
 
-For example, from a checkout of this repository, run
-`cp -R skills/firebird-lib ~/.codex/skills/` to make the skill available to Codex
-across projects. Use the corresponding directory for another agent.
+For example, run `unzip firebird-lib-<version>-skill.zip -d ~/.codex/skills/`
+to make the downloaded skill available to Codex across projects. From a checkout,
+you can instead run `cp -R skills/firebird-lib ~/.codex/skills/`. Maintainers can
+create the archive in `dist/` with `hatch run build-skill`.
 
 ## License
 
